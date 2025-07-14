@@ -1,4 +1,4 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This module provides structures and functions for managing pricing information for a dWallet.
@@ -14,9 +14,9 @@
 ///   - `dkg_second_round`
 module ika_dwallet_2pc_mpc::pricing;
 
-// === Imports ===
-use sui::{priority_queue::{Self, PriorityQueue}, vec_map::{Self, VecMap}};
 use ika_common::bls_committee::BlsCommittee;
+use sui::priority_queue::{Self, PriorityQueue};
+use sui::vec_map::{Self, VecMap};
 
 // === Structs ===
 
@@ -78,12 +78,25 @@ public fun empty(): PricingInfo {
 /// # Returns
 ///
 /// The [`PricingInfo`] object.
-public fun insert_or_update_pricing(self: &mut PricingInfo, curve: u32, signature_algorithm: Option<u32>, protocol: u32, fee_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
-    self.insert_or_update_pricing_value(curve, signature_algorithm, protocol, PricingInfoValue {
-        fee_ika,
-        gas_fee_reimbursement_sui,
-        gas_fee_reimbursement_sui_for_system_calls,
-    })
+public fun insert_or_update_pricing(
+    self: &mut PricingInfo,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+    fee_ika: u64,
+    gas_fee_reimbursement_sui: u64,
+    gas_fee_reimbursement_sui_for_system_calls: u64,
+) {
+    self.insert_or_update_pricing_value(
+        curve,
+        signature_algorithm,
+        protocol,
+        PricingInfoValue {
+            fee_ika,
+            gas_fee_reimbursement_sui,
+            gas_fee_reimbursement_sui_for_system_calls,
+        },
+    )
 }
 
 /// Returns the pricing information for a specific operation from the [`PricingInfo`] table.
@@ -96,7 +109,12 @@ public fun insert_or_update_pricing(self: &mut PricingInfo, curve: u32, signatur
 /// # Returns
 ///
 /// The pricing information for the operation.
-public(package) fun try_get_pricing_value(self: &PricingInfo, curve: u32, signature_algorithm: Option<u32>, protocol: u32): Option<PricingInfoValue> {
+public(package) fun try_get_pricing_value(
+    self: &PricingInfo,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+): Option<PricingInfoValue> {
     let key = PricingInfoKey {
         curve,
         signature_algorithm,
@@ -120,7 +138,10 @@ public fun gas_fee_reimbursement_sui_for_system_calls(self: &PricingInfoValue): 
     self.gas_fee_reimbursement_sui_for_system_calls
 }
 
-public(package) fun new_pricing_calculation(bls_committee: BlsCommittee, default_pricing: PricingInfo): PricingInfoCalculationVotes {
+public(package) fun new_pricing_calculation(
+    bls_committee: BlsCommittee,
+    default_pricing: PricingInfo,
+): PricingInfoCalculationVotes {
     PricingInfoCalculationVotes {
         bls_committee,
         default_pricing,
@@ -128,34 +149,59 @@ public(package) fun new_pricing_calculation(bls_committee: BlsCommittee, default
     }
 }
 
-public(package) fun committee_members_for_pricing_calculation_votes(calculation: &PricingInfoCalculationVotes): vector<ID> {
+public(package) fun committee_members_for_pricing_calculation_votes(
+    calculation: &PricingInfoCalculationVotes,
+): vector<ID> {
     calculation.bls_committee.members().map_ref!(|member| {
         member.validator_id()
     })
 }
 
-public(package) fun calculate_pricing_quorum_below(calculation: &mut PricingInfoCalculationVotes, pricing: vector<PricingInfo>, curve: u32, signature_algorithm: Option<u32>, protocol: u32) {
+public(package) fun calculate_pricing_quorum_below(
+    calculation: &mut PricingInfoCalculationVotes,
+    pricing: vector<PricingInfo>,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+) {
     let mut values = vector[];
     pricing.do_ref!(|pricing| {
         let value = pricing.try_get_pricing_value(curve, signature_algorithm, protocol);
-        values.push_back(value.get_with_default(calculation.default_pricing.try_get_pricing_value(curve, signature_algorithm, protocol).extract()));
+        values.push_back(value.get_with_default(calculation
+            .default_pricing
+            .try_get_pricing_value(curve, signature_algorithm, protocol)
+            .extract()));
     });
     let value = pricing_value_quorum_below(calculation.bls_committee, values);
-    calculation.working_pricing.insert_or_update_pricing_value(curve, signature_algorithm, protocol, value);
+    calculation
+        .working_pricing
+        .insert_or_update_pricing_value(curve, signature_algorithm, protocol, value);
 }
 
-public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, values: vector<PricingInfoValue>): PricingInfoValue {
+public(package) fun pricing_value_quorum_below(
+    bls_committee: BlsCommittee,
+    values: vector<PricingInfoValue>,
+): PricingInfoValue {
     let mut fee_ika = priority_queue::new(vector[]);
     let mut gas_fee_reimbursement_sui = priority_queue::new(vector[]);
     let mut gas_fee_reimbursement_sui_for_system_calls = priority_queue::new(vector[]);
     values.do_ref!(|value| {
         fee_ika.insert(value.fee_ika(), 1);
         gas_fee_reimbursement_sui.insert(value.gas_fee_reimbursement_sui(), 1);
-        gas_fee_reimbursement_sui_for_system_calls.insert(value.gas_fee_reimbursement_sui_for_system_calls(), 1);
+        gas_fee_reimbursement_sui_for_system_calls.insert(
+            value.gas_fee_reimbursement_sui_for_system_calls(),
+            1,
+        );
     });
     let fee_ika_quorum_below = quorum_below(bls_committee, &mut fee_ika);
-    let gas_fee_reimbursement_sui_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui);
-    let gas_fee_reimbursement_sui_for_system_calls_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui_for_system_calls);
+    let gas_fee_reimbursement_sui_quorum_below = quorum_below(
+        bls_committee,
+        &mut gas_fee_reimbursement_sui,
+    );
+    let gas_fee_reimbursement_sui_for_system_calls_quorum_below = quorum_below(
+        bls_committee,
+        &mut gas_fee_reimbursement_sui_for_system_calls,
+    );
     PricingInfoValue {
         fee_ika: fee_ika_quorum_below,
         gas_fee_reimbursement_sui: gas_fee_reimbursement_sui_quorum_below,
@@ -168,7 +214,7 @@ public(package) fun is_calculation_completed(calculation: &PricingInfoCalculatio
     let (keys, _) = calculation.default_pricing.pricing_map.into_keys_values();
     while (i < keys.length()) {
         let key = keys[i];
-        if(calculation.working_pricing.pricing_map.try_get(&key).is_none()) {
+        if (calculation.working_pricing.pricing_map.try_get(&key).is_none()) {
             return false
         };
         i = i + 1;
@@ -182,13 +228,19 @@ public(package) fun calculated_pricing(calculation: &PricingInfoCalculationVotes
 
 // === Private Functions ===
 
-fun insert_or_update_pricing_value(self: &mut PricingInfo, curve: u32, signature_algorithm: Option<u32>, protocol: u32, value: PricingInfoValue) {
+fun insert_or_update_pricing_value(
+    self: &mut PricingInfo,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+    value: PricingInfoValue,
+) {
     let key = PricingInfoKey {
         curve,
         signature_algorithm,
         protocol,
     };
-    if(self.pricing_map.contains(&key)) {
+    if (self.pricing_map.contains(&key)) {
         let existing_value = &mut self.pricing_map[&key];
         *existing_value = value;
     } else {

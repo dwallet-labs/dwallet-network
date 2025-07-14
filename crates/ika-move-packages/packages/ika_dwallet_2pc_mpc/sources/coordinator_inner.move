@@ -1,4 +1,4 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// # dWallet 2PC-MPC Coordinator Inner Module
@@ -28,39 +28,28 @@
 
 module ika_dwallet_2pc_mpc::coordinator_inner;
 
-// === Imports ===
-
-use sui::{
-    table_vec::{Self, TableVec},
-    object_table::{Self, ObjectTable},
-    table::Table,
-    balance::{Self, Balance},
-    bcs,
-    coin::Coin,
-    bag::{Self, Bag},
-    event,
-    ed25519::ed25519_verify,
-    vec_map::VecMap,
-    sui::SUI,
-};
-
 use ika::ika::IKA;
-use ika_common::{
-    address,
-    bls_committee::{Self, BlsCommittee},
-};
-use ika_dwallet_2pc_mpc::{
-    pricing::{PricingInfo, PricingInfoValue},
-    sessions_manager::{Self, SessionsManager, SessionIdentifier},
-    pricing_and_fee_manager::{Self, PricingAndFeeManager},
-    support_config::{Self, SupportConfig},
-};
-use ika_system::{
-    system_current_status_info::SystemCurrentStatusInfo,
-    validator_cap::VerifiedValidatorOperationCap,
-    advance_epoch_approver::AdvanceEpochApprover,
-    protocol_cap::VerifiedProtocolCap,
-};
+use ika_common::address;
+use ika_common::bls_committee::{Self, BlsCommittee};
+use ika_dwallet_2pc_mpc::pricing::{PricingInfo, PricingInfoValue};
+use ika_dwallet_2pc_mpc::pricing_and_fee_manager::{Self, PricingAndFeeManager};
+use ika_dwallet_2pc_mpc::sessions_manager::{Self, SessionsManager, SessionIdentifier};
+use ika_dwallet_2pc_mpc::support_config::{Self, SupportConfig};
+use ika_system::advance_epoch_approver::AdvanceEpochApprover;
+use ika_system::protocol_cap::VerifiedProtocolCap;
+use ika_system::system_current_status_info::SystemCurrentStatusInfo;
+use ika_system::validator_cap::VerifiedValidatorOperationCap;
+use sui::bag::{Self, Bag};
+use sui::balance::{Self, Balance};
+use sui::bcs;
+use sui::coin::Coin;
+use sui::ed25519::ed25519_verify;
+use sui::event;
+use sui::object_table::{Self, ObjectTable};
+use sui::sui::SUI;
+use sui::table::Table;
+use sui::table_vec::{Self, TableVec};
+use sui::vec_map::VecMap;
 
 // === Constants ===
 
@@ -410,7 +399,7 @@ public enum EncryptedUserSecretKeyShareState has copy, drop, store {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
         user_output_signature: vector<u8>,
-    }
+    },
 }
 
 /// Unverified capability for a partial user signature requiring network validation.
@@ -511,7 +500,7 @@ public struct PartialUserSignature has key, store {
 public enum PartialUserSignatureState has copy, drop, store {
     AwaitingNetworkVerification,
     NetworkVerificationCompleted,
-    NetworkVerificationRejected
+    NetworkVerificationRejected,
 }
 
 /// Represents a decentralized wallet (dWallet) created through DKG or key import.
@@ -565,8 +554,6 @@ public struct DWallet has key, store {
 ///
 /// Both paths converge to the `Active` state where signing operations can be performed.
 public enum DWalletState has copy, drop, store {
-    // === DKG Creation Path ===
-
     /// DKG first round has been requested from the network
     DKGRequested,
     /// Network rejected the DKG first round request
@@ -580,27 +567,20 @@ public enum DWalletState has copy, drop, store {
     AwaitingNetworkDKGVerification,
     /// Network rejected the DKG second round verification
     NetworkRejectedDKGVerification,
-
-    // === Imported Key Creation Path ===
-
     /// Imported key verification requested, waiting for network verification
     AwaitingNetworkImportedKeyVerification,
     /// Network rejected the imported key verification
     NetworkRejectedImportedKeyVerification,
-
-    // === Common Completion Path ===
-
     /// DKG/Import completed, waiting for key holder to sign and accept
     AwaitingKeyHolderSignature {
         /// Public output from DKG or import verification
         public_output: vector<u8>,
     },
-
     /// dWallet is fully operational and ready for signing
     Active {
         /// The verified public output
         public_output: vector<u8>,
-    }
+    },
 }
 
 /// Unverified capability for a presign session requiring validation.
@@ -715,7 +695,7 @@ public enum PresignState has copy, drop, store {
     Completed {
         /// Precomputed cryptographic material for accelerated signing
         presign: vector<u8>,
-    }
+    },
 }
 
 /// Signing session for generating dWallet signatures.
@@ -762,9 +742,8 @@ public enum SignState has copy, drop, store {
     Completed {
         /// Final cryptographic signature that can be verified against the public key
         signature: vector<u8>,
-    }
+    },
 }
-
 
 // === Message Approval ===
 
@@ -785,7 +764,7 @@ public enum SignState has copy, drop, store {
 /// 2. Approval is combined with presign capability
 /// 3. Network validates and generates signature
 /// 4. Approval is consumed and cannot be reused
-public struct MessageApproval has store, drop {
+public struct MessageApproval has drop, store {
     /// ID of the dWallet authorized to sign this message
     dwallet_id: ID,
     /// Cryptographic signature algorithm to use
@@ -810,7 +789,7 @@ public struct MessageApproval has store, drop {
 /// - Imported key dWallets may have different trust models
 /// - Users should understand the provenance of imported keys
 /// - Same single-use and message-binding properties apply
-public struct ImportedKeyMessageApproval has store, drop {
+public struct ImportedKeyMessageApproval has drop, store {
     /// ID of the imported key dWallet authorized to sign this message
     dwallet_id: ID,
     /// Cryptographic signature algorithm to use
@@ -1100,7 +1079,6 @@ public struct RejectedDWalletImportedKeyVerificationEvent has copy, drop, store 
     dwallet_id: ID,
 }
 
-
 // === Encrypted User Share Events ===
 
 /// Event emitted when an encryption key is successfully created and registered.
@@ -1385,7 +1363,7 @@ public struct RejectedPresignEvent has copy, drop, store {
     /// Target dWallet ID (None for global presigns)
     dwallet_id: Option<ID>,
     /// ID of the presign that failed generation
-    presign_id: ID
+    presign_id: ID,
 }
 
 // === Sign Events ===
@@ -1593,7 +1571,6 @@ public struct RejectedFutureSignEvent has copy, drop, store {
 
 // === Operational Events ===
 
-
 /// Event containing dwallet 2pc-mpc checkpoint information, emitted during
 /// the checkpoint submission message.
 public struct DWalletCheckpointInfoEvent has copy, drop, store {
@@ -1643,9 +1620,12 @@ public(package) fun create(
     system_current_status_info: &SystemCurrentStatusInfo,
     pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): DWalletCoordinatorInner {
-    verify_pricing_exists_for_all_protocols(&supported_curves_to_signature_algorithms_to_hash_schemes, &pricing);
+    verify_pricing_exists_for_all_protocols(
+        &supported_curves_to_signature_algorithms_to_hash_schemes,
+        &pricing,
+    );
     let mut inner = DWalletCoordinatorInner {
         current_epoch: 0,
         sessions_manager: sessions_manager::create(ctx),
@@ -1661,7 +1641,9 @@ public(package) fun create(
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
-        support_config: support_config::create(supported_curves_to_signature_algorithms_to_hash_schemes),
+        support_config: support_config::create(
+            supported_curves_to_signature_algorithms_to_hash_schemes,
+        ),
         received_end_of_publish: true,
         extra_fields: bag::new(ctx),
     };
@@ -1707,7 +1689,6 @@ public(package) fun register_session_identifier(
     self.sessions_manager.register_session_identifier(identifier_preimage, ctx)
 }
 
-
 /// Starts a Distributed Key Generation (DKG) session for the network (threshold) encryption key.
 ///
 /// Creates a new network encryption key and initiates the DKG process through the validator network.
@@ -1720,7 +1701,7 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     params_for_network: vector<u8>,
     _: &VerifiedProtocolCap,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     // We limit dkg only for the first half of the epoch.
     // The second half of the epoch is used for reconfiguration.
@@ -1729,25 +1710,32 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
     let id = object::new(ctx);
     let dwallet_network_encryption_key_id = id.to_inner();
     // Create a new network encryption key and add it to the shared state.
-    self.dwallet_network_encryption_keys.add(dwallet_network_encryption_key_id, DWalletNetworkEncryptionKey {
-        id,
-        dkg_at_epoch: self.current_epoch,
-        reconfiguration_public_outputs: sui::table::new(ctx),
-        network_dkg_public_output: table_vec::empty(ctx),
-        dkg_params_for_network: params_for_network,
-        supported_curves: vector::empty(),
-        state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
-    });
-
-    self.sessions_manager.initiate_system_session(
-        self.current_epoch,
-        dwallet_network_encryption_key_id,
-        DWalletNetworkDKGEncryptionKeyRequestEvent {
+    self
+        .dwallet_network_encryption_keys
+        .add(
             dwallet_network_encryption_key_id,
-            params_for_network,
-        },
-        ctx,
-    );
+            DWalletNetworkEncryptionKey {
+                id,
+                dkg_at_epoch: self.current_epoch,
+                reconfiguration_public_outputs: sui::table::new(ctx),
+                network_dkg_public_output: table_vec::empty(ctx),
+                dkg_params_for_network: params_for_network,
+                supported_curves: vector::empty(),
+                state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
+            },
+        );
+
+    self
+        .sessions_manager
+        .initiate_system_session(
+            self.current_epoch,
+            dwallet_network_encryption_key_id,
+            DWalletNetworkDKGEncryptionKeyRequestEvent {
+                dwallet_network_encryption_key_id,
+                params_for_network,
+            },
+            ctx,
+        );
 }
 
 /// Complete the Distributed Key Generation (DKG) session
@@ -1766,54 +1754,85 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
     ctx: &mut TxContext,
 ): Balance<SUI> {
     if (rejected) {
-        let status = sessions_manager::create_rejected_status_event<CompletedDWalletNetworkDKGEncryptionKeyEvent, RejectedDWalletNetworkDKGEncryptionKeyEvent>(RejectedDWalletNetworkDKGEncryptionKeyEvent {
+        let status = sessions_manager::create_rejected_status_event<
+            CompletedDWalletNetworkDKGEncryptionKeyEvent,
+            RejectedDWalletNetworkDKGEncryptionKeyEvent,
+        >(RejectedDWalletNetworkDKGEncryptionKeyEvent {
             dwallet_network_encryption_key_id,
         });
-        self.sessions_manager.complete_system_session<DWalletNetworkDKGEncryptionKeyRequestEvent, CompletedDWalletNetworkDKGEncryptionKeyEvent, RejectedDWalletNetworkDKGEncryptionKeyEvent>(self.current_epoch, session_sequence_number, status);
-        let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
-            dwallet_network_encryption_key_id
-        );
-        if (dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG) {
+        self
+            .sessions_manager
+            .complete_system_session<
+                DWalletNetworkDKGEncryptionKeyRequestEvent,
+                CompletedDWalletNetworkDKGEncryptionKeyEvent,
+                RejectedDWalletNetworkDKGEncryptionKeyEvent,
+            >(self.current_epoch, session_sequence_number, status);
+        let dwallet_network_encryption_key = self
+            .dwallet_network_encryption_keys
+            .borrow_mut(
+                dwallet_network_encryption_key_id,
+            );
+        if (
+            dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
+        ) {
             abort EWrongState
         };
 
-        while(!dwallet_network_encryption_key.network_dkg_public_output.is_empty()) {
+        while (!dwallet_network_encryption_key.network_dkg_public_output.is_empty()) {
             dwallet_network_encryption_key.network_dkg_public_output.pop_back();
         };
 
-        self.sessions_manager.initiate_system_session(
-            self.current_epoch,
-            dwallet_network_encryption_key_id,
-            DWalletNetworkDKGEncryptionKeyRequestEvent {
+        self
+            .sessions_manager
+            .initiate_system_session(
+                self.current_epoch,
                 dwallet_network_encryption_key_id,
-                params_for_network: dwallet_network_encryption_key.dkg_params_for_network,
-            },
-            ctx,
-        );
+                DWalletNetworkDKGEncryptionKeyRequestEvent {
+                    dwallet_network_encryption_key_id,
+                    params_for_network: dwallet_network_encryption_key.dkg_params_for_network,
+                },
+                ctx,
+            );
     } else {
         let state = if (is_last_chunk) {
-            let status = sessions_manager::create_success_status_event<CompletedDWalletNetworkDKGEncryptionKeyEvent, RejectedDWalletNetworkDKGEncryptionKeyEvent>(CompletedDWalletNetworkDKGEncryptionKeyEvent {
+            let status = sessions_manager::create_success_status_event<
+                CompletedDWalletNetworkDKGEncryptionKeyEvent,
+                RejectedDWalletNetworkDKGEncryptionKeyEvent,
+            >(CompletedDWalletNetworkDKGEncryptionKeyEvent {
                 dwallet_network_encryption_key_id,
             });
-            self.sessions_manager.complete_system_session<DWalletNetworkDKGEncryptionKeyRequestEvent, CompletedDWalletNetworkDKGEncryptionKeyEvent, RejectedDWalletNetworkDKGEncryptionKeyEvent>(self.current_epoch, session_sequence_number, status);
-            let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
-                dwallet_network_encryption_key_id
-            );
+            self
+                .sessions_manager
+                .complete_system_session<
+                    DWalletNetworkDKGEncryptionKeyRequestEvent,
+                    CompletedDWalletNetworkDKGEncryptionKeyEvent,
+                    RejectedDWalletNetworkDKGEncryptionKeyEvent,
+                >(self.current_epoch, session_sequence_number, status);
+            let dwallet_network_encryption_key = self
+                .dwallet_network_encryption_keys
+                .borrow_mut(
+                    dwallet_network_encryption_key_id,
+                );
             dwallet_network_encryption_key.supported_curves = supported_curves;
             DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
         } else {
             DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
         };
-        let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
-            dwallet_network_encryption_key_id
-        );
-        dwallet_network_encryption_key.network_dkg_public_output.push_back(network_public_output_chunk);
-        dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-            DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG => {
-                state
-            },
-            _ => abort EWrongState
-        };
+        let dwallet_network_encryption_key = self
+            .dwallet_network_encryption_keys
+            .borrow_mut(
+                dwallet_network_encryption_key_id,
+            );
+        dwallet_network_encryption_key
+            .network_dkg_public_output
+            .push_back(network_public_output_chunk);
+        dwallet_network_encryption_key.state =
+            match (&dwallet_network_encryption_key.state) {
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG => {
+                    state
+                },
+                _ => abort EWrongState,
+            };
     };
     self.pricing_and_fee_manager.charge_gas_fee_reimbursement_sui_for_system_calls()
 }
@@ -1837,59 +1856,92 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     // We should only update the count once, so we check it is the last chunk before we do.
 
     if (rejected) {
-        let status = sessions_manager::create_rejected_status_event<CompletedDWalletEncryptionKeyReconfigurationEvent, RejectedDWalletEncryptionKeyReconfigurationEvent>(RejectedDWalletEncryptionKeyReconfigurationEvent {
+        let status = sessions_manager::create_rejected_status_event<
+            CompletedDWalletEncryptionKeyReconfigurationEvent,
+            RejectedDWalletEncryptionKeyReconfigurationEvent,
+        >(RejectedDWalletEncryptionKeyReconfigurationEvent {
             dwallet_network_encryption_key_id,
         });
-        self.sessions_manager.complete_system_session<DWalletEncryptionKeyReconfigurationRequestEvent, CompletedDWalletEncryptionKeyReconfigurationEvent, RejectedDWalletEncryptionKeyReconfigurationEvent>(self.current_epoch, session_sequence_number, status);
-        let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
-            dwallet_network_encryption_key_id
-        );
-        if (dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration) {
+        self
+            .sessions_manager
+            .complete_system_session<
+                DWalletEncryptionKeyReconfigurationRequestEvent,
+                CompletedDWalletEncryptionKeyReconfigurationEvent,
+                RejectedDWalletEncryptionKeyReconfigurationEvent,
+            >(self.current_epoch, session_sequence_number, status);
+        let dwallet_network_encryption_key = self
+            .dwallet_network_encryption_keys
+            .borrow_mut(
+                dwallet_network_encryption_key_id,
+            );
+        if (
+            dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
+        ) {
             abort EWrongState
         };
 
         let next_epoch = self.current_epoch + 1;
-        let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(next_epoch);
+        let next_reconfiguration_public_output = dwallet_network_encryption_key
+            .reconfiguration_public_outputs
+            .borrow_mut(next_epoch);
 
-        while(!next_reconfiguration_public_output.is_empty()) {
+        while (!next_reconfiguration_public_output.is_empty()) {
             next_reconfiguration_public_output.pop_back();
         };
 
-        self.sessions_manager.initiate_system_session(
-            self.current_epoch,
-            dwallet_network_encryption_key_id,
-            DWalletEncryptionKeyReconfigurationRequestEvent {
+        self
+            .sessions_manager
+            .initiate_system_session(
+                self.current_epoch,
                 dwallet_network_encryption_key_id,
-            },
-            ctx,
-        );
+                DWalletEncryptionKeyReconfigurationRequestEvent {
+                    dwallet_network_encryption_key_id,
+                },
+                ctx,
+            );
     } else {
         let state = if (is_last_chunk) {
-            let status = sessions_manager::create_success_status_event<CompletedDWalletEncryptionKeyReconfigurationEvent, RejectedDWalletEncryptionKeyReconfigurationEvent>(CompletedDWalletEncryptionKeyReconfigurationEvent {
+            let status = sessions_manager::create_success_status_event<
+                CompletedDWalletEncryptionKeyReconfigurationEvent,
+                RejectedDWalletEncryptionKeyReconfigurationEvent,
+            >(CompletedDWalletEncryptionKeyReconfigurationEvent {
                 dwallet_network_encryption_key_id,
             });
-            self.sessions_manager.complete_system_session<DWalletEncryptionKeyReconfigurationRequestEvent, CompletedDWalletEncryptionKeyReconfigurationEvent, RejectedDWalletEncryptionKeyReconfigurationEvent>(self.current_epoch, session_sequence_number, status);
-            let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
-                dwallet_network_encryption_key_id
-            );
+            self
+                .sessions_manager
+                .complete_system_session<
+                    DWalletEncryptionKeyReconfigurationRequestEvent,
+                    CompletedDWalletEncryptionKeyReconfigurationEvent,
+                    RejectedDWalletEncryptionKeyReconfigurationEvent,
+                >(self.current_epoch, session_sequence_number, status);
+            let dwallet_network_encryption_key = self
+                .dwallet_network_encryption_keys
+                .borrow_mut(
+                    dwallet_network_encryption_key_id,
+                );
             dwallet_network_encryption_key.supported_curves = supported_curves;
             DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted
         } else {
             DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
         };
-        let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
-            dwallet_network_encryption_key_id
-        );
+        let dwallet_network_encryption_key = self
+            .dwallet_network_encryption_keys
+            .borrow_mut(
+                dwallet_network_encryption_key_id,
+            );
         let next_epoch = self.current_epoch + 1;
-        let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(next_epoch);
+        let next_reconfiguration_public_output = dwallet_network_encryption_key
+            .reconfiguration_public_outputs
+            .borrow_mut(next_epoch);
         // Change state to complete and emit an event to signify that only if it is the last chunk.
         next_reconfiguration_public_output.push_back(public_output);
-        dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration => {
-                state
-            },
-            _ => abort EWrongState
-        };
+        dwallet_network_encryption_key.state =
+            match (&dwallet_network_encryption_key.state) {
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration => {
+                    state
+                },
+                _ => abort EWrongState,
+            };
     };
     self.pricing_and_fee_manager.charge_gas_fee_reimbursement_sui_for_system_calls()
 }
@@ -1905,7 +1957,9 @@ public(package) fun initiate_mid_epoch_reconfiguration(
     assert!(self.next_epoch_active_committee.is_none(), EAlreadyInitiatedMidEpochReconfiguration);
 
     self.next_epoch_active_committee = next_epoch_active_committee;
-    self.pricing_and_fee_manager.initiate_pricing_calculation(*self.next_epoch_active_committee.borrow());
+    self
+        .pricing_and_fee_manager
+        .initiate_pricing_calculation(*self.next_epoch_active_committee.borrow());
 }
 
 public(package) fun request_network_encryption_key_mid_epoch_reconfiguration(
@@ -1914,35 +1968,46 @@ public(package) fun request_network_encryption_key_mid_epoch_reconfiguration(
     ctx: &mut TxContext,
 ) {
     assert!(self.next_epoch_active_committee.is_some(), EHaveNotInitiatedMidEpochReconfiguration);
-    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    assert!(
+        self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id),
+        EDWalletNetworkEncryptionKeyNotExist,
+    );
 
     let next_epoch = self.current_epoch + 1;
 
-    self.epoch_dwallet_network_encryption_keys_reconfiguration_completed = self.epoch_dwallet_network_encryption_keys_reconfiguration_completed + 1;
+    self.epoch_dwallet_network_encryption_keys_reconfiguration_completed =
+        self.epoch_dwallet_network_encryption_keys_reconfiguration_completed + 1;
 
-    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(dwallet_network_encryption_key_id);
+    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(
+        dwallet_network_encryption_key_id,
+    );
 
-    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-        DWalletNetworkEncryptionKeyState::NetworkDKGCompleted => {
-            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
-        },
-        DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted => {
-            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
-        },
-        _ => abort EWrongState,
-    };
+    dwallet_network_encryption_key.state =
+        match (&dwallet_network_encryption_key.state) {
+            DWalletNetworkEncryptionKeyState::NetworkDKGCompleted => {
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
+            },
+            DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted => {
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
+            },
+            _ => abort EWrongState,
+        };
 
     // Initialize the chunks vector corresponding to the upcoming's epoch in the public outputs map.
-    dwallet_network_encryption_key.reconfiguration_public_outputs.add(next_epoch, table_vec::empty(ctx));
+    dwallet_network_encryption_key
+        .reconfiguration_public_outputs
+        .add(next_epoch, table_vec::empty(ctx));
 
-    self.sessions_manager.initiate_system_session(
-        self.current_epoch,
-        dwallet_network_encryption_key_id,
-        DWalletEncryptionKeyReconfigurationRequestEvent {
+    self
+        .sessions_manager
+        .initiate_system_session(
+            self.current_epoch,
             dwallet_network_encryption_key_id,
-        },
-        ctx,
-    );
+            DWalletEncryptionKeyReconfigurationRequestEvent {
+                dwallet_network_encryption_key_id,
+            },
+            ctx,
+        );
 }
 
 public(package) fun calculate_pricing_votes(
@@ -1958,9 +2023,14 @@ fun get_active_dwallet_network_encryption_key(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
 ): &mut DWalletNetworkEncryptionKey {
-    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
+    let dwallet_network_encryption_key = self
+        .dwallet_network_encryption_keys
+        .borrow_mut(dwallet_network_encryption_key_id);
 
-    assert!(dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG, EDWalletNetworkEncryptionKeyNotActive);
+    assert!(
+        dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
+        EDWalletNetworkEncryptionKeyNotActive,
+    );
 
     dwallet_network_encryption_key
 }
@@ -1997,11 +2067,15 @@ public(package) fun advance_epoch(
     advance_epoch_approver: &mut AdvanceEpochApprover,
 ) {
     assert!(self.received_end_of_publish, ECannotAdvanceEpoch);
-    assert!(self.epoch_dwallet_network_encryption_keys_reconfiguration_completed == self.dwallet_network_encryption_keys.length(), ENotAllNetworkEncryptionKeysReconfigurationCompleted);
+    assert!(
+        self.epoch_dwallet_network_encryption_keys_reconfiguration_completed == self.dwallet_network_encryption_keys.length(),
+        ENotAllNetworkEncryptionKeysReconfigurationCompleted,
+    );
     self.received_end_of_publish = false;
     self.epoch_dwallet_network_encryption_keys_reconfiguration_completed = 0;
 
-    self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
+    self.previous_epoch_last_checkpoint_sequence_number =
+        self.last_processed_checkpoint_sequence_number;
 
     self.sessions_manager.advance_epoch();
 
@@ -2024,10 +2098,7 @@ public(package) fun advance_epoch(
 ///
 /// ### Aborts
 /// - `EDWalletNotExists`: If the dWallet doesn't exist
-fun get_dwallet(
-    self: &DWalletCoordinatorInner,
-    dwallet_id: ID,
-): &DWallet {
+fun get_dwallet(self: &DWalletCoordinatorInner, dwallet_id: ID): &DWallet {
     assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
     self.dwallets.borrow(dwallet_id)
 }
@@ -2043,10 +2114,7 @@ fun get_dwallet(
 ///
 /// ### Aborts
 /// - `EDWalletNotExists`: If the dWallet doesn't exist
-fun get_dwallet_mut(
-    self: &mut DWalletCoordinatorInner,
-    dwallet_id: ID,
-): &mut DWallet {
+fun get_dwallet_mut(self: &mut DWalletCoordinatorInner, dwallet_id: ID): &mut DWallet {
     assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
     self.dwallets.borrow_mut(dwallet_id)
 }
@@ -2072,9 +2140,7 @@ fun get_dwallet_mut(
 /// - Imported key verification has completed successfully
 /// - User has accepted their encrypted key share
 /// - Public output is available for cryptographic operations
-fun validate_active_and_get_public_output(
-    self: &DWallet,
-): &vector<u8> {
+fun validate_active_and_get_public_output(self: &DWallet): &vector<u8> {
     match (&self.state) {
         DWalletState::Active {
             public_output,
@@ -2188,9 +2254,17 @@ fun validate_network_encryption_key_supports_curve(
     dwallet_network_encryption_key_id: ID,
     curve: u32,
 ) {
-    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
-    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow(dwallet_network_encryption_key_id);
-    assert!(dwallet_network_encryption_key.supported_curves.contains(&curve), ENetworkEncryptionKeyUnsupportedCurve);
+    assert!(
+        self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id),
+        EDWalletNetworkEncryptionKeyNotExist,
+    );
+    let dwallet_network_encryption_key = self
+        .dwallet_network_encryption_keys
+        .borrow(dwallet_network_encryption_key_id);
+    assert!(
+        dwallet_network_encryption_key.supported_curves.contains(&curve),
+        ENetworkEncryptionKeyUnsupportedCurve,
+    );
 }
 
 /// Registers an encryption key for secure dWallet share storage.
@@ -2220,12 +2294,12 @@ public(package) fun register_encryption_key(
     encryption_key: vector<u8>,
     encryption_key_signature: vector<u8>,
     signer_public_key: vector<u8>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     self.support_config.validate_curve(curve);
     assert!(
         ed25519_verify(&encryption_key_signature, &signer_public_key, &encryption_key),
-        EInvalidEncryptionKeySignature
+        EInvalidEncryptionKeySignature,
     );
     let signer_address = address::ed25519_address(signer_public_key);
 
@@ -2233,15 +2307,20 @@ public(package) fun register_encryption_key(
 
     let encryption_key_id = id.to_inner();
 
-    self.encryption_keys.add(signer_address, EncryptionKey {
-        id,
-        created_at_epoch: self.current_epoch,
-        curve,
-        encryption_key,
-        encryption_key_signature,
-        signer_public_key,
-        signer_address,
-    });
+    self
+        .encryption_keys
+        .add(
+            signer_address,
+            EncryptionKey {
+                id,
+                created_at_epoch: self.current_epoch,
+                curve,
+                encryption_key,
+                encryption_key_signature,
+                signer_public_key,
+                signer_address,
+            },
+        );
 
     // Emit an event to signal the creation of the encryption key
     event::emit(CreatedEncryptionKeyEvent {
@@ -2276,11 +2355,15 @@ public(package) fun approve_message(
     dwallet_cap: &DWalletCap,
     signature_algorithm: u32,
     hash_scheme: u32,
-    message: vector<u8>
+    message: vector<u8>,
 ): MessageApproval {
     let dwallet_id = dwallet_cap.dwallet_id;
 
-    let is_imported_key_dwallet = self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
+    let is_imported_key_dwallet = self.validate_approve_message(
+        dwallet_id,
+        signature_algorithm,
+        hash_scheme,
+    );
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 
     let approval = MessageApproval {
@@ -2319,11 +2402,15 @@ public(package) fun approve_imported_key_message(
     imported_key_dwallet_cap: &ImportedKeyDWalletCap,
     signature_algorithm: u32,
     hash_scheme: u32,
-    message: vector<u8>
+    message: vector<u8>,
 ): ImportedKeyMessageApproval {
     let dwallet_id = imported_key_dwallet_cap.dwallet_id;
 
-    let is_imported_key_dwallet = self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
+    let is_imported_key_dwallet = self.validate_approve_message(
+        dwallet_id,
+        signature_algorithm,
+        hash_scheme,
+    );
     assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
 
     let approval = ImportedKeyMessageApproval {
@@ -2347,8 +2434,17 @@ fun validate_approve_message(
 ): bool {
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
 
-    self.support_config.validate_curve_and_signature_algorithm_and_hash_scheme(dwallet.curve, signature_algorithm, hash_scheme);
-    self.validate_network_encryption_key_supports_curve(dwallet.dwallet_network_encryption_key_id, dwallet.curve);
+    self
+        .support_config
+        .validate_curve_and_signature_algorithm_and_hash_scheme(
+            dwallet.curve,
+            signature_algorithm,
+            hash_scheme,
+        );
+    self.validate_network_encryption_key_supports_curve(
+        dwallet.dwallet_network_encryption_key_id,
+        dwallet.curve,
+    );
 
     dwallet.is_imported_key_dwallet
 }
@@ -2388,15 +2484,20 @@ public(package) fun request_dwallet_dkg_first_round(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): DWalletCap {
     self.support_config.validate_curve(curve);
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG);
 
     // TODO(@Omer): check the state of the dWallet (i.e., not waiting for dkg.)
     // TODO(@Omer): I believe the best thing would be to always use the latest key. I'm not sure why the user should even supply the id.
-    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    assert!(
+        self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id),
+        EDWalletNetworkEncryptionKeyNotExist,
+    );
     self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     // Create a new `DWalletCap` object.
@@ -2411,37 +2512,47 @@ public(package) fun request_dwallet_dkg_first_round(
     // Create a new `DWallet` object,
     // link it to the `dwallet_cap` we just created by id,
     // and insert it into the `dwallets` map.
-    self.dwallets.add(dwallet_id, DWallet {
-        id,
-        created_at_epoch: self.current_epoch,
-        curve,
-        public_user_secret_key_share: option::none(),
-        dwallet_cap_id,
-        dwallet_network_encryption_key_id,
-        is_imported_key_dwallet: false,
-        encrypted_user_secret_key_shares: object_table::new(ctx),
-        sign_sessions: object_table::new(ctx),
-        state: DWalletState::DKGRequested,
-    });
-
+    self
+        .dwallets
+        .add(
+            dwallet_id,
+            DWallet {
+                id,
+                created_at_epoch: self.current_epoch,
+                curve,
+                public_user_secret_key_share: option::none(),
+                dwallet_cap_id,
+                dwallet_network_encryption_key_id,
+                is_imported_key_dwallet: false,
+                encrypted_user_secret_key_shares: object_table::new(ctx),
+                sign_sessions: object_table::new(ctx),
+                state: DWalletState::DKGRequested,
+            },
+        );
 
     // Emit an event to request the Ika network to start DKG for this dWallet.
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
-        session_identifier,
-                dwallet_network_encryption_key_id,
-        pricing_value,
-        payment_ika,
-        payment_sui,
-        DWalletDKGFirstRoundRequestEvent {
-            dwallet_id,
-            dwallet_cap_id,
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
+            session_identifier,
             dwallet_network_encryption_key_id,
-            curve,
-        },
-        ctx,
-    );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+            pricing_value,
+            payment_ika,
+            payment_sui,
+            DWalletDKGFirstRoundRequestEvent {
+                dwallet_id,
+                dwallet_cap_id,
+                dwallet_network_encryption_key_id,
+                curve,
+            },
+            ctx,
+        );
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
 
     dwallet_cap
 }
@@ -2508,22 +2619,29 @@ public(package) fun respond_dwallet_dkg_first_round(
         })
     };
 
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<DWalletDKGFirstRoundRequestEvent, CompletedDWalletDKGFirstRoundEvent, RejectedDWalletDKGFirstRoundEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<
+            DWalletDKGFirstRoundRequestEvent,
+            CompletedDWalletDKGFirstRoundEvent,
+            RejectedDWalletDKGFirstRoundEvent,
+        >(self.current_epoch, session_sequence_number, status);
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
 
     let dwallet = self.get_dwallet_mut(dwallet_id);
-    dwallet.state = match (dwallet.state) {
-        DWalletState::DKGRequested => {
-            if (rejected) {
-                DWalletState::NetworkRejectedDKGRequest
-            } else {
-                DWalletState::AwaitingUserDKGVerificationInitiation {
-                    first_round_output
+    dwallet.state =
+        match (dwallet.state) {
+            DWalletState::DKGRequested => {
+                if (rejected) {
+                    DWalletState::NetworkRejectedDKGRequest
+                } else {
+                    DWalletState::AwaitingUserDKGVerificationInitiation {
+                        first_round_output,
+                    }
                 }
-            }
-        },
-        _ => abort EWrongState
-    };
+            },
+            _ => abort EWrongState,
+        };
 
     gas_fee_reimbursement_sui
 }
@@ -2579,7 +2697,7 @@ public(package) fun request_dwallet_dkg_second_round(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_curve = encryption_key.curve;
@@ -2600,7 +2718,7 @@ public(package) fun request_dwallet_dkg_second_round(
         } => {
             *first_round_output
         },
-        _ => abort EWrongState
+        _ => abort EWrongState,
     };
 
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
@@ -2613,40 +2731,50 @@ public(package) fun request_dwallet_dkg_second_round(
         encryption_key_id,
         encryption_key_address,
         source_encrypted_user_secret_key_share_id: option::none(),
-        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification
+        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification,
     };
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG);
 
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
-        session_identifier,
-        dwallet_network_encryption_key_id,
-        pricing_value,
-        payment_ika,
-        payment_sui,
-        DWalletDKGSecondRoundRequestEvent {
-            encrypted_user_secret_key_share_id,
-            dwallet_id,
-            first_round_output,
-            centralized_public_key_share_and_proof,
-            dwallet_cap_id: object::id(dwallet_cap),
-            encrypted_centralized_secret_share_and_proof,
-            encryption_key,
-            encryption_key_id,
-            encryption_key_address,
-            user_public_output,
-            signer_public_key,
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
+            session_identifier,
             dwallet_network_encryption_key_id,
-            curve,
-        },
-        ctx,
-    );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+            pricing_value,
+            payment_ika,
+            payment_sui,
+            DWalletDKGSecondRoundRequestEvent {
+                encrypted_user_secret_key_share_id,
+                dwallet_id,
+                first_round_output,
+                centralized_public_key_share_and_proof,
+                dwallet_cap_id: object::id(dwallet_cap),
+                encrypted_centralized_secret_share_and_proof,
+                encryption_key,
+                encryption_key_id,
+                encryption_key_address,
+                user_public_output,
+                signer_public_key,
+                dwallet_network_encryption_key_id,
+                curve,
+            },
+            ctx,
+        );
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
 
     let dwallet = self.get_dwallet_mut(dwallet_cap.dwallet_id);
-    dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+    dwallet
+        .encrypted_user_secret_key_shares
+        .add(encrypted_user_secret_key_share_id, encrypted_user_share);
     dwallet.state = DWalletState::AwaitingNetworkDKGVerification;
 }
 
@@ -2678,26 +2806,36 @@ public(package) fun respond_dwallet_dkg_second_round(
             encrypted_user_secret_key_share_id,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<DWalletDKGSecondRoundRequestEvent, CompletedDWalletDKGSecondRoundEvent, RejectedDWalletDKGSecondRoundEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<
+            DWalletDKGSecondRoundRequestEvent,
+            CompletedDWalletDKGSecondRoundEvent,
+            RejectedDWalletDKGSecondRoundEvent,
+        >(self.current_epoch, session_sequence_number, status);
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
-    
+
     let dwallet = self.get_dwallet_mut(dwallet_id);
 
-    dwallet.state = match (&dwallet.state) {
-        DWalletState::AwaitingNetworkDKGVerification => {
-            if (rejected) {
-                DWalletState::NetworkRejectedDKGVerification
-            } else {
-                let encrypted_user_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
-                encrypted_user_share.state = EncryptedUserSecretKeyShareState::NetworkVerificationCompleted;
+    dwallet.state =
+        match (&dwallet.state) {
+            DWalletState::AwaitingNetworkDKGVerification => {
+                if (rejected) {
+                    DWalletState::NetworkRejectedDKGVerification
+                } else {
+                    let encrypted_user_share = dwallet
+                        .encrypted_user_secret_key_shares
+                        .borrow_mut(encrypted_user_secret_key_share_id);
+                    encrypted_user_share.state =
+                        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted;
 
-                DWalletState::AwaitingKeyHolderSignature {
-                    public_output
+                    DWalletState::AwaitingKeyHolderSignature {
+                        public_output,
+                    }
                 }
-            }
-        },
-        _ => abort EWrongState
-    };
+            },
+            _ => abort EWrongState,
+        };
     gas_fee_reimbursement_sui
 }
 
@@ -2720,7 +2858,9 @@ public(package) fun request_re_encrypt_user_share_for(
     ctx: &mut TxContext,
 ) {
     let created_at_epoch = self.current_epoch;
-    let destination_encryption_key = self.encryption_keys.borrow(destination_encryption_key_address);
+    let destination_encryption_key = self
+        .encryption_keys
+        .borrow(destination_encryption_key_address);
     let destination_encryption_key_id = destination_encryption_key.id.to_inner();
     let destination_encryption_key = destination_encryption_key.encryption_key;
 
@@ -2729,7 +2869,12 @@ public(package) fun request_re_encrypt_user_share_for(
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
 
-    assert!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), EInvalidSource);
+    assert!(
+        dwallet
+            .encrypted_user_secret_key_shares
+            .contains(source_encrypted_user_secret_key_share_id),
+        EInvalidSource,
+    );
 
     let encrypted_user_share = EncryptedUserSecretKeyShare {
         id: object::new(ctx),
@@ -2738,16 +2883,24 @@ public(package) fun request_re_encrypt_user_share_for(
         encrypted_centralized_secret_share_and_proof,
         encryption_key_id: destination_encryption_key_id,
         encryption_key_address: destination_encryption_key_address,
-        source_encrypted_user_secret_key_share_id: option::some(source_encrypted_user_secret_key_share_id),
-        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification
+        source_encrypted_user_secret_key_share_id: option::some(
+            source_encrypted_user_secret_key_share_id,
+        ),
+        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification,
     };
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
-    dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+    dwallet
+        .encrypted_user_secret_key_shares
+        .add(encrypted_user_secret_key_share_id, encrypted_user_share);
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG);
 
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
             session_identifier,
             dwallet_network_encryption_key_id,
             pricing_value,
@@ -2766,7 +2919,11 @@ public(package) fun request_re_encrypt_user_share_for(
             },
             ctx,
         );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
 }
 
 /// This function is called by the Ika network to respond to a re-encryption request of the user share of the dWallet
@@ -2776,7 +2933,7 @@ public(package) fun respond_re_encrypt_user_share_for(
     dwallet_id: ID,
     encrypted_user_secret_key_share_id: ID,
     rejected: bool,
-    session_sequence_number: u64
+    session_sequence_number: u64,
 ): Balance<SUI> {
     let status = if (rejected) {
         sessions_manager::create_rejected_status_event(RejectedEncryptedShareVerificationEvent {
@@ -2789,22 +2946,31 @@ public(package) fun respond_re_encrypt_user_share_for(
             dwallet_id,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<EncryptedShareVerificationRequestEvent, CompletedEncryptedShareVerificationEvent, RejectedEncryptedShareVerificationEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<
+            EncryptedShareVerificationRequestEvent,
+            CompletedEncryptedShareVerificationEvent,
+            RejectedEncryptedShareVerificationEvent,
+        >(self.current_epoch, session_sequence_number, status);
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
-    let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
+    let encrypted_user_secret_key_share = dwallet
+        .encrypted_user_secret_key_shares
+        .borrow_mut(encrypted_user_secret_key_share_id);
 
-    encrypted_user_secret_key_share.state = match(encrypted_user_secret_key_share.state) {
-        EncryptedUserSecretKeyShareState::AwaitingNetworkVerification => {
-            if(rejected) {
-                EncryptedUserSecretKeyShareState::NetworkVerificationRejected
-            } else {
-                EncryptedUserSecretKeyShareState::NetworkVerificationCompleted
-            }
-        },
-        _ => abort EWrongState
-    };
+    encrypted_user_secret_key_share.state =
+        match (encrypted_user_secret_key_share.state) {
+            EncryptedUserSecretKeyShareState::AwaitingNetworkVerification => {
+                if (rejected) {
+                    EncryptedUserSecretKeyShareState::NetworkVerificationRejected
+                } else {
+                    EncryptedUserSecretKeyShareState::NetworkVerificationCompleted
+                }
+            },
+            _ => abort EWrongState,
+        };
     gas_fee_reimbursement_sui
 }
 
@@ -2823,44 +2989,50 @@ public(package) fun accept_encrypted_user_share(
     user_output_signature: vector<u8>,
 ) {
     let dwallet = self.get_dwallet_mut(dwallet_id);
-    match(&dwallet.state) {
+    match (&dwallet.state) {
         DWalletState::AwaitingKeyHolderSignature {
-            public_output
+            public_output,
         } => {
-            dwallet.state = DWalletState::Active {
-                public_output: *public_output
-            };
+            dwallet.state =
+                DWalletState::Active {
+                    public_output: *public_output,
+                };
         },
-        DWalletState::Active { .. } => { },
-        _ => abort EWrongState
+        DWalletState::Active { .. } => {},
+        _ => abort EWrongState,
     };
     let public_output = *dwallet.validate_active_and_get_public_output();
-    let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow(encrypted_user_secret_key_share_id);
-    let encryption_key = self.encryption_keys.borrow(encrypted_user_secret_key_share.encryption_key_address);
+    let encrypted_user_secret_key_share = dwallet
+        .encrypted_user_secret_key_shares
+        .borrow(encrypted_user_secret_key_share_id);
+    let encryption_key = self
+        .encryption_keys
+        .borrow(encrypted_user_secret_key_share.encryption_key_address);
     let encryption_key_id = encrypted_user_secret_key_share.encryption_key_id;
     let encryption_key_address = encrypted_user_secret_key_share.encryption_key_address;
     assert!(
         ed25519_verify(&user_output_signature, &encryption_key.signer_public_key, &public_output),
-        EInvalidEncryptionKeySignature
+        EInvalidEncryptionKeySignature,
     );
     let dwallet = self.get_dwallet_mut(dwallet_id);
 
-    let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
-    encrypted_user_secret_key_share.state = match (encrypted_user_secret_key_share.state) {
-        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSigned {
-            user_output_signature
-        },
-        _ => abort EWrongState
-    };
-    event::emit(
-        AcceptEncryptedUserShareEvent {
-            encrypted_user_secret_key_share_id,
-            dwallet_id,
-            user_output_signature,
-            encryption_key_id,
-            encryption_key_address,
-        }
-    );
+    let encrypted_user_secret_key_share = dwallet
+        .encrypted_user_secret_key_shares
+        .borrow_mut(encrypted_user_secret_key_share_id);
+    encrypted_user_secret_key_share.state =
+        match (encrypted_user_secret_key_share.state) {
+            EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSigned {
+                user_output_signature,
+            },
+            _ => abort EWrongState,
+        };
+    event::emit(AcceptEncryptedUserShareEvent {
+        encrypted_user_secret_key_share_id,
+        dwallet_id,
+        user_output_signature,
+        encryption_key_id,
+        encryption_key_address,
+    });
 }
 
 /// Request verification of the imported key dWallet from the Ika network.
@@ -2898,10 +3070,13 @@ public(package) fun request_imported_key_dwallet_verification(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): ImportedKeyDWalletCap {
     self.support_config.validate_curve(curve);
-    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    assert!(
+        self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id),
+        EDWalletNetworkEncryptionKeyNotExist,
+    );
     self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
@@ -2920,7 +3095,7 @@ public(package) fun request_imported_key_dwallet_verification(
         encryption_key_id,
         encryption_key_address,
         source_encrypted_user_secret_key_share_id: option::none(),
-        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification
+        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification,
     };
 
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
@@ -2933,45 +3108,62 @@ public(package) fun request_imported_key_dwallet_verification(
     let dwallet_cap_id = object::id(&dwallet_cap);
     let mut encrypted_user_secret_key_shares = object_table::new(ctx);
     encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
-    self.dwallets.add(dwallet_id, DWallet {
-        id,
-        created_at_epoch: self.current_epoch,
-        curve,
-        public_user_secret_key_share: option::none(),
-        dwallet_cap_id,
-        dwallet_network_encryption_key_id,
-        is_imported_key_dwallet: true,
-        encrypted_user_secret_key_shares,
-        sign_sessions: object_table::new(ctx),
-        state: DWalletState::AwaitingNetworkImportedKeyVerification,
-    });
-
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG);
-
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
-        session_identifier,
-        dwallet_network_encryption_key_id,
-        pricing_value,
-        payment_ika,
-        payment_sui,
-        DWalletImportedKeyVerificationRequestEvent {
+    self
+        .dwallets
+        .add(
             dwallet_id,
-            encrypted_user_secret_key_share_id,
-            centralized_party_message,
-            dwallet_cap_id,
-            encrypted_centralized_secret_share_and_proof,
-            encryption_key,
-            encryption_key_id,
-            encryption_key_address,
-            user_public_output,
-            signer_public_key,
-            dwallet_network_encryption_key_id,
+            DWallet {
+                id,
+                created_at_epoch: self.current_epoch,
+                curve,
+                public_user_secret_key_share: option::none(),
+                dwallet_cap_id,
+                dwallet_network_encryption_key_id,
+                is_imported_key_dwallet: true,
+                encrypted_user_secret_key_shares,
+                sign_sessions: object_table::new(ctx),
+                state: DWalletState::AwaitingNetworkImportedKeyVerification,
+            },
+        );
+
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
             curve,
-        },
-        ctx,
-    );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+            option::none(),
+            IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+        );
+
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
+            session_identifier,
+            dwallet_network_encryption_key_id,
+            pricing_value,
+            payment_ika,
+            payment_sui,
+            DWalletImportedKeyVerificationRequestEvent {
+                dwallet_id,
+                encrypted_user_secret_key_share_id,
+                centralized_party_message,
+                dwallet_cap_id,
+                encrypted_centralized_secret_share_and_proof,
+                encryption_key,
+                encryption_key_id,
+                encryption_key_address,
+                user_public_output,
+                signer_public_key,
+                dwallet_network_encryption_key_id,
+                curve,
+            },
+            ctx,
+        );
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
     dwallet_cap
 }
 
@@ -3001,25 +3193,35 @@ public(package) fun respond_imported_key_dwallet_verification(
             encrypted_user_secret_key_share_id,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<DWalletImportedKeyVerificationRequestEvent, CompletedDWalletImportedKeyVerificationEvent, RejectedDWalletImportedKeyVerificationEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<
+            DWalletImportedKeyVerificationRequestEvent,
+            CompletedDWalletImportedKeyVerificationEvent,
+            RejectedDWalletImportedKeyVerificationEvent,
+        >(self.current_epoch, session_sequence_number, status);
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
     let dwallet = self.get_dwallet_mut(dwallet_id);
 
-    dwallet.state = match (&dwallet.state) {
-        DWalletState::AwaitingNetworkImportedKeyVerification => {
-            if (rejected) {
-                DWalletState::NetworkRejectedImportedKeyVerification
-            } else {
-                let encrypted_user_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
-                encrypted_user_share.state = EncryptedUserSecretKeyShareState::NetworkVerificationCompleted;
+    dwallet.state =
+        match (&dwallet.state) {
+            DWalletState::AwaitingNetworkImportedKeyVerification => {
+                if (rejected) {
+                    DWalletState::NetworkRejectedImportedKeyVerification
+                } else {
+                    let encrypted_user_share = dwallet
+                        .encrypted_user_secret_key_shares
+                        .borrow_mut(encrypted_user_secret_key_share_id);
+                    encrypted_user_share.state =
+                        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted;
 
-                DWalletState::AwaitingKeyHolderSignature {
-                    public_output
+                    DWalletState::AwaitingKeyHolderSignature {
+                        public_output,
+                    }
                 }
-            }
-        },
-        _ => abort EWrongState
-    };
+            },
+            _ => abort EWrongState,
+        };
     gas_fee_reimbursement_sui
 }
 
@@ -3049,27 +3251,42 @@ public(package) fun request_make_dwallet_user_secret_key_share_public(
     let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
-    assert!(dwallet.public_user_secret_key_share.is_none(), EDWalletUserSecretKeySharesAlreadyPublic);
-
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG);
-
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
-        session_identifier,
-        dwallet_network_encryption_key_id,
-        pricing_value,
-        payment_ika,
-        payment_sui,
-        MakeDWalletUserSecretKeySharePublicRequestEvent {
-            public_user_secret_key_share,
-            public_output,
-            curve,
-            dwallet_id,
-            dwallet_network_encryption_key_id,
-        },
-        ctx,
+    assert!(
+        dwallet.public_user_secret_key_share.is_none(),
+        EDWalletUserSecretKeySharesAlreadyPublic,
     );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::none(),
+            MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG,
+        );
+
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
+            session_identifier,
+            dwallet_network_encryption_key_id,
+            pricing_value,
+            payment_ika,
+            payment_sui,
+            MakeDWalletUserSecretKeySharePublicRequestEvent {
+                public_user_secret_key_share,
+                public_output,
+                curve,
+                dwallet_id,
+                dwallet_network_encryption_key_id,
+            },
+            ctx,
+        );
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
 }
 
 /// This function is called by the Ika network to respond to the request to make the dWallet's user share public.
@@ -3091,7 +3308,13 @@ public(package) fun respond_make_dwallet_user_secret_key_share_public(
             public_user_secret_key_share,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<MakeDWalletUserSecretKeySharePublicRequestEvent, CompletedMakeDWalletUserSecretKeySharePublicEvent, RejectedMakeDWalletUserSecretKeySharePublicEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<
+            MakeDWalletUserSecretKeySharePublicRequestEvent,
+            CompletedMakeDWalletUserSecretKeySharePublicEvent,
+            RejectedMakeDWalletUserSecretKeySharePublicEvent,
+        >(self.current_epoch, session_sequence_number, status);
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
     let dwallet = self.get_dwallet_mut(dwallet_id);
     if (!rejected) {
@@ -3142,7 +3365,7 @@ public(package) fun request_presign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UnverifiedPresignCap {
     let created_at_epoch = self.current_epoch;
 
@@ -3151,8 +3374,13 @@ public(package) fun request_presign(
     let curve = dwallet.curve;
 
     self.support_config.validate_curve_and_signature_algorithm(curve, signature_algorithm);
-    self.validate_network_encryption_key_supports_curve(dwallet.dwallet_network_encryption_key_id, curve);
-    self.support_config.validate_signature_algorithm_not_allowed_global_presign(signature_algorithm);
+    self.validate_network_encryption_key_supports_curve(
+        dwallet.dwallet_network_encryption_key_id,
+        curve,
+    );
+    self
+        .support_config
+        .validate_signature_algorithm_not_allowed_global_presign(signature_algorithm);
 
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
 
@@ -3165,20 +3393,33 @@ public(package) fun request_presign(
         presign_id,
     };
 
-    self.presign_sessions.add(presign_id, PresignSession {
-        id,
-        created_at_epoch,
-        signature_algorithm,
-        curve,
-        dwallet_id: option::some(dwallet_id),
-        cap_id: object::id(&cap),
-        state: PresignState::Requested,
-    });
+    self
+        .presign_sessions
+        .add(
+            presign_id,
+            PresignSession {
+                id,
+                created_at_epoch,
+                signature_algorithm,
+                curve,
+                dwallet_id: option::some(dwallet_id),
+                cap_id: object::id(&cap),
+                state: PresignState::Requested,
+            },
+        );
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            PRESIGN_PROTOCOL_FLAG,
+        );
 
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
             session_identifier,
             dwallet_network_encryption_key_id,
             pricing_value,
@@ -3194,7 +3435,11 @@ public(package) fun request_presign(
             },
             ctx,
         );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
     cap
 }
 
@@ -3241,7 +3486,7 @@ public(package) fun request_global_presign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UnverifiedPresignCap {
     let created_at_epoch = self.current_epoch;
 
@@ -3256,20 +3501,33 @@ public(package) fun request_global_presign(
         dwallet_id: option::none(),
         presign_id,
     };
-    self.presign_sessions.add(presign_id, PresignSession {
-        id,
-        created_at_epoch,
-        signature_algorithm,
-        curve,
-        dwallet_id: option::none(),
-        cap_id: object::id(&cap),
-        state: PresignState::Requested,
-    });
+    self
+        .presign_sessions
+        .add(
+            presign_id,
+            PresignSession {
+                id,
+                created_at_epoch,
+                signature_algorithm,
+                curve,
+                dwallet_id: option::none(),
+                cap_id: object::id(&cap),
+                state: PresignState::Requested,
+            },
+        );
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            PRESIGN_PROTOCOL_FLAG,
+        );
 
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
             session_identifier,
             dwallet_network_encryption_key_id,
             pricing_value,
@@ -3285,7 +3543,11 @@ public(package) fun request_global_presign(
             },
             ctx,
         );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
     cap
 }
 
@@ -3334,7 +3596,7 @@ public(package) fun respond_presign(
     presign_id: ID,
     presign: vector<u8>,
     rejected: bool,
-    session_sequence_number: u64
+    session_sequence_number: u64,
 ): Balance<SUI> {
     let status = if (rejected) {
         sessions_manager::create_rejected_status_event(RejectedPresignEvent {
@@ -3348,23 +3610,30 @@ public(package) fun respond_presign(
             presign,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<PresignRequestEvent, CompletedPresignEvent, RejectedPresignEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<PresignRequestEvent, CompletedPresignEvent, RejectedPresignEvent>(
+            self.current_epoch,
+            session_sequence_number,
+            status,
+        );
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
 
     let presign_obj = self.presign_sessions.borrow_mut(presign_id);
 
-    presign_obj.state = match(presign_obj.state) {
-        PresignState::Requested => {
-            if(rejected) {
-                PresignState::NetworkRejected
-            } else {
-                PresignState::Completed {
-                    presign
+    presign_obj.state =
+        match (presign_obj.state) {
+            PresignState::Requested => {
+                if (rejected) {
+                    PresignState::NetworkRejected
+                } else {
+                    PresignState::Completed {
+                        presign,
+                    }
                 }
-            }
-        },
-        _ => abort EWrongState
-    };
+            },
+            _ => abort EWrongState,
+        };
     gas_fee_reimbursement_sui
 }
 
@@ -3389,11 +3658,11 @@ public(package) fun is_presign_valid(
     cap: &UnverifiedPresignCap,
 ): bool {
     let presign = self.presign_sessions.borrow(cap.presign_id);
-    match(&presign.state) {
+    match (&presign.state) {
         PresignState::Completed { .. } => {
             cap.id.to_inner() == presign.cap_id
         },
-        _ => false
+        _ => false,
     }
 }
 
@@ -3402,12 +3671,12 @@ public(package) fun is_presign_valid(
 public(package) fun verify_presign_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedPresignCap,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): VerifiedPresignCap {
     let UnverifiedPresignCap {
         id,
         dwallet_id,
-        presign_id
+        presign_id,
     } = cap;
 
     let cap_id = id.to_inner();
@@ -3415,9 +3684,9 @@ public(package) fun verify_presign_cap(
 
     let presign = self.presign_sessions.borrow_mut(presign_id);
     assert!(presign.cap_id == cap_id, EIncorrectCap);
-        match(&presign.state) {
+    match (&presign.state) {
         PresignState::Completed { .. } => {},
-        _ => abort EUnverifiedCap
+        _ => abort EUnverifiedCap,
     };
 
     let cap = VerifiedPresignCap {
@@ -3450,14 +3719,16 @@ fun validate_and_initiate_sign(
     presign_cap: VerifiedPresignCap,
     message_centralized_signature: vector<u8>,
     is_future_sign: bool,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): bool {
     let created_at_epoch = self.current_epoch;
 
     assert!(self.presign_sessions.contains(presign_cap.presign_id), EPresignNotExist);
     let presign = self.presign_sessions.remove(presign_cap.presign_id);
 
-    let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(
+        dwallet_id,
+    );
 
     let VerifiedPresignCap {
         id,
@@ -3478,18 +3749,21 @@ fun validate_and_initiate_sign(
         signature_algorithm: presign_signature_algorithm,
     } = presign;
 
-    let presign = match(state) {
+    let presign = match (state) {
         PresignState::Completed { presign } => {
             presign
         },
-        _ => abort EInvalidPresign
+        _ => abort EInvalidPresign,
     };
 
     let presign_id = id.to_inner();
     id.delete();
 
     // Check that the presign is global, or that it belongs to this dWallet.
-    assert!(presign_dwallet_id.is_none() || presign_dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
+    assert!(
+        presign_dwallet_id.is_none() || presign_dwallet_id.is_some_and!(|id| id == dwallet_id),
+        EMessageApprovalMismatch,
+    );
 
     // Sanity checks: check that the IDs of the capability and presign match, and that they point to this dWallet.
     assert!(presign_cap_id == cap_id, EPresignNotExist);
@@ -3504,40 +3778,57 @@ fun validate_and_initiate_sign(
     let id = object::new(ctx);
     let sign_id = id.to_inner();
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
-        session_identifier,
-        dwallet_network_encryption_key_id,
-        pricing_value,
-        payment_ika,
-        payment_sui,
-        SignRequestEvent {
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
+            session_identifier,
+            dwallet_network_encryption_key_id,
+            pricing_value,
+            payment_ika,
+            payment_sui,
+            SignRequestEvent {
+                sign_id,
+                dwallet_id,
+                dwallet_public_output,
+                curve,
+                signature_algorithm,
+                hash_scheme,
+                message,
+                dwallet_network_encryption_key_id,
+                presign_id,
+                presign,
+                message_centralized_signature,
+                is_future_sign,
+            },
+            ctx,
+        );
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
+    // Create a `SignSession` object and register it in `sign_sessions`.
+    let dwallet = self.get_dwallet_mut(dwallet_id);
+    dwallet
+        .sign_sessions
+        .add(
             sign_id,
-            dwallet_id,
-            dwallet_public_output,
+            SignSession {
+                id,
+                created_at_epoch,
+                dwallet_id,
+                state: SignState::Requested,
+            },
+        );
+    let is_imported_key_dwallet = dwallet.is_imported_key_dwallet;
+    self
+        .support_config
+        .validate_curve_and_signature_algorithm_and_hash_scheme(
             curve,
             signature_algorithm,
             hash_scheme,
-            message,
-            dwallet_network_encryption_key_id,
-            presign_id,
-            presign,
-            message_centralized_signature,
-            is_future_sign,
-        },
-        ctx,
-    );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
-    // Create a `SignSession` object and register it in `sign_sessions`.
-    let dwallet = self.get_dwallet_mut(dwallet_id);
-    dwallet.sign_sessions.add(sign_id, SignSession {
-        id,
-        created_at_epoch,
-        dwallet_id,
-        state: SignState::Requested,
-    });
-    let is_imported_key_dwallet = dwallet.is_imported_key_dwallet;
-    self.support_config.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
+        );
     self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     is_imported_key_dwallet
@@ -3553,19 +3844,25 @@ public(package) fun request_sign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     let MessageApproval {
         dwallet_id,
         signature_algorithm,
         hash_scheme,
-        message
+        message,
     } = message_approval;
 
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
 
     let curve = dwallet.curve;
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            SIGN_PROTOCOL_FLAG,
+        );
 
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing_value,
@@ -3579,7 +3876,7 @@ public(package) fun request_sign(
         presign_cap,
         message_centralized_signature,
         false,
-        ctx
+        ctx,
     );
 
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
@@ -3595,18 +3892,24 @@ public(package) fun request_imported_key_sign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     let ImportedKeyMessageApproval {
         dwallet_id,
         signature_algorithm,
         hash_scheme,
-        message
+        message,
     } = message_approval;
 
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
     let curve = dwallet.curve;
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            SIGN_PROTOCOL_FLAG,
+        );
 
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing_value,
@@ -3620,7 +3923,7 @@ public(package) fun request_imported_key_sign(
         presign_cap,
         message_centralized_signature,
         false,
-        ctx
+        ctx,
     );
 
     assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
@@ -3649,12 +3952,17 @@ public(package) fun request_future_sign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UnverifiedPartialUserSignatureCap {
     // Check that the presign is global, or that it belongs to this dWallet.
-    assert!(presign_cap.dwallet_id.is_none() || presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
+    assert!(
+        presign_cap.dwallet_id.is_none() || presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id),
+        EMessageApprovalMismatch,
+    );
 
-    let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
+    let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(
+        dwallet_id,
+    );
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
 
@@ -3663,11 +3971,11 @@ public(package) fun request_future_sign(
     let presign_obj = self.presign_sessions.borrow(presign_cap.presign_id);
     assert!(presign_obj.curve == curve, EDWalletMismatch);
 
-    let presign = match(presign_obj.state) {
+    let presign = match (presign_obj.state) {
         PresignState::Completed { presign } => {
             presign
         },
-        _ => abort EInvalidPresign
+        _ => abort EInvalidPresign,
     };
 
     let id = object::new(ctx);
@@ -3679,18 +3987,32 @@ public(package) fun request_future_sign(
 
     let signature_algorithm = presign_obj.signature_algorithm;
 
-    self.support_config.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
+    self
+        .support_config
+        .validate_curve_and_signature_algorithm_and_hash_scheme(
+            curve,
+            signature_algorithm,
+            hash_scheme,
+        );
     self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG);
-    let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
-        self.current_epoch,
-        session_identifier,
-        dwallet_network_encryption_key_id,
-        pricing_value,
-        payment_ika,
-        payment_sui,
-        FutureSignRequestEvent {
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            FUTURE_SIGN_PROTOCOL_FLAG,
+        );
+    let gas_fee_reimbursement_sui_for_system_calls = self
+        .sessions_manager
+        .initiate_user_session(
+            self.current_epoch,
+            session_identifier,
+            dwallet_network_encryption_key_id,
+            pricing_value,
+            payment_ika,
+            payment_sui,
+            FutureSignRequestEvent {
                 dwallet_id,
                 partial_centralized_signed_message_id,
                 message,
@@ -3701,24 +4023,33 @@ public(package) fun request_future_sign(
                 hash_scheme,
                 message_centralized_signature,
                 dwallet_network_encryption_key_id,
-        },
-        ctx,
-    );
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(gas_fee_reimbursement_sui_for_system_calls);
+            },
+            ctx,
+        );
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(
+            gas_fee_reimbursement_sui_for_system_calls,
+        );
     // Create a new `PartialUserSignature` that wraps around `presign_cap` to ensure it can't be used twice.
-    self.partial_centralized_signed_messages.add(partial_centralized_signed_message_id, PartialUserSignature {
-        id: id,
-        created_at_epoch: self.current_epoch,
-        presign_cap,
-        dwallet_id,
-        cap_id: object::id(&cap),
-        hash_scheme,
-        message,
-        message_centralized_signature,
-        state: PartialUserSignatureState::AwaitingNetworkVerification,
-        curve,
-        signature_algorithm,
-    });
+    self
+        .partial_centralized_signed_messages
+        .add(
+            partial_centralized_signed_message_id,
+            PartialUserSignature {
+                id: id,
+                created_at_epoch: self.current_epoch,
+                presign_cap,
+                dwallet_id,
+                cap_id: object::id(&cap),
+                hash_scheme,
+                message,
+                message_centralized_signature,
+                state: PartialUserSignatureState::AwaitingNetworkVerification,
+                curve,
+                signature_algorithm,
+            },
+        );
 
     cap
 }
@@ -3734,7 +4065,7 @@ public(package) fun respond_future_sign(
     dwallet_id: ID,
     partial_centralized_signed_message_id: ID,
     rejected: bool,
-    session_sequence_number: u64
+    session_sequence_number: u64,
 ): Balance<SUI> {
     let status = if (rejected) {
         sessions_manager::create_rejected_status_event(RejectedFutureSignEvent {
@@ -3747,23 +4078,35 @@ public(package) fun respond_future_sign(
             partial_centralized_signed_message_id,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<FutureSignRequestEvent, CompletedFutureSignEvent, RejectedFutureSignEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<
+            FutureSignRequestEvent,
+            CompletedFutureSignEvent,
+            RejectedFutureSignEvent,
+        >(self.current_epoch, session_sequence_number, status);
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
-    let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
+    let partial_centralized_signed_message = self
+        .partial_centralized_signed_messages
+        .borrow_mut(partial_centralized_signed_message_id);
 
     // Check that the presign is global, or that it belongs to this dWallet.
-    assert!(partial_centralized_signed_message.presign_cap.dwallet_id.is_none() || partial_centralized_signed_message.presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EDWalletMismatch);
+    assert!(
+        partial_centralized_signed_message.presign_cap.dwallet_id.is_none() || partial_centralized_signed_message.presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id),
+        EDWalletMismatch,
+    );
 
-    partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
-        PartialUserSignatureState::AwaitingNetworkVerification => {
-            if(rejected) {
-                PartialUserSignatureState::NetworkVerificationRejected
-            } else {
-                PartialUserSignatureState::NetworkVerificationCompleted
-            }
-        },
-        _ => abort EWrongState
-    };
+    partial_centralized_signed_message.state =
+        match (partial_centralized_signed_message.state) {
+            PartialUserSignatureState::AwaitingNetworkVerification => {
+                if (rejected) {
+                    PartialUserSignatureState::NetworkVerificationRejected
+                } else {
+                    PartialUserSignatureState::NetworkVerificationCompleted
+                }
+            },
+            _ => abort EWrongState,
+        };
     gas_fee_reimbursement_sui
 }
 
@@ -3772,7 +4115,9 @@ public(package) fun is_partial_user_signature_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPartialUserSignatureCap,
 ): bool {
-    let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow(cap.partial_centralized_signed_message_id);
+    let partial_centralized_signed_message = self
+        .partial_centralized_signed_messages
+        .borrow(cap.partial_centralized_signed_message_id);
     partial_centralized_signed_message.cap_id == cap.id.to_inner() && partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted
 }
 
@@ -3781,19 +4126,24 @@ public(package) fun is_partial_user_signature_valid(
 public(package) fun verify_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedPartialUserSignatureCap,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): VerifiedPartialUserSignatureCap {
     let UnverifiedPartialUserSignatureCap {
         id,
-        partial_centralized_signed_message_id
+        partial_centralized_signed_message_id,
     } = cap;
 
     let cap_id = id.to_inner();
     id.delete();
 
-    let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
+    let partial_centralized_signed_message = self
+        .partial_centralized_signed_messages
+        .borrow_mut(partial_centralized_signed_message_id);
     assert!(partial_centralized_signed_message.cap_id == cap_id, EIncorrectCap);
-    assert!(partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted, EUnverifiedCap);
+    assert!(
+        partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted,
+        EUnverifiedCap,
+    );
     let cap = VerifiedPartialUserSignatureCap {
         id: object::new(ctx),
         partial_centralized_signed_message_id,
@@ -3817,10 +4167,13 @@ public(package) fun request_sign_with_partial_user_signature(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     // Ensure that each partial user signature has a corresponding message approval; otherwise, abort.
-    let is_match = self.match_partial_user_signature_with_message_approval(&partial_user_signature_cap, &message_approval);
+    let is_match = self.match_partial_user_signature_with_message_approval(
+        &partial_user_signature_cap,
+        &message_approval,
+    );
     assert!(is_match, EMessageApprovalMismatch);
 
     let VerifiedPartialUserSignatureCap {
@@ -3841,20 +4194,29 @@ public(package) fun request_sign_with_partial_user_signature(
         hash_scheme: _,
         message: _,
         message_centralized_signature,
-        state
+        state,
     } = self.partial_centralized_signed_messages.remove(partial_centralized_signed_message_id);
 
     id.delete();
-    assert!(cap_id == verified_cap_id && state == PartialUserSignatureState::NetworkVerificationCompleted, EIncorrectCap);
+    assert!(
+        cap_id == verified_cap_id && state == PartialUserSignatureState::NetworkVerificationCompleted,
+        EIncorrectCap,
+    );
 
     let MessageApproval {
         dwallet_id,
         signature_algorithm,
         hash_scheme,
-        message
+        message,
     } = message_approval;
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+        );
 
     // Emit signing events to finalize the signing process.
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
@@ -3869,7 +4231,7 @@ public(package) fun request_sign_with_partial_user_signature(
         presign_cap,
         message_centralized_signature,
         true,
-        ctx
+        ctx,
     );
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 }
@@ -3882,10 +4244,13 @@ public(package) fun request_imported_key_sign_with_partial_user_signature(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     // Ensure that each partial user signature has a corresponding imported key message approval; otherwise, abort.
-    let is_match = self.match_partial_user_signature_with_imported_key_message_approval(&partial_user_signature_cap, &message_approval);
+    let is_match = self.match_partial_user_signature_with_imported_key_message_approval(
+        &partial_user_signature_cap,
+        &message_approval,
+    );
     assert!(is_match, EMessageApprovalMismatch);
 
     let VerifiedPartialUserSignatureCap {
@@ -3906,19 +4271,28 @@ public(package) fun request_imported_key_sign_with_partial_user_signature(
         hash_scheme: _,
         message: _,
         message_centralized_signature,
-        state
+        state,
     } = self.partial_centralized_signed_messages.remove(partial_centralized_signed_message_id);
     id.delete();
-    assert!(cap_id == verified_cap_id && state == PartialUserSignatureState::NetworkVerificationCompleted, EIncorrectCap);
+    assert!(
+        cap_id == verified_cap_id && state == PartialUserSignatureState::NetworkVerificationCompleted,
+        EIncorrectCap,
+    );
 
     let ImportedKeyMessageApproval {
         dwallet_id,
         signature_algorithm,
         hash_scheme,
-        message
+        message,
     } = message_approval;
 
-    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG);
+    let pricing_value = self
+        .pricing_and_fee_manager
+        .get_pricing_value_for_protocol(
+            curve,
+            option::some(signature_algorithm),
+            SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+        );
 
     // Emit signing events to finalize the signing process.
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
@@ -3933,7 +4307,7 @@ public(package) fun request_imported_key_sign_with_partial_user_signature(
         presign_cap,
         message_centralized_signature,
         true,
-        ctx
+        ctx,
     );
     assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
 }
@@ -3947,7 +4321,9 @@ public(package) fun match_partial_user_signature_with_message_approval(
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &MessageApproval,
 ): bool {
-    let partial_signature = self.partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
+    let partial_signature = self
+        .partial_centralized_signed_messages
+        .borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
     partial_signature.dwallet_id == message_approval.dwallet_id &&
     partial_signature.message == message_approval.message &&
@@ -3963,7 +4339,9 @@ public(package) fun match_partial_user_signature_with_imported_key_message_appro
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &ImportedKeyMessageApproval,
 ): bool {
-    let partial_signature = self.partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
+    let partial_signature = self
+        .partial_centralized_signed_messages
+        .borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
     partial_signature.dwallet_id == message_approval.dwallet_id &&
     partial_signature.message == message_approval.message &&
@@ -3982,7 +4360,7 @@ public(package) fun respond_sign(
     signature: vector<u8>,
     is_future_sign: bool,
     rejected: bool,
-    session_sequence_number: u64
+    session_sequence_number: u64,
 ): Balance<SUI> {
     let status = if (rejected) {
         sessions_manager::create_rejected_status_event(RejectedSignEvent {
@@ -3996,22 +4374,29 @@ public(package) fun respond_sign(
             is_future_sign,
         })
     };
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.sessions_manager.complete_user_session<SignRequestEvent, CompletedSignEvent, RejectedSignEvent>(self.current_epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .sessions_manager
+        .complete_user_session<SignRequestEvent, CompletedSignEvent, RejectedSignEvent>(
+            self.current_epoch,
+            session_sequence_number,
+            status,
+        );
     self.pricing_and_fee_manager.join_fee_charged_ika(fee_charged_ika);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let sign = dwallet.sign_sessions.borrow_mut(sign_id);
 
-    sign.state = match(sign.state) {
-        SignState::Requested => {
-            if(rejected) {
-                SignState::NetworkRejected
-            } else {
-                SignState::Completed { signature }
-            }
-        },
-        _ => abort ESignWrongState
-    };
+    sign.state =
+        match (sign.state) {
+            SignState::Requested => {
+                if (rejected) {
+                    SignState::NetworkRejected
+                } else {
+                    SignState::Completed { signature }
+                }
+            },
+            _ => abort ESignWrongState,
+        };
     gas_fee_reimbursement_sui
 }
 
@@ -4051,7 +4436,9 @@ public(package) fun process_checkpoint_message_by_quorum(
     intent_bytes.append(message);
     intent_bytes.append(bcs::to_bytes(&self.current_epoch));
 
-    self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
+    self
+        .active_committee
+        .verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
 
     self.process_checkpoint_message(message, ctx)
 }
@@ -4070,7 +4457,10 @@ fun process_checkpoint_message(
 
     let sequence_number = bcs_body.peel_u64();
 
-    assert!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, EWrongCheckpointSequenceNumber);
+    assert!(
+        self.last_processed_checkpoint_sequence_number + 1 == sequence_number,
+        EWrongCheckpointSequenceNumber,
+    );
     self.last_processed_checkpoint_sequence_number = sequence_number;
 
     event::emit(DWalletCheckpointInfoEvent {
@@ -4090,7 +4480,12 @@ fun process_checkpoint_message(
                 let first_round_output = bcs_body.peel_vec_u8();
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
-                let gas_fee_reimbursement_sui = self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, rejected, session_sequence_number);
+                let gas_fee_reimbursement_sui = self.respond_dwallet_dkg_first_round(
+                    dwallet_id,
+                    first_round_output,
+                    rejected,
+                    session_sequence_number,
+                );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE => {
@@ -4126,7 +4521,12 @@ fun process_checkpoint_message(
                 let public_user_secret_key_shares = bcs_body.peel_vec_u8();
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
-                let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+                let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(
+                    dwallet_id,
+                    public_user_secret_key_shares,
+                    rejected,
+                    session_sequence_number,
+                );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE => {
@@ -4140,12 +4540,14 @@ fun process_checkpoint_message(
                     public_output,
                     encrypted_user_secret_key_share_id,
                     rejected,
-                    session_sequence_number
+                    session_sequence_number,
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE => {
-                let dwallet_id = bcs_body.peel_option!(|bcs_option| object::id_from_bytes(bcs_option.peel_vec_u8()));
+                let dwallet_id = bcs_body.peel_option!(
+                    |bcs_option| object::id_from_bytes(bcs_option.peel_vec_u8()),
+                );
                 let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let presign = bcs_body.peel_vec_u8();
                 let rejected = bcs_body.peel_bool();
@@ -4155,7 +4557,8 @@ fun process_checkpoint_message(
                     presign_id,
                     presign,
                     rejected,
-                    session_sequence_number);
+                    session_sequence_number,
+                );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_SIGN_MESSAGE_TYPE => {
@@ -4171,7 +4574,7 @@ fun process_checkpoint_message(
                     signature,
                     is_future_sign,
                     rejected,
-                    session_sequence_number
+                    session_sequence_number,
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
@@ -4184,7 +4587,7 @@ fun process_checkpoint_message(
                     dwallet_id,
                     partial_centralized_signed_message_id,
                     rejected,
-                    session_sequence_number
+                    session_sequence_number,
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
@@ -4195,7 +4598,15 @@ fun process_checkpoint_message(
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
-                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_dkg(session_sequence_number, dwallet_network_encryption_key_id, public_output, supported_curves,is_last, rejected, ctx);
+                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_dkg(
+                    session_sequence_number,
+                    dwallet_network_encryption_key_id,
+                    public_output,
+                    supported_curves,
+                    is_last,
+                    rejected,
+                    ctx,
+                );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE => {
@@ -4205,7 +4616,15 @@ fun process_checkpoint_message(
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
-                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_reconfiguration(session_sequence_number, dwallet_network_encryption_key_id, public_output, supported_curves, is_last, rejected, ctx);
+                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_reconfiguration(
+                    session_sequence_number,
+                    dwallet_network_encryption_key_id,
+                    public_output,
+                    supported_curves,
+                    is_last,
+                    rejected,
+                    ctx,
+                );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE => {
@@ -4214,7 +4633,9 @@ fun process_checkpoint_message(
             },
             SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE => {
                 let gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
-                self.set_gas_fee_reimbursement_sui_system_call_value(gas_fee_reimbursement_sui_system_call_value);
+                self.set_gas_fee_reimbursement_sui_system_call_value(
+                    gas_fee_reimbursement_sui_system_call_value,
+                );
             },
             END_OF_EPOCH_MESSAGE_TYPE => {
                 self.received_end_of_publish = true;
@@ -4236,7 +4657,7 @@ fun set_max_active_sessions_buffer(
 ) {
     self.sessions_manager.set_max_active_sessions_buffer(max_active_sessions_buffer);
     event::emit(SetMaxActiveSessionsBufferEvent {
-        max_active_sessions_buffer
+        max_active_sessions_buffer,
     });
 }
 
@@ -4244,9 +4665,13 @@ fun set_gas_fee_reimbursement_sui_system_call_value(
     self: &mut DWalletCoordinatorInner,
     gas_fee_reimbursement_sui_system_call_value: u64,
 ) {
-    self.pricing_and_fee_manager.set_gas_fee_reimbursement_sui_system_call_value(gas_fee_reimbursement_sui_system_call_value);
+    self
+        .pricing_and_fee_manager
+        .set_gas_fee_reimbursement_sui_system_call_value(
+            gas_fee_reimbursement_sui_system_call_value,
+        );
     event::emit(SetGasFeeReimbursementSuiSystemCallValueEvent {
-        gas_fee_reimbursement_sui_system_call_value
+        gas_fee_reimbursement_sui_system_call_value,
     });
 }
 
@@ -4268,9 +4693,16 @@ public(package) fun set_supported_and_pricing(
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     _: &VerifiedProtocolCap,
 ) {
-    verify_pricing_exists_for_all_protocols(&supported_curves_to_signature_algorithms_to_hash_schemes, &default_pricing);
+    verify_pricing_exists_for_all_protocols(
+        &supported_curves_to_signature_algorithms_to_hash_schemes,
+        &default_pricing,
+    );
     self.pricing_and_fee_manager.set_default_pricing(default_pricing);
-    self.support_config.set_supported_curves_to_signature_algorithms_to_hash_schemes(supported_curves_to_signature_algorithms_to_hash_schemes);
+    self
+        .support_config
+        .set_supported_curves_to_signature_algorithms_to_hash_schemes(
+            supported_curves_to_signature_algorithms_to_hash_schemes,
+        );
 }
 
 /// Verifies that pricing exists for all protocols for all curves.
@@ -4283,23 +4715,38 @@ public(package) fun set_supported_and_pricing(
 ///
 /// ### Errors
 /// - **`EMissingProtocolPricing`**: If pricing is missing for any protocol or curve.
-fun verify_pricing_exists_for_all_protocols(supported_curves_to_signature_algorithms_to_hash_schemes: &VecMap<u32, VecMap<u32, vector<u32>>>, default_pricing: &PricingInfo) {
+fun verify_pricing_exists_for_all_protocols(
+    supported_curves_to_signature_algorithms_to_hash_schemes: &VecMap<
+        u32,
+        VecMap<u32, vector<u32>>,
+    >,
+    default_pricing: &PricingInfo,
+) {
     let curves = supported_curves_to_signature_algorithms_to_hash_schemes.keys();
     curves.do_ref!(|curve| {
         let mut is_missing_pricing = false;
         let signature_algorithms = &supported_curves_to_signature_algorithms_to_hash_schemes[curve];
         let signature_algorithms = signature_algorithms.keys();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG).is_none();
+        is_missing_pricing =
+            is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG).is_none();
+        is_missing_pricing =
+            is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG).is_none();
+        is_missing_pricing =
+            is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG).is_none();
+        is_missing_pricing =
+            is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG).is_none();
+        is_missing_pricing =
+            is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG).is_none();
         // Add here pricing validation for new protocols per curve.
         signature_algorithms.do_ref!(|signature_algorithm| {
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), PRESIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), SIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG).is_none();
+            is_missing_pricing =
+                is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), PRESIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing =
+                is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), SIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing =
+                is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing =
+                is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG).is_none();
             // Add here pricing validation for new protocols per curve per signature algorithm.
         });
         assert!(!is_missing_pricing, EMissingProtocolPricing);
@@ -4347,7 +4794,9 @@ public(package) fun subsidize_coordinator_with_sui(
     self: &mut DWalletCoordinatorInner,
     sui: Coin<SUI>,
 ) {
-    self.pricing_and_fee_manager.join_gas_fee_reimbursement_sui_system_call_balance(sui.into_balance());
+    self
+        .pricing_and_fee_manager
+        .join_gas_fee_reimbursement_sui_system_call_balance(sui.into_balance());
 }
 
 public(package) fun subsidize_coordinator_with_ika(
@@ -4376,8 +4825,13 @@ public(package) fun get_network_encryption_key_supported_curves(
     self: &DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
 ): vector<u32> {
-    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
-    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow(dwallet_network_encryption_key_id);
+    assert!(
+        self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id),
+        EDWalletNetworkEncryptionKeyNotExist,
+    );
+    let dwallet_network_encryption_key = self
+        .dwallet_network_encryption_keys
+        .borrow(dwallet_network_encryption_key_id);
     dwallet_network_encryption_key.supported_curves
 }
 
@@ -4394,9 +4848,7 @@ public fun imported_key_dwallet_id(self: &ImportedKeyDWalletCap): ID {
 // === Test Functions ===
 
 #[test_only]
-public fun last_processed_checkpoint_sequence_number(
-    self: &DWalletCoordinatorInner,
-): u64 {
+public fun last_processed_checkpoint_sequence_number(self: &DWalletCoordinatorInner): u64 {
     self.last_processed_checkpoint_sequence_number
 }
 

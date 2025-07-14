@@ -3,23 +3,16 @@
 
 module ika_dwallet_2pc_mpc::ika_dwallet_2pc_mpc_init;
 
-// === Imports ===
-
-use std::{string::String, type_name};
-use ika_dwallet_2pc_mpc::{
-    ika_dwallet_2pc_mpc_display,
-    pricing::PricingInfo,
-    coordinator,
-};
-use sui::{
-    package::{Self, Publisher},
-    vec_map::VecMap,
-    address
-};
-use ika_system::{
-    advance_epoch_approver::AdvanceEpochApprover,
-    system_current_status_info::SystemCurrentStatusInfo
-};
+use ika_dwallet_2pc_mpc::coordinator;
+use ika_dwallet_2pc_mpc::ika_dwallet_2pc_mpc_display;
+use ika_dwallet_2pc_mpc::pricing::PricingInfo;
+use ika_system::advance_epoch_approver::AdvanceEpochApprover;
+use ika_system::system_current_status_info::SystemCurrentStatusInfo;
+use std::string::String;
+use std::type_name;
+use sui::address;
+use sui::package::{Self, Publisher};
+use sui::vec_map::VecMap;
 
 // === Structs ===
 /// The OTW to create `Publisher` and `Display` objects.
