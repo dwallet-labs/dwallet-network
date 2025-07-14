@@ -375,6 +375,7 @@ pub async fn init_ika_on_sui(
         ika_dwallet_2pc_mpc_package_id,
         ika_system_package_id,
         ika_system_object_id,
+        ika_dwallet_coordinator_object_id,
     };
     std::env::set_current_dir(contract_paths.current_working_dir)?;
     let mut file = File::create("ika_config.json")?;

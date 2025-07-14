@@ -63,6 +63,9 @@ pub enum IkaValidatorCommand {
         ika_system_package_id: ObjectID,
         #[clap(name = "ika-system-object-id", long)]
         ika_system_object_id: ObjectID,
+        // todo(zeev): make option
+        #[clap(name = "ika-dwallet-coordinator-object-id", long)]
+        ika_dwallet_coordinator_object_id: ObjectID,
     },
     #[clap(name = "become-candidate")]
     BecomeCandidate {
@@ -190,6 +193,7 @@ impl IkaValidatorCommand {
                 ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
             } => {
                 let config = IkaPackagesConfig {
                     ika_package_id,
@@ -197,6 +201,7 @@ impl IkaValidatorCommand {
                     ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
+                    ika_dwallet_coordinator_object_id,
                 };
 
                 let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
