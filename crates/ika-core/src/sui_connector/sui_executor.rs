@@ -5,19 +5,19 @@
 //! on Sui blockchain for `ika_system` package.
 
 use crate::dwallet_checkpoints::DWalletCheckpointStore;
-use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
+use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
-use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
+use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkEncryptionKeyData, DKG_FIRST_ROUND_PROTOCOL_FLAG,
-    DKG_SECOND_ROUND_PROTOCOL_FLAG, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
+    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWalletNetworkEncryptionKeyData,
     FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
@@ -27,12 +27,12 @@ use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
-    DWalletCoordinatorInner, SystemInner,
-    SystemInnerTrait, ADVANCE_EPOCH_FUNCTION_NAME,
-    CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME,
-    INITIATE_ADVANCE_EPOCH_FUNCTION_NAME, INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME,
+    DWalletCoordinatorInner, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
+    INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
     REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    SystemInner, SystemInnerTrait,
 };
 use itertools::Itertools;
 use move_core_types::ident_str;

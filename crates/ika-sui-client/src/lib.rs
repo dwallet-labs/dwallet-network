@@ -418,6 +418,7 @@ where
                         )?;
                         let info = validator.verified_validator_info();
                         Ok(EpochStartValidatorInfoV1 {
+                            name: info.name.clone(),
                             validator_id: validator.id,
                             protocol_pubkey: info.protocol_pubkey.clone(),
                             network_pubkey: info.network_pubkey.clone(),
