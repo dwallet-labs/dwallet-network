@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! This module contains the DWalletMPCService struct.
 //! It is responsible to read DWallet MPC messages from the
 //! local DB every [`READ_INTERVAL_MS`] seconds
@@ -5,6 +8,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
+use crate::consensus_manager::ReplayWaiter;
 use crate::dwallet_checkpoints::{
     DWalletCheckpointServiceNotify, PendingDWalletCheckpoint, PendingDWalletCheckpointInfo,
     PendingDWalletCheckpointV1,
@@ -129,7 +133,11 @@ impl DWalletMPCService {
     /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
-    pub async fn spawn(&mut self) {
+    pub async fn spawn(&mut self, replay_waiter: ReplayWaiter) {
+        info!("Waiting for consensus commits to replay ...");
+        replay_waiter.wait_for_replay().await;
+        info!("Consensus commits finished replaying");
+
         info!(
             validator=?self.epoch_store.name,
             bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),

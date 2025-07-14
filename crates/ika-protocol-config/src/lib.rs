@@ -122,19 +122,9 @@ struct FeatureFlags {
     #[serde(skip_serializing_if = "Option::is_none")]
     mysticeti_num_leaders_per_round: Option<usize>,
 
-    // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
-    // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
-    #[serde(skip_serializing_if = "is_false")]
-    consensus_linearize_subdag_v2: bool,
-
     // If true, enable zstd compression for consensus tonic network.
     #[serde(skip_serializing_if = "is_false")]
     consensus_zstd_compression: bool,
-
-    // If true, then it (1) will not enforce monotonicity checks for a block's ancestors and (2) calculates the commit's timestamp based on the
-    // weighted by stake median timestamp of the leader's ancestors.
-    #[serde(skip_serializing_if = "is_false")]
-    consensus_median_based_commit_timestamp: bool,
 
     // If true, enabled batched block sync in consensus.
     #[serde(skip_serializing_if = "is_false")]
@@ -296,24 +286,6 @@ impl ProtocolConfig {
             return enabled;
         }
         self.feature_flags.mysticeti_fastpath
-    }
-
-    pub fn consensus_linearize_subdag_v2(&self) -> bool {
-        let res = self.feature_flags.consensus_linearize_subdag_v2;
-        assert!(
-            !res || self.gc_depth() > 0,
-            "The consensus linearize sub dag V2 requires GC to be enabled"
-        );
-        res
-    }
-
-    pub fn consensus_median_based_commit_timestamp(&self) -> bool {
-        let res = self.feature_flags.consensus_median_based_commit_timestamp;
-        assert!(
-            !res || self.gc_depth() > 0,
-            "The consensus median based commit timestamp requires GC to be enabled"
-        );
-        res
     }
 
     pub fn consensus_batched_block_sync(&self) -> bool {
@@ -495,9 +467,7 @@ impl ProtocolConfig {
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
         cfg.feature_flags.consensus_round_prober = true;
-        cfg.feature_flags.consensus_linearize_subdag_v2 = true;
         cfg.feature_flags.consensus_zstd_compression = true;
-        cfg.feature_flags.consensus_median_based_commit_timestamp = true;
         cfg.feature_flags.consensus_batched_block_sync = true;
         cfg.feature_flags.enforce_checkpoint_timestamp_monotonicity = true;
 
@@ -548,16 +518,8 @@ impl ProtocolConfig {
         self.feature_flags.consensus_round_prober = val;
     }
 
-    pub fn set_consensus_linearize_subdag_v2_for_testing(&mut self, val: bool) {
-        self.feature_flags.consensus_linearize_subdag_v2 = val;
-    }
-
     pub fn set_mysticeti_fastpath_for_testing(&mut self, val: bool) {
         self.feature_flags.mysticeti_fastpath = val;
-    }
-
-    pub fn set_consensus_median_based_commit_timestamp_for_testing(&mut self, val: bool) {
-        self.feature_flags.consensus_median_based_commit_timestamp = val;
     }
 
     pub fn set_consensus_batched_block_sync_for_testing(&mut self, val: bool) {

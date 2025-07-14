@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! # DWallet MPC Metrics
 //!
 //! This module provides Prometheus metrics for monitoring DWallet Multi-Party Computation
