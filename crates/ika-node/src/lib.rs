@@ -325,6 +325,9 @@ impl IkaNode {
                 .ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
+            ika_dwallet_coordinator_object_id: config
+                .sui_connector_config
+                .ika_dwallet_coordinator_object_id,
         };
 
         let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());

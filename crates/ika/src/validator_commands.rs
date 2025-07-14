@@ -197,6 +197,9 @@ impl IkaValidatorCommand {
                     ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
+                    // This is done on purpose,
+                    // there is no ika_dwallet_coordinator_object_id at this stage.
+                    ika_dwallet_coordinator_object_id: ObjectID::ZERO,
                 };
 
                 let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
