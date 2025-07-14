@@ -233,7 +233,7 @@ impl IkaValidatorCommand {
                 let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
                     context.active_address()?,
                     context,
-                    config.ika_system_package_id,
+                    config.ika_common_package_id,
                     validator_info.class_groups_public_key_and_proof.clone(),
                     gas_budget,
                 ).await?;
