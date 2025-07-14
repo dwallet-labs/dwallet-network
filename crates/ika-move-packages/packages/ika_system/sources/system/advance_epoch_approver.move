@@ -1,11 +1,12 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 module ika_system::advance_epoch_approver;
 
-// === Imports ===
-
-use std::string::String;
-use sui::balance::Balance;
 use ika::ika::IKA;
+use std::string::String;
 use std::type_name;
+use sui::balance::Balance;
 
 // === Structs ===
 
@@ -39,7 +40,7 @@ public(package) fun assert_all_witnesses_approved(self: &AdvanceEpochApprover) {
 public(package) fun destroy(self: AdvanceEpochApprover): Balance<IKA> {
     let AdvanceEpochApprover {
         balance_ika,
-        ..
+        ..,
     } = self;
     balance_ika
 }
@@ -53,7 +54,9 @@ public fun approve_advance_epoch_by_witness<Witness: drop>(
 ) {
     let witness_type = type_name::get_with_original_ids<Witness>();
     let witness_type_name = witness_type.into_string().to_string();
-    let (is_found, index) = advance_epoch_approver.remaining_witnesses_to_approve.index_of(&witness_type_name);
+    let (is_found, index) = advance_epoch_approver
+        .remaining_witnesses_to_approve
+        .index_of(&witness_type_name);
     assert!(is_found, EWitnessIsNotInApprover);
     advance_epoch_approver.remaining_witnesses_to_approve.remove(index);
     advance_epoch_approver.balance_ika.join(balance_ika);

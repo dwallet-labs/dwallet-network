@@ -3,8 +3,6 @@
 
 module ika_common::extended_field;
 
-// === Imports ===
-
 use sui::dynamic_field as df;
 
 // === Structs ===
