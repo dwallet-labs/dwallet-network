@@ -4,7 +4,7 @@ set -euo pipefail
 #set -x
 
 # Default values
-VALIDATOR_NUM=4
+VALIDATOR_NUM=55
 TERRAFORM_WORKSPACES_FILE="../../../infra/tf-gcp/workspaces.tf"
 SUBDOMAIN=beta.devnet.ika-network.net
 GCP_PROJECT=devnet-449616
