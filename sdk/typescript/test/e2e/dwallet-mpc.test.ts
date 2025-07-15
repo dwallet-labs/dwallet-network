@@ -260,7 +260,7 @@ describe('Test dWallet MPC', () => {
 						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						console.time(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
 						const signRes = await executeSignTransaction(signTx, cfg);
-						console.timeEnd(`Sign: ${conf.suiClientKeypair.toSuiAddress()}`);
+						console.timeEnd(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
 						console.log(`Sign: ${cfg.suiClientKeypair.toSuiAddress()} - ${signRes.id.id}`);
 						return signRes;
 					})(),
