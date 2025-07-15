@@ -494,9 +494,12 @@ impl DWalletCheckpointBuilder {
         }
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
-    async fn make_checkpoint(&self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
-        let last_details = pendings.last().unwrap().details().clone();
+    #[instrument(level = "debug", skip_all, fields(last_height = pending_checkpoints.last().unwrap().details().checkpoint_height))]
+    async fn make_checkpoint(
+        &self,
+        pending_checkpoints: Vec<PendingDWalletCheckpoint>,
+    ) -> anyhow::Result<()> {
+        let last_details = pending_checkpoints.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
         // This is used when there are multiple pending checkpoints to create a single checkpoint
@@ -507,7 +510,7 @@ impl DWalletCheckpointBuilder {
         // Stores the transactions that should be included in the checkpoint.
         // Transactions will be recorded in the checkpoint in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
-        for pending_checkpoint in pendings.into_iter() {
+        for pending_checkpoint in pending_checkpoints.into_iter() {
             let logger = MPCSessionLogger::new();
             let pending = pending_checkpoint.into_v1();
             logger.write_pending_checkpoint(&pending);

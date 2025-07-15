@@ -81,7 +81,13 @@ impl MPCSessionLogger {
             return;
         }
 
-        warn!("Writing MPC session logs to disk");
+        if std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() % 60 == 0)
+            .unwrap_or(false)
+        {
+            warn!("Writing MPC session logs to disk");
+        }
 
         // Determine round number
         let round = messages.len();
@@ -132,13 +138,19 @@ impl MPCSessionLogger {
         output_sender_party_id: PartyID,
         output: &[u8],
         session_request: &MPCSessionRequest,
+        round: u64,
+        idx: usize,
     ) {
         if std::env::var("IKA_WRITE_MPC_OUTPUTS_TO_DISK").unwrap_or_default() != "1" {
             return;
         }
-
-        warn!("Writing MPC session output to disk");
-
+        if std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() % 60 == 0)
+            .unwrap_or(false)
+        {
+            warn!("Writing MPC session output to disk");
+        }
         // Get (and initialize once) the log directory
         let log_dir = match self.get_log_dir() {
             Ok(dir) => dir,
@@ -147,7 +159,8 @@ impl MPCSessionLogger {
                 return;
             }
         };
-        let filename = format!("session_{session_id}_output_from_{output_sender_party_id}.json");
+        let filename =
+            format!("{round}_{idx}_session_{session_id}_from_{output_sender_party_id}.json",);
         let path = log_dir.join(&filename);
 
         // Serialize to JSON.
@@ -156,7 +169,7 @@ impl MPCSessionLogger {
             "party_id": party_id,
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
-            "output": output.to_owned(),
+            "output": output,
             "session_request": session_request.clone(),
         });
 
@@ -178,7 +191,13 @@ impl MPCSessionLogger {
             return;
         }
 
-        warn!("Writing MPC pending checkpoint to disk");
+        if std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() % 60 == 0)
+            .unwrap_or(false)
+        {
+            warn!("Writing MPC pending checkpoint to disk");
+        }
 
         // Get (and initialize once) the log directory
         let log_dir = match self.get_log_dir() {

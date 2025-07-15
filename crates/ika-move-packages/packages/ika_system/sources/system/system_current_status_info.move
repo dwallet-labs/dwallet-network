@@ -1,6 +1,7 @@
-module ika_system::system_current_status_info;
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-// === Imports ===
+module ika_system::system_current_status_info;
 
 use ika_common::bls_committee::BlsCommittee;
 

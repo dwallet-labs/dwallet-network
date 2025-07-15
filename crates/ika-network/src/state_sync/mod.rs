@@ -1019,7 +1019,7 @@ async fn get_latest_from_peer(
 
     // Bail early if this node isn't on the same chain as us
     if !info.on_same_chain_as_us {
-        trace!(?info, "Peer {peer_id} not on same chain as us");
+        info!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
     let Some(highest_checkpoint) = query_peer_for_latest_info(&mut client, timeout).await else {
@@ -1361,7 +1361,7 @@ async fn get_latest_from_peer_system_checkpoint(
 
     // Bail early if this node isn't on the same chain as us
     if !info.on_same_chain_as_us {
-        trace!(?info, "Peer {peer_id} not on same chain as us");
+        info!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
     let Some(highest_system_checkpoint) =
