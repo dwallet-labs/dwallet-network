@@ -250,13 +250,16 @@ pub(crate) fn advance_network_dkg(
     logger: &MPCSessionLogger,
     rng: ChaCha20Rng,
 ) -> DwalletMPCResult<AsynchronousRoundGODResult> {
+    let PublicInput::NetworkEncryptionKeyDkg(public_input) = public_input else {
+        unreachable!();
+    };
     // Add the Class Groups key pair and proof to the logger.
     let encoded_private_input: MPCPrivateInput = Some(bcs::to_bytes(&class_groups_decryption_key)?);
     let logger = logger
         .clone()
         .with_class_groups_key_pair_and_proof(encoded_private_input.clone());
     let messages_party_ids: Vec<Vec<PartyID>> = messages
-        .iter()
+        .values()
         .map(|m| m.keys().copied().collect())
         .collect();
     error!(?messages_party_ids, ?party_id, "advancing");
@@ -272,16 +275,7 @@ pub(crate) fn advance_network_dkg(
                 &logger,
                 rng
             ),
-            DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
-                session_id,
-                1,
-                &access_structure,
-                messages,
-                public_input,
-                class_groups_decryption_key,
-                &logger,
-                rng,
-            ),
+            DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
         }?;
         return Ok(res);
     } else if party_id == 4 && messages.len() <= 2 {
@@ -289,9 +283,7 @@ pub(crate) fn advance_network_dkg(
     }
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let PublicInput::NetworkEncryptionKeyDkg(public_input) = public_input else {
-                unreachable!();
-            };
+            
             let result = advance_and_serialize::<Secp256k1Party>(
                 session_id,
                 party_id,
