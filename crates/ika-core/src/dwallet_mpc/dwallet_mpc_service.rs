@@ -292,7 +292,7 @@ impl DWalletMPCService {
                     should_never_happen=true,
                     consensus_round,
                     last_read_consensus_round=?self.last_read_consensus_round,
-                    "consensus round must be in a ascending order"
+                    "consensus round must be in an ascending order"
                 );
 
                 return false;

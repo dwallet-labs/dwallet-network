@@ -146,6 +146,27 @@ pub(crate) fn build_messages_to_advance(
     None
 }
 
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_messages_to_advance() {
+        let messages_to_advance = build_messages_to_advance(
+            2,
+            0,
+            HashMap::new(),
+            HashMap::new(),
+            WeightedThresholdAccessStructure::new(3, HashMap::from(
+                [
+                    (PartyID::from(1), 1),
+                    (PartyID::from(2), 1),
+                    (PartyID::from(3), 1),
+                ]
+            )),
+        );
+    }
+}
+
 /// Advances the state of an MPC party and serializes the result into bytes.
 ///
 /// This helper function wraps around a party `P`'s `advance()` method,
