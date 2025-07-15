@@ -351,11 +351,6 @@ pub struct AuthorityEpochTables {
     /// Validators that sent a EndOfPublish message in this epoch.
     end_of_publish: DBMap<AuthorityName, ()>,
 
-    /// Record the every protocol config version sent to the authority at the current epoch.
-    /// This is used to check if the authority has already sent the protocol config version,
-    /// so it not to be sent again.
-    protocol_config_version_sent: DBMap<ProtocolVersion, ()>,
-
     /// Contains a single key, which overrides the value of
     /// ProtocolConfig::buffer_stake_for_protocol_upgrade_bps
     override_protocol_upgrade_buffer_stake: DBMap<u64, u64>,
@@ -798,26 +793,6 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    pub fn record_protocol_config_version_sent(
-        &self,
-        protocol_version: ProtocolVersion,
-    ) -> IkaResult {
-        self.tables()?
-            .protocol_config_version_sent
-            .insert(&protocol_version, &())?;
-        Ok(())
-    }
-
-    pub fn last_protocol_config_version_sent(&self) -> IkaResult<Option<ProtocolVersion>> {
-        Ok(self
-            .tables()?
-            .protocol_config_version_sent
-            .reversed_safe_iter_with_bounds(None, None)?
-            .next()
-            .transpose()?
-            .map(|(s, _)| s))
-    }
-
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
     }
@@ -1079,18 +1054,7 @@ impl AuthorityPerEpochStore {
         }
         verified_system_checkpoint_messages.iter().for_each(
             |system_checkpoint_kind| match system_checkpoint_kind {
-                SystemCheckpointMessageKind::SetNextConfigVersion(version) => {
-                    if let Ok(tables) = self.tables() {
-                        if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
-                            warn!(
-                                ?e,
-                                "Failed to insert the next protocol config version into the table"
-                            );
-                        }
-                    } else {
-                        warn!("Failed to insert params message digest into the table");
-                    }
-                }
+                SystemCheckpointMessageKind::SetNextConfigVersion(_) => {}
                 SystemCheckpointMessageKind::EndOfPublish => {}
                 // For now, we only handle NextConfigVersion. Other variants are ignored.
                 SystemCheckpointMessageKind::SetEpochDurationMs(_)
@@ -1167,11 +1131,11 @@ impl AuthorityPerEpochStore {
         let cancelled_txns: BTreeMap<MessageDigest, CancelConsensusCertificateReason> =
             BTreeMap::new();
 
-        for tx in transactions {
+        'process_transactions: for tx in transactions {
             let key = tx.0.transaction.key();
             let mut ignored = false;
             // let mut filter_roots = false;
-            match self
+            for cert in self
                 .process_consensus_transaction(
                     output,
                     tx,
@@ -1182,44 +1146,46 @@ impl AuthorityPerEpochStore {
                 )
                 .await?
             {
-                ConsensusCertificateResult::IkaTransaction(cert) => {
-                    notifications.push(key.clone());
-                    verified_certificates.push_back(cert);
-                }
-                ConsensusCertificateResult::SystemTransaction(cert) => {
-                    notifications.push(key.clone());
-                    verified_system_checkpoint_certificates.push_back(cert);
-                }
-                // This is a special transaction needed for NetworkDKG to bypass TX
-                // size limits.
-                ConsensusCertificateResult::IkaBulkTransaction(certs) => {
-                    notifications.push(key.clone());
-                    certs
-                        .into_iter()
-                        .for_each(|cert| verified_certificates.push_back(cert));
-                }
-                // ConsensusCertificateResult::Cancelled((cert, reason)) => {
-                //     notifications.push(key.clone());
-                //     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
-                //     verified_certificates.push_back(cert);
-                // }
-                ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
-                ConsensusCertificateResult::IgnoredSystem => {
-                    // filter_roots = true;
-                }
-                // Note: ignored external transactions must not be recorded as processed. Otherwise
-                // they may not get reverted after restart during epoch change.
-                ConsensusCertificateResult::Ignored => {
-                    ignored = true;
-                    // filter_roots = true;
-                }
-                ConsensusCertificateResult::EndOfPublish => {
-                    verified_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
-                    verified_system_checkpoint_certificates
-                        .push_back(SystemCheckpointMessageKind::EndOfPublish);
-                    let mut reconfig_state = self.reconfig_state.write();
-                    reconfig_state.status = ReconfigCertStatus::RejectAllTx;
-                    break;
+                match cert {
+                    ConsensusCertificateResult::IkaTransaction(cert) => {
+                        notifications.push(key.clone());
+                        verified_certificates.push_back(cert);
+                    }
+                    ConsensusCertificateResult::SystemTransaction(cert) => {
+                        notifications.push(key.clone());
+                        verified_system_checkpoint_certificates.push_back(cert);
+                    }
+                    // This is a special transaction needed for NetworkDKG to bypass TX
+                    // size limits.
+                    ConsensusCertificateResult::IkaBulkTransaction(certs) => {
+                        notifications.push(key.clone());
+                        certs
+                            .into_iter()
+                            .for_each(|cert| verified_certificates.push_back(cert));
+                    }
+                    // ConsensusCertificateResult::Cancelled((cert, reason)) => {
+                    //     notifications.push(key.clone());
+                    //     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
+                    //     verified_certificates.push_back(cert);
+                    // }
+                    ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
+                    ConsensusCertificateResult::IgnoredSystem => {
+                        // filter_roots = true;
+                    }
+                    // Note: ignored external transactions must not be recorded as processed. Otherwise
+                    // they may not get reverted after restart during epoch change.
+                    ConsensusCertificateResult::Ignored => {
+                        ignored = true;
+                        // filter_roots = true;
+                    }
+                    ConsensusCertificateResult::EndOfPublish => {
+                        verified_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
+                        verified_system_checkpoint_certificates
+                            .push_back(SystemCheckpointMessageKind::EndOfPublish);
+                        let mut reconfig_state = self.reconfig_state.write();
+                        reconfig_state.status = ReconfigCertStatus::RejectAllTx;
+                        break 'process_transactions;
+                    }
                 }
             }
             if !ignored {
@@ -1302,7 +1268,7 @@ impl AuthorityPerEpochStore {
         system_checkpoint_service: &Arc<SystemCheckpointService>, // should i do this generic as the checkpoint service?
         _commit_round: Round,
         _authority_metrics: &Arc<AuthorityMetrics>,
-    ) -> IkaResult<ConsensusCertificateResult> {
+    ) -> IkaResult<Vec<ConsensusCertificateResult>> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transaction");
 
         let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
@@ -1317,11 +1283,11 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            }) => Ok(vec![ConsensusCertificateResult::ConsensusMessage]),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(..),
                 ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            }) => Ok(vec![ConsensusCertificateResult::ConsensusMessage]),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletCheckpointSignature(info),
                 ..
@@ -1330,7 +1296,7 @@ impl AuthorityPerEpochStore {
                 // be skipped when a batch is already part of a certificate, so we must also
                 // notify here.
                 checkpoint_service.notify_checkpoint_signature(self, info)?;
-                Ok(ConsensusCertificateResult::ConsensusMessage)
+                Ok(vec![ConsensusCertificateResult::ConsensusMessage])
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CapabilityNotificationV1(authority_capabilities),
@@ -1343,52 +1309,58 @@ impl AuthorityPerEpochStore {
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
-                let authority_capabilities_max_version = authority_capabilities
-                    .supported_protocol_versions
-                    .versions
-                    .iter()
-                    .map(|(num, _)| *num)
-                    .max();
-                // this should be the minimum protocol version between self.protocol_version() and authority_capabilities_max_version to allow version downgrades.
-                let first_protocol_version = self
-                    .protocol_version()
-                    .min(authority_capabilities_max_version.unwrap_or(self.protocol_version()));
-                if let Some((new_version, _)) =
-                    AuthorityState::choose_highest_protocol_version_and_system_packages_v1(
-                        first_protocol_version,
-                        self.protocol_config(),
+                let (new_version, move_contracts_to_upgrade) =
+                    AuthorityState::choose_highest_protocol_version_and_move_contracts_upgrades_v1(
+                        self.protocol_version(),
                         self.committee(),
                         capabilities.clone(),
                         self.get_effective_buffer_stake_bps(),
-                    )
-                {
-                    let last_version_sent = self.last_protocol_config_version_sent()?;
-                    if last_version_sent.is_none() || last_version_sent != Some(new_version) {
-                        info!(
-                            validator=?self.name,
-                            protocol_version=?new_version,
-                            "Found version quorum from capabilities v1 {:?}",
-                            capabilities.first()
-                        );
-                        return Ok(ConsensusCertificateResult::SystemTransaction(
-                            SystemCheckpointMessageKind::SetNextConfigVersion(new_version),
+                    );
+
+                let mut system_transactions: Vec<ConsensusCertificateResult> = Vec::new();
+                if self.protocol_version() != new_version {
+                    info!(
+                        validator=?self.name,
+                        protocol_version=?new_version,
+                        "Found new version quorum from capabilities v1 {:?}",
+                        capabilities.first()
+                    );
+                    system_transactions.push(ConsensusCertificateResult::SystemTransaction(
+                        SystemCheckpointMessageKind::SetNextConfigVersion(new_version),
+                    ));
+                }
+
+                if !move_contracts_to_upgrade.is_empty() {
+                    info!(
+                        validator=?self.name,
+                        protocol_version=?new_version,
+                        move_contracts_to_upgrade=?move_contracts_to_upgrade,
+                        "Move contracts to upgrade found",
+                    );
+                    for (package_id, digest) in move_contracts_to_upgrade.iter() {
+                        system_transactions.push(ConsensusCertificateResult::SystemTransaction(
+                            SystemCheckpointMessageKind::SetApprovedUpgrade {
+                                package_id: package_id.to_vec(),
+                                digest: Some(digest.to_vec()),
+                            },
                         ));
                     }
-                    Ok(ConsensusCertificateResult::ConsensusMessage)
-                } else {
-                    Ok(ConsensusCertificateResult::ConsensusMessage)
                 }
+                if system_transactions.is_empty() {
+                    return Ok(vec![ConsensusCertificateResult::ConsensusMessage]);
+                }
+                Ok(system_transactions)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SystemCheckpointSignature(data),
                 ..
             }) => {
                 system_checkpoint_service.notify_checkpoint_signature(self, data)?;
-                Ok(ConsensusCertificateResult::ConsensusMessage)
+                Ok(vec![ConsensusCertificateResult::ConsensusMessage])
             }
-            SequencedConsensusTransactionKind::System(system_transaction) => {
-                Ok(self.process_consensus_system_transaction(system_transaction))
-            }
+            SequencedConsensusTransactionKind::System(system_transaction) => Ok(vec![
+                self.process_consensus_system_transaction(system_transaction),
+            ]),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::EndOfPublish(authority),
                 ..
@@ -1406,9 +1378,9 @@ impl AuthorityPerEpochStore {
                         .insert_generic(*authority, ())
                         .is_quorum_reached()
                 {
-                    return Ok(ConsensusCertificateResult::EndOfPublish);
+                    return Ok(vec![ConsensusCertificateResult::EndOfPublish]);
                 }
-                Ok(ConsensusCertificateResult::ConsensusMessage)
+                Ok(vec![ConsensusCertificateResult::ConsensusMessage])
             }
         }
     }

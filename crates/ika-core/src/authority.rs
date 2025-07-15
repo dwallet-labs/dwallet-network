@@ -26,7 +26,7 @@ use ika_types::committee::EpochId;
 use ika_types::committee::ProtocolVersion;
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use ika_types::supported_protocol_versions::{ProtocolConfig, SupportedProtocolVersions};
+use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use sui_macros::fail_point;
 use sui_types::crypto::Signer;
 use sui_types::executable_transaction::VerifiedExecutableTransaction;
@@ -872,9 +872,7 @@ impl AuthorityState {
     }
 
     fn is_protocol_version_supported_v1(
-        _current_protocol_version: ProtocolVersion,
         proposed_protocol_version: ProtocolVersion,
-        _protocol_config: &ProtocolConfig,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         mut buffer_stake_bps: u64,
@@ -889,19 +887,11 @@ impl AuthorityState {
         let mut desired_upgrades: Vec<_> = capabilities
             .into_iter()
             .filter_map(|cap| {
-                // Note: In our current implementation, all validators are available_move_packages are empty.
-                // A validator that lists no packages is voting against any change at all.
-                // if cap.available_move_packages.is_empty() {
-                //     return None;
-                // }
-
-                // cap.available_move_packages.sort();
-
                 info!(
                     "validator {:?} supports {:?} with move packages: {:?}",
                     cap.authority.concise(),
                     cap.supported_protocol_versions,
-                    cap.available_move_packages,
+                    cap.move_contracts_to_upgrade,
                 );
 
                 // A validator that only supports the current protocol version is also voting
@@ -909,7 +899,7 @@ impl AuthorityState {
                 // bump.
                 cap.supported_protocol_versions
                     .get_version_digest(proposed_protocol_version)
-                    .map(|digest| (digest, cap.available_move_packages, cap.authority))
+                    .map(|digest| (digest, cap.move_contracts_to_upgrade, cap.authority))
             })
             .collect();
 
@@ -920,9 +910,6 @@ impl AuthorityState {
             .chunk_by(|(digest, packages, _authority)| (*digest, packages.clone()))
             .into_iter()
             .find_map(|((digest, packages), group)| {
-                // should have been filtered out earlier.
-                // assert!(!packages.is_empty());
-
                 let mut stake_aggregator: StakeAggregator<(), true> =
                     StakeAggregator::new(Arc::new(committee.clone()));
 
@@ -954,29 +941,26 @@ impl AuthorityState {
             })
     }
 
-    pub fn choose_highest_protocol_version_and_system_packages_v1(
-        first_protocol_version: ProtocolVersion,
-        protocol_config: &ProtocolConfig,
+    pub fn choose_highest_protocol_version_and_move_contracts_upgrades_v1(
+        current_protocol_version: ProtocolVersion,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         buffer_stake_bps: u64,
-    ) -> Option<(ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>)> {
-        let mut next_protocol_version = first_protocol_version;
-        let mut next_protocol_version_and_packages = None;
+    ) -> (ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>) {
+        let mut next_protocol_version = current_protocol_version;
+        let mut system_packages = vec![];
 
-        while let Some(protocol_version_and_packages) = Self::is_protocol_version_supported_v1(
-            first_protocol_version,
-            next_protocol_version + 1,
-            protocol_config,
+        while let Some((version, packages)) = Self::is_protocol_version_supported_v1(
+            current_protocol_version,
             committee,
             capabilities.clone(),
             buffer_stake_bps,
         ) {
-            next_protocol_version = next_protocol_version + 1;
-            next_protocol_version_and_packages = Some(protocol_version_and_packages);
+            next_protocol_version = version;
+            system_packages = packages;
         }
 
-        next_protocol_version_and_packages
+        (next_protocol_version, system_packages)
     }
 
     pub fn unixtime_now_ms() -> u64 {

@@ -123,7 +123,7 @@ pub struct AuthorityCapabilitiesV1 {
 
     /// A list of package id to move package digest to
     /// determine whether to do a protocol upgrade on sui.
-    pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+    pub move_contracts_to_upgrade: Vec<(ObjectID, MovePackageDigest)>,
 }
 
 impl AuthorityCapabilitiesV1 {
@@ -147,7 +147,7 @@ impl AuthorityCapabilitiesV1 {
                     supported_protocol_versions,
                     chain,
                 ),
-            available_move_packages,
+            move_contracts_to_upgrade: available_move_packages,
         }
     }
 }
@@ -161,7 +161,7 @@ impl Debug for AuthorityCapabilitiesV1 {
                 "supported_protocol_versions",
                 &self.supported_protocol_versions,
             )
-            .field("available_move_packages", &self.available_move_packages)
+            .field("available_move_packages", &self.move_contracts_to_upgrade)
             .finish()
     }
 }
