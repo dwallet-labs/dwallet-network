@@ -230,7 +230,6 @@ export async function executeDKGSecondRoundTransaction(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	tx: Transaction,
 ): Promise<DKGSecondRoundMoveResponse> {
-	console.time(`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
@@ -247,10 +246,6 @@ export async function executeDKGSecondRoundTransaction(
 		throw new Error('invalid start session event');
 	}
 	const dwallet = await getObjectWithType(conf, firstRoundOutputResult.dwalletID, isActiveDWallet);
-	console.timeEnd(`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	console.log(
-		`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${startSessionEvent.session_identifier_preimage}`,
-	);
 	return {
 		dwallet,
 		encrypted_user_secret_key_share_id:
@@ -320,7 +315,6 @@ export async function executeDKGFirstRoundTransaction(
 	c: Config,
 	tx: Transaction,
 ): Promise<DKGFirstRoundOutputResult> {
-	console.time(`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 	const result = await c.client.signAndExecuteTransaction({
 		signer: c.suiClientKeypair,
 		transaction: tx,
@@ -335,10 +329,6 @@ export async function executeDKGFirstRoundTransaction(
 	}
 	const dwalletID = startDKGEvent.event_data.dwallet_id;
 	const output = await waitForDKGFirstRoundOutput(c, dwalletID);
-	console.timeEnd(`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	console.log(
-		`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${startDKGEvent.session_identifier_preimage}`,
-	);
 	return {
 		sessionIdentifier: startDKGEvent.session_identifier_preimage,
 		output: output,

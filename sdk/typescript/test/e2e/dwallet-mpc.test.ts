@@ -22,6 +22,7 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getDWalletSecpState,
 	getNetworkPublicParameters,
 	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
@@ -59,11 +60,11 @@ async function createConf(
 	);
 	const address = keypair.getPublicKey().toSuiAddress();
 	console.log(`Address: ${address}`);
-	// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-	const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+	const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+	// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 	await requestSuiFromFaucetV2({
-		// host: getFaucetHost('localnet'),
-		host: 'https://faucet.sui.beta.devnet.ika-network.net',
+		host: getFaucetHost('localnet'),
+		// host: 'https://faucet.sui.beta.devnet.ika-network.net',
 		recipient: address,
 	});
 
@@ -99,7 +100,7 @@ describe('Test dWallet MPC', () => {
 		async () => {
 			const iterations = 2;
 			const maxDelayBeforeMPCRequestSec = 1000 * 5;
-			const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 
 			// Create a new configuration for each iteration
 			const configs = await Promise.all(
@@ -121,7 +122,15 @@ describe('Test dWallet MPC', () => {
 					(async () => {
 						await dkgFirstStartSignal.promise;
 						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
-						return executeDKGFirstRoundTransaction(cfg, tx);
+						console.time(`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
+						const dkgFirstRoundOutput = executeDKGFirstRoundTransaction(cfg, tx);
+						console.timeEnd(
+							`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`,
+						);
+						console.log(
+							`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${dkgFirstRoundOutput.sessionIdentifier}`,
+						);
+						return dkgFirstRoundOutput;
 					})(),
 				);
 			}
@@ -163,10 +172,17 @@ describe('Test dWallet MPC', () => {
 						await dkgSeconsStartSignal.promise;
 						const centralizedSecretKeyShare = centralizedPartyOutputs[i].centralizedSecretKeyShare;
 						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						console.time(`DKG second round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const secondRoundResponse = await executeDKGSecondRoundTransaction(
 							cfg,
 							firstDKGRoundOutput,
 							tx,
+						);
+						console.timeEnd(
+							`DKG second round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`,
+						);
+						console.log(
+							`DKG second round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${secondRoundResponse.dwallet.id.id}`,
 						);
 						await acceptEncryptedUserShare(cfg, {
 							dwallet_id: secondRoundResponse.dwallet.id.id,
@@ -242,7 +258,13 @@ describe('Test dWallet MPC', () => {
 					(async () => {
 						await startSignal.promise;
 						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
-						return await executeSignTransaction(signTx, cfg);
+						console.time(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
+						const signRes = await executeSignTransaction(signTx, cfg);
+						console.timeEnd(`Sign: ${conf.suiClientKeypair.toSuiAddress()}`);
+						console.log(
+							`Sign: ${cfg.suiClientKeypair.toSuiAddress()} - ${signRes.event_data.sign_id}`,
+						);
+						return signRes;
 					})(),
 				);
 			}

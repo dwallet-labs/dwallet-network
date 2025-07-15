@@ -51,7 +51,6 @@ interface VerifiedPartialUserSignature {
 }
 
 export async function executeSignTransaction(tx: Transaction, conf: Config) {
-	console.time(`Sign: ${conf.suiClientKeypair.toSuiAddress()}`);
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
@@ -68,10 +67,6 @@ export async function executeSignTransaction(tx: Transaction, conf: Config) {
 		conf,
 		startSessionEvent.event_data.sign_id,
 		isReadySignObject,
-	);
-	console.timeEnd(`Sign: ${conf.suiClientKeypair.toSuiAddress()}`);
-	console.log(
-		`Sign: ${conf.suiClientKeypair.toSuiAddress()} - ${startSessionEvent.event_data.sign_id}`,
 	);
 	return signObj;
 }
