@@ -14,7 +14,6 @@ import {
 	createSessionIdentifier,
 	delay,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
-	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
 	getNetworkDecryptionKeyID,
@@ -175,10 +174,10 @@ export async function dkgSecondRoundMoveCall(
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
-		conf.ikaConfig.ika_system_package_id,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
 	);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
 		arguments: [
 			dwalletStateArg,
 			dwalletCapArg,
@@ -240,19 +239,21 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
-	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(c);
 	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dwalletSecp256k1ID,
-		initialSharedVersion: await getInitialSharedVersion(c, dwalletSecp256k1ID),
+		objectId: c.ikaConfig.ika_dwallet_coordinator_object_id,
+		initialSharedVersion: await getInitialSharedVersion(
+			c,
+			c.ikaConfig.ika_dwallet_coordinator_object_id,
+		),
 		mutable: true,
 	});
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
-		c.ikaConfig.ika_system_package_id,
+		c.ikaConfig.ika_dwallet_2pc_mpc_package_id,
 	);
 	const dwalletCap = tx.moveCall({
-		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
+		target: `${c.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
 		arguments: [
 			dwalletStateArg,
 			tx.pure.id(networkDecryptionKeyID),
@@ -343,7 +344,7 @@ export async function acceptEncryptedUserShare(
 	);
 	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicOutput));
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
 		arguments: [
 			dwalletStateArg,
 			dwalletIDArg,

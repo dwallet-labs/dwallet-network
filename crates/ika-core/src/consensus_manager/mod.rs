@@ -8,19 +8,20 @@ use crate::consensus_validator::IkaTxValidator;
 use crate::mysticeti_adapter::LazyMysticetiClient;
 use arc_swap::ArcSwapOption;
 use async_trait::async_trait;
+use consensus_core::CommitConsumerMonitor;
 use enum_dispatch::enum_dispatch;
 use fastcrypto::traits::KeyPair as _;
 use ika_config::{ConsensusConfig, NodeConfig};
 use ika_protocol_config::ProtocolVersion;
 use ika_types::error::IkaResult;
-use ika_types::messages_consensus::ConsensusTransaction;
+use ika_types::messages_consensus::{ConsensusPosition, ConsensusTransaction};
 use mysten_metrics::RegistryService;
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use sui_types::committee::EpochId;
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::{Mutex, MutexGuard, broadcast};
 use tokio::time::{sleep, timeout};
 use tracing::info;
 
@@ -46,6 +47,8 @@ pub trait ConsensusManagerTrait {
     async fn shutdown(&self);
 
     async fn is_running(&self) -> bool;
+
+    fn replay_waiter(&self) -> ReplayWaiter;
 }
 
 // Wraps the underlying consensus protocol managers to make calling
@@ -160,6 +163,10 @@ impl ConsensusManagerTrait for ConsensusManager {
         let active = self.active.lock();
         *active
     }
+
+    fn replay_waiter(&self) -> ReplayWaiter {
+        self.mysticeti_manager.replay_waiter()
+    }
 }
 
 /// A ConsensusClient that can be updated internally at any time. This usually happening during epoch
@@ -194,10 +201,7 @@ impl UpdatableConsensusClient {
             return client;
         }
 
-        panic!(
-            "Timed out after {:?} waiting for Consensus to start!",
-            START_TIMEOUT,
-        );
+        panic!("Timed out after {START_TIMEOUT:?} waiting for Consensus to start!",);
     }
 
     pub fn set(&self, client: Arc<dyn ConsensusClient>) {
@@ -215,9 +219,44 @@ impl ConsensusClient for UpdatableConsensusClient {
         &self,
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> IkaResult<BlockStatusReceiver> {
+    ) -> IkaResult<(Vec<ConsensusPosition>, BlockStatusReceiver)> {
         let client = self.get().await;
         client.submit(transactions, epoch_store).await
+    }
+}
+
+/// Waits for consensus to finish replaying at consensus handler.
+pub struct ReplayWaiter {
+    consumer_monitor_receiver: broadcast::Receiver<Arc<CommitConsumerMonitor>>,
+}
+
+impl ReplayWaiter {
+    pub(crate) fn new(
+        consumer_monitor_receiver: broadcast::Receiver<Arc<CommitConsumerMonitor>>,
+    ) -> Self {
+        Self {
+            consumer_monitor_receiver,
+        }
+    }
+
+    pub(crate) async fn wait_for_replay(mut self) {
+        loop {
+            info!("Waiting for consensus to start replaying ...");
+            let Ok(monitor) = self.consumer_monitor_receiver.recv().await else {
+                continue;
+            };
+            info!("Waiting for consensus handler to finish replaying ...");
+            monitor.replay_complete().await;
+            break;
+        }
+    }
+}
+
+impl Clone for ReplayWaiter {
+    fn clone(&self) -> Self {
+        Self {
+            consumer_monitor_receiver: self.consumer_monitor_receiver.resubscribe(),
+        }
     }
 }
 
@@ -308,7 +347,10 @@ impl Drop for RunningLockGuard<'_> {
         match *self.state_guard {
             // consensus was running and now will have to be marked as shutdown
             Running::True(epoch, version) => {
-                tracing::info!("Consensus shutdown for epoch {epoch:?} & protocol version {version:?} is complete - took {} seconds", self.start.elapsed().as_secs_f64());
+                tracing::info!(
+                    "Consensus shutdown for epoch {epoch:?} & protocol version {version:?} is complete - took {} seconds",
+                    self.start.elapsed().as_secs_f64()
+                );
 
                 self.metrics
                     .shutdown_latency
@@ -319,10 +361,11 @@ impl Drop for RunningLockGuard<'_> {
             // consensus was not running and now will be marked as started
             Running::False => {
                 tracing::info!(
-                "Starting up consensus for epoch {} & protocol version {:?} is complete - took {} seconds",
-                self.epoch.unwrap(),
-                self.protocol_version.unwrap(),
-                self.start.elapsed().as_secs_f64());
+                    "Starting up consensus for epoch {} & protocol version {:?} is complete - took {} seconds",
+                    self.epoch.unwrap(),
+                    self.protocol_version.unwrap(),
+                    self.start.elapsed().as_secs_f64()
+                );
 
                 self.metrics
                     .start_latency

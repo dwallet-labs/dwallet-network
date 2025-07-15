@@ -1,18 +1,17 @@
 use anyhow::bail;
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
-    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
-    VALIDATOR_METADATA_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
+    ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
+    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
@@ -21,8 +20,8 @@ use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
 use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions};
 use sui_keys::keystore::AccountKeystore;
-use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
+use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -34,12 +33,12 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_system_package_id: ObjectID,
+    ika_common_package_id: ObjectID,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
         vec![],
@@ -59,7 +58,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -68,7 +67,9 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .ok_or(anyhow::Error::msg("failed to get builder object id"))?;
+        .ok_or(anyhow::Error::msg(
+            "failed to get the class groups builder object id",
+        ))?;
 
     let builder_ref = client
         .transaction_builder()
@@ -82,8 +83,8 @@ async fn create_class_groups_public_key_and_proof_builder_object(
 pub async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
-    ika_system_package_id: ObjectID,
-    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    ika_common_package_id: ObjectID,
+    class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let client = context.get_client().await?;
@@ -91,19 +92,19 @@ pub async fn create_class_groups_public_key_and_proof_object(
         publisher_address,
         context,
         &client,
-        ika_system_package_id,
+        ika_common_package_id,
         gas_budget,
     )
     .await?;
 
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
-        Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
+        Box::new(class_groups_public_key_and_proof_bytes);
     for pubkey_and_proof in class_groups_public_key_and_proof.iter() {
         let mut ptb = ProgrammableTransactionBuilder::new();
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
 
         ptb.move_call(
-            ika_system_package_id,
+            ika_common_package_id,
             CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
             ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
             vec![],
@@ -128,7 +129,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
                     object_id,
                     object_type,
                     ..
-                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                     == *object_type =>
                 {
                     Some(*object_id)
@@ -149,7 +150,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
 
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
@@ -172,7 +173,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -320,17 +321,6 @@ pub async fn request_add_validator_candidate(
     let tx = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
     let response = execute_transaction(context, tx).await?;
-
-    // let response = call_ika_system(
-    //     context,
-    //     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    //     args,
-    //     gas_budget,
-    //     ika_system_object_id,
-    //     ika_system_package_id,
-    //     ptb,
-    // )
-    // .await?;
 
     let object_changes = response
         .object_changes
@@ -563,10 +553,16 @@ async fn construct_unsigned_txn(
 
     let tx = ptb.finish();
     let tx_kind = TransactionKind::ProgrammableTransaction(tx.clone());
-    let gas_budget =
-        sui::client_commands::estimate_gas_budget(context, sender, tx_kind, gas_price, None, None)
-            .await
-            .unwrap_or(gas_budget);
+    let gas_budget = sui::client_commands::estimate_gas_budget(
+        context,
+        sender,
+        tx_kind,
+        gas_price,
+        vec![],
+        None,
+    )
+    .await
+    .unwrap_or(gas_budget);
 
     let rgp = sui_client
         .governance_api()

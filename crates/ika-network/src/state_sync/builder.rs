@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{
+    Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
     metrics::Metrics,
     server::{CheckpointMessageDownloadLimitLayer, Server},
-    Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
 };
 use crate::state_sync::server::SystemCheckpointDownloadLimitLayer;
 use anemo::codegen::InboundRequestLayer;
@@ -200,7 +200,11 @@ impl<S> UnstartedStateSync<S>
 where
     S: WriteStore + Clone + Send + Sync + 'static,
 {
-    pub(super) fn build(self, network: anemo::Network) -> (StateSyncEventLoop<S>, Handle) {
+    pub(super) fn build(
+        self,
+        network: anemo::Network,
+        is_notifier: bool,
+    ) -> (StateSyncEventLoop<S>, Handle) {
         let Self {
             config,
             handle,
@@ -218,6 +222,7 @@ where
 
         (
             StateSyncEventLoop {
+                is_notifier,
                 config,
                 mailbox,
                 weak_sender: handle.sender.downgrade(),
@@ -241,8 +246,8 @@ where
         )
     }
 
-    pub fn start(self, network: anemo::Network) -> Handle {
-        let (event_loop, handle) = self.build(network);
+    pub fn start(self, network: anemo::Network, is_notifier: bool) -> Handle {
+        let (event_loop, handle) = self.build(network, is_notifier);
         tokio::spawn(event_loop.start());
 
         handle

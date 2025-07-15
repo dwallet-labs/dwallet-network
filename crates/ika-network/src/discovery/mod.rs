@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anemo::types::PeerInfo;
-use anemo::{types::PeerEvent, Network, Peer, PeerId, Request, Response};
+use anemo::{Network, Peer, PeerId, Request, Response, types::PeerEvent};
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use futures::StreamExt;
 use ika_config::p2p::{AccessType, DiscoveryConfig, P2pConfig, SeedPeer};

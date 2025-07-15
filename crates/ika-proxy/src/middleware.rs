@@ -15,9 +15,10 @@ use bytes::Buf;
 use hyper::header::CONTENT_ENCODING;
 use once_cell::sync::Lazy;
 use prometheus::{proto::MetricFamily, register_counter_vec, CounterVec};
+use std::env;
 use std::sync::Arc;
 use sui_tls::TlsConnectionInfo;
-use tracing::error;
+use tracing::{debug, error};
 
 static MIDDLEWARE_OPS: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
@@ -43,16 +44,42 @@ pub async fn expect_content_length(
     request: Request<Body>,
     next: Next,
 ) -> Result<Response, (StatusCode, &'static str)> {
+    let verbose_logging = env::var("IKA_PROXY_VERBOSE_HTTP")
+        .map(|val| val.to_lowercase() == "true" || val == "1")
+        .unwrap_or(false);
+
+    if verbose_logging {
+        debug!(
+            method = %request.method(),
+            uri = %request.uri(),
+            content_length = %content_length.0,
+            "Processing request with content-length header"
+        );
+    }
+
     MIDDLEWARE_HEADERS.with_label_values(&["content-length", &format!("{}", content_length.0)]);
     Ok(next.run(request).await)
 }
 
-/// we expect sui-node to send us an http header content-type encoding.
-pub async fn expect_mysten_proxy_header(
+/// We expect ika-node to send us an http header content-type encoding.
+pub async fn expect_ika_proxy_header(
     TypedHeader(content_type): TypedHeader<ContentType>,
     request: Request<Body>,
     next: Next,
 ) -> Result<Response, (StatusCode, &'static str)> {
+    let verbose_logging = env::var("IKA_PROXY_VERBOSE_HTTP")
+        .map(|val| val.to_lowercase() == "true" || val == "1")
+        .unwrap_or(false);
+
+    if verbose_logging {
+        debug!(
+            method = %request.method(),
+            uri = %request.uri(),
+            content_type = %content_type,
+            "Validating content-type header"
+        );
+    }
+
     match format!("{content_type}").as_str() {
         prometheus::PROTOBUF_FORMAT => Ok(next.run(request).await),
         ct => {

@@ -9,15 +9,12 @@ use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
 use clap::*;
 use colored::Colorize;
-use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, read_class_groups_from_file,
-    read_class_groups_seed_from_file, sample_seed, write_class_groups_keypair_and_proof_to_file,
-    write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
-};
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
+use dwallet_rng::RootSeed;
 use fastcrypto::traits::KeyPair;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::{ika_config_dir, IKA_SUI_CONFIG};
+use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
     request_add_validator, request_add_validator_candidate, request_remove_validator, stake_ika,
 };
@@ -58,6 +55,10 @@ pub enum IkaValidatorCommand {
     ConfigEnv {
         #[clap(name = "ika-package-id", long)]
         ika_package_id: ObjectID,
+        #[clap(name = "ika-common-package-id", long)]
+        ika_common_package_id: ObjectID,
+        #[clap(name = "ika-dwallet-2pc-mpc-package-id", long)]
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         #[clap(name = "ika-system-package-id", long)]
         ika_system_package_id: ObjectID,
         #[clap(name = "ika-system-object-id", long)]
@@ -127,7 +128,7 @@ impl IkaValidatorCommand {
         self,
         context: &mut WalletContext,
     ) -> Result<IkaValidatorCommandResponse, anyhow::Error> {
-        let ret = Ok(match self {
+        Ok(match self {
             IkaValidatorCommand::MakeValidatorInfo {
                 name,
                 description,
@@ -153,15 +154,13 @@ impl IkaValidatorCommand {
                     read_network_keypair_from_file(network_key_file_name)?;
                 let pop = generate_proof_of_possession(&keypair, sender_sui_address);
 
-                let class_groups_public_key_and_proof = read_or_generate_seed_and_class_groups_key(
-                    dir.join("class-groups.key"),
-                    dir.join("class-groups.seed"),
-                )?;
+                let class_groups_public_key_and_proof =
+                    read_or_generate_seed_and_class_groups_key(dir.join("class-groups.seed"))?;
 
                 let validator_info = ValidatorInfo {
                     name,
                     class_groups_public_key_and_proof: class_groups_public_key_and_proof
-                        .public_bytes(),
+                        .encryption_key_and_proof(),
                     account_address: sender_sui_address,
                     protocol_public_key: keypair.public().into(),
                     consensus_public_key: consensus_keypair.public().clone(),
@@ -171,33 +170,36 @@ impl IkaValidatorCommand {
                     image_url,
                     project_url,
                     commission_rate: DEFAULT_COMMISSION_RATE,
-                    consensus_address: Multiaddr::try_from(format!("/dns/{}/udp/8081", host_name))?,
+                    consensus_address: Multiaddr::try_from(format!("/dns/{host_name}/udp/8081"))?,
                     network_address: Multiaddr::try_from(format!(
-                        "/dns/{}/tcp/8080/http",
-                        host_name
+                        "/dns/{host_name}/tcp/8080/http"
                     ))?,
-                    p2p_address: Multiaddr::try_from(format!("/dns/{}/udp/8084", host_name))?,
+                    p2p_address: Multiaddr::try_from(format!("/dns/{host_name}/udp/8084"))?,
                     proof_of_possession: pop,
                 };
 
                 let validator_info_file_name = dir.join("validator.info");
                 let validator_info_bytes = serde_yaml::to_string(&validator_info)?;
                 fs::write(validator_info_file_name.clone(), validator_info_bytes)?;
-                println!(
-                    "Generated validator info file: {:?}.",
-                    validator_info_file_name
-                );
+                println!("Generated validator info file: {validator_info_file_name:?}.");
                 IkaValidatorCommandResponse::MakeValidatorInfo
             }
             IkaValidatorCommand::ConfigEnv {
                 ika_package_id,
+                ika_common_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
             } => {
                 let config = IkaPackagesConfig {
                     ika_package_id,
+                    ika_common_package_id,
+                    ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
+                    // This is done on purpose,
+                    // there is no ika_dwallet_coordinator_object_id at this stage.
+                    ika_dwallet_coordinator_object_id: ObjectID::ZERO,
                 };
 
                 let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
@@ -215,8 +217,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig = PersistedConfig::read(&ika_on_sui_config_path)
                     .map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            ika_on_sui_config_path
+                            "Cannot open Ika network config file at {ika_on_sui_config_path:?}"
                         ))
                     })?;
 
@@ -226,7 +227,7 @@ impl IkaValidatorCommand {
                 let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
                     context.active_address()?,
                     context,
-                    config.ika_system_package_id,
+                    config.ika_common_package_id,
                     validator_info.class_groups_public_key_and_proof.clone(),
                     gas_budget,
                 ).await?;
@@ -258,8 +259,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig =
                     PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            config_path
+                            "Cannot open Ika network config file at {config_path:?}"
                         ))
                     })?;
 
@@ -285,8 +285,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig =
                     PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            config_path
+                            "Cannot open Ika network config file at {config_path:?}"
                         ))
                     })?;
 
@@ -313,8 +312,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig =
                     PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            config_path
+                            "Cannot open Ika network config file at {config_path:?}"
                         ))
                     })?;
                 let response = request_remove_validator(
@@ -327,8 +325,7 @@ impl IkaValidatorCommand {
                 .await?;
                 IkaValidatorCommandResponse::LeaveCommittee(response)
             }
-        });
-        ret
+        })
     }
 }
 
@@ -345,8 +342,8 @@ impl Display for IkaValidatorCommandResponse {
                 },
             ) => {
                 write!(writer, "{}", write_transaction_response(response)?)?;
-                writeln!(writer, "Validator ID: {}", validator_id)?;
-                writeln!(writer, "Validator Cap ID: {}", validator_cap_id)?;
+                writeln!(writer, "Validator ID: {validator_id}")?;
+                writeln!(writer, "Validator Cap ID: {validator_cap_id}")?;
             }
             IkaValidatorCommandResponse::JoinCommittee(response)
             | IkaValidatorCommandResponse::StakeValidator(response)
@@ -354,7 +351,7 @@ impl Display for IkaValidatorCommandResponse {
                 write!(writer, "{}", write_transaction_response(response)?)?;
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
-                writeln!(writer, "Ika Sui config file created at: {:?}", path)?;
+                writeln!(writer, "Ika Sui config file created at: {path:?}")?;
             }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))
@@ -365,7 +362,7 @@ impl Debug for IkaValidatorCommandResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let string = serde_json::to_string_pretty(self);
         let s = string.unwrap_or_else(|err| format!("{err}").red().to_string());
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -377,7 +374,7 @@ impl IkaValidatorCommandResponse {
                 let line = if pretty {
                     format!("{other}")
                 } else {
-                    format!("{:?}", other)
+                    format!("{other:?}")
                 };
                 for line in line.lines() {
                     println!("{line}");
@@ -393,24 +390,21 @@ fn make_key_files(
     key: Option<SuiKeyPair>,
 ) -> Result<()> {
     if file_name.exists() {
-        println!("Use existing {:?} key file.", file_name);
+        println!("Use existing {file_name:?} key file.");
         return Ok(());
     } else if is_protocol_key {
         let (_, keypair) = get_authority_key_pair();
         write_authority_keypair_to_file(&keypair, file_name.clone())?;
-        println!("Generated new key file: {:?}.", file_name);
+        println!("Generated new key file: {file_name:?}.");
     } else {
         let kp = match key {
             Some(key) => {
-                println!(
-                    "Generated a new key file {:?} based on `sui.keystore` file.",
-                    file_name
-                );
+                println!("Generated a new key file {file_name:?} based on `sui.keystore` file.");
                 key
             }
             None => {
                 let (_, kp, _, _) = generate_new_key(SignatureScheme::ED25519, None, None)?;
-                println!("Generated new key file: {:?}.", file_name);
+                println!("Generated new key file: {file_name:?}.");
                 kp
             }
         };
@@ -419,34 +413,25 @@ fn make_key_files(
     Ok(())
 }
 
-/// Reads the class groups a key pair and proof from a file if it exists,
-/// otherwise generates it from the seed.
-/// The seed is the private key of the authority key pair.
+/// Generates the class groups a key pair and proof from a seed file if it exists,
+/// otherwise generates and saves the seed.
 fn read_or_generate_seed_and_class_groups_key(
-    file_path: PathBuf,
     seed_path: PathBuf,
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
-    println!("Generating class groups key pair file",);
-    match read_class_groups_from_file(file_path.clone()) {
-        Ok(class_groups_public_key_and_proof) => {
-            println!("Use existing: {:?}.", file_path,);
-            Ok(class_groups_public_key_and_proof)
+    let seed = match RootSeed::from_file(seed_path.clone()) {
+        Ok(seed) => {
+            println!("Use existing seed: {seed_path:?}.",);
+            seed
         }
-        Err(err) => {
-            println!("error reading class groups key from file: {err:?}, generating...");
-            let seed = read_class_groups_seed_from_file(seed_path.clone()).unwrap_or(sample_seed());
-            let class_groups_public_key_and_proof =
-                Box::new(generate_class_groups_keypair_and_proof_from_seed(seed));
-            write_class_groups_keypair_and_proof_to_file(
-                &class_groups_public_key_and_proof,
-                file_path.clone(),
-            )?;
-            write_class_groups_seed_to_file(seed, seed_path.clone())?;
-            println!(
-                "Generated class groups key pair info file: {:?}.",
-                file_path,
-            );
-            Ok(class_groups_public_key_and_proof)
+        Err(_) => {
+            let seed = RootSeed::random_seed();
+            seed.save_to_file(seed_path.clone())?;
+            println!("Generated class groups seed info file: {seed_path:?}.",);
+            seed
         }
-    }
+    };
+
+    let class_groups_public_key_and_proof = Box::new(ClassGroupsKeyPairAndProof::from_seed(&seed));
+
+    Ok(class_groups_public_key_and_proof)
 }

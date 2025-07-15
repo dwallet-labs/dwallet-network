@@ -3,13 +3,13 @@
 #![allow(dead_code)]
 
 use crate::{
-    create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
-    Manifest, SystemCheckpointUpdates, DWALLET_CHECKPOINT_FILE_MAGIC,
-    DWALLET_CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES, SYSTEM_CHECKPOINT_FILE_MAGIC,
-    SYSTEM_CHECKPOINT_FILE_SUFFIX,
+    CheckpointUpdates, DWALLET_CHECKPOINT_FILE_MAGIC, DWALLET_CHECKPOINT_FILE_SUFFIX,
+    EPOCH_DIR_PREFIX, FileMetadata, FileType, MAGIC_BYTES, Manifest, SYSTEM_CHECKPOINT_FILE_MAGIC,
+    SYSTEM_CHECKPOINT_FILE_SUFFIX, SystemCheckpointUpdates, create_file_metadata, read_manifest,
+    write_manifest,
 };
 use anyhow::Result;
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
 use ika_types::messages_dwallet_checkpoint::{
@@ -20,7 +20,7 @@ use ika_types::messages_system_checkpoints::{
 };
 use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Seek, SeekFrom, Write};
@@ -30,7 +30,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use sui_storage::blob::{Blob, BlobEncoding};
 use sui_storage::object_store::util::{copy_file, path_to_filesystem};
-use sui_storage::{compress, FileCompression, StorageFormat};
+use sui_storage::{FileCompression, StorageFormat, compress};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::Instant;
@@ -90,7 +90,7 @@ impl DWalletCheckpointWriter {
     ) -> Result<Self> {
         let epoch_num = manifest.epoch_num();
         let checkpoint_sequence_num = manifest.next_dwallet_checkpoint_seq_num();
-        let epoch_dir = root_dir_path.join(format!("{}{epoch_num}", EPOCH_DIR_PREFIX));
+        let epoch_dir = root_dir_path.join(format!("{EPOCH_DIR_PREFIX}{epoch_num}"));
         if epoch_dir.exists() {
             fs::remove_dir_all(&epoch_dir)?;
         }
@@ -300,7 +300,7 @@ impl SystemCheckpointWriter {
     ) -> Result<Self> {
         let epoch_num = manifest.epoch_num();
         let system_checkpoint_sequence_num = manifest.next_system_checkpoint_seq_num();
-        let epoch_dir = root_dir_path.join(format!("{}{epoch_num}", EPOCH_DIR_PREFIX));
+        let epoch_dir = root_dir_path.join(format!("{EPOCH_DIR_PREFIX}{epoch_num}"));
         if epoch_dir.exists() {
             fs::remove_dir_all(&epoch_dir)?;
         }
@@ -644,7 +644,9 @@ impl ArchiveWriter {
         S: WriteStore + Send + Sync + 'static,
     {
         let mut system_checkpoint_sequence_number = start_system_checkpoint_sequence_number;
-        info!("Starting system checkpoint tailing from sequence number: {system_checkpoint_sequence_number}");
+        info!(
+            "Starting system checkpoint tailing from sequence number: {system_checkpoint_sequence_number}"
+        );
 
         while kill.try_recv().is_err() {
             if let Some(system_checkpoint_message) = store

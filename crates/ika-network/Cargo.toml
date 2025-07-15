@@ -4,7 +4,7 @@ version = "0.0.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 anemo.workspace = true
@@ -49,4 +49,4 @@ sui-macros.workspace = true
 telemetry-subscribers.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
 ed25519-consensus.workspace = true
-tempfile = "3.3.0"
+tempfile = "3.20.0"

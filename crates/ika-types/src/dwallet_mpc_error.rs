@@ -20,9 +20,6 @@ pub enum DwalletMPCError {
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
 
-    #[error("non MPC event {0}")]
-    NonMPCEvent(String),
-
     #[error("authority with a name: `{0}` not found")]
     AuthorityNameNotFound(crate::crypto::AuthorityName),
 
@@ -55,6 +52,9 @@ pub enum DwalletMPCError {
 
     #[error("missing dWallet MPC Sender")]
     MissingDWalletMPCSender,
+
+    #[error("missing Root Seed")]
+    MissingRootSeed,
 
     #[error("dwallet MPC Sender failed: {0}")]
     DWalletMPCSenderSendFailed(String),
@@ -97,11 +97,11 @@ pub enum DwalletMPCError {
     #[error("error in Class Groups: {0}")]
     ClassGroupsError(String),
 
-    #[error("failed to read Class Groups key: {0}")]
-    FailedToReadCGKey(String),
+    #[error("failed to read seed from file: {0}")]
+    FailedToReadSeed(String),
 
-    #[error("failed to write Class Groups key: {0}")]
-    FailedToWriteCGKey(String),
+    #[error("failed to write seed to file: {0}")]
+    FailedToWriteSeed(String),
 
     #[error("missing MPC private session input")]
     MissingMPCPrivateInput,
@@ -132,6 +132,9 @@ pub enum DwalletMPCError {
 
     #[error("the first MPC step should not not receive any messages from the other parties")]
     MessageForFirstMPCStep,
+
+    #[error("no next active committee for an event (SID ({0:?})) that required it: BUG")]
+    MissingNextActiveCommittee(Vec<u8>),
 
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,

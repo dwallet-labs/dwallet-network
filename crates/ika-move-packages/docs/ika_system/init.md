@@ -12,20 +12,19 @@ title: Module `(ika_system=0x0)::init`
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
-<b>use</b> (ika_system=0x0)::<b>address</b>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
+<b>use</b> (ika_common=0x0)::bls_committee;
+<b>use</b> (ika_common=0x0)::class_groups_public_key_and_proof;
+<b>use</b> (ika_common=0x0)::extended_field;
+<b>use</b> (ika_common=0x0)::multiaddr;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/display.md#(ika_system=0x0)_display">display</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field">extended_field</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr">multiaddr</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/pending_values.md#(ika_system=0x0)_pending_values">pending_values</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system">system</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/system_current_status_info.md#(ika_system=0x0)_system_current_status_info">system_current_status_info</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner">system_inner</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/token_exchange_rate.md#(ika_system=0x0)_token_exchange_rate">token_exchange_rate</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>;
@@ -50,20 +49,17 @@ title: Module `(ika_system=0x0)::init`
 <b>use</b> <a href="../sui/coin.md#sui_coin">sui::coin</a>;
 <b>use</b> <a href="../sui/config.md#sui_config">sui::config</a>;
 <b>use</b> <a href="../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
+<b>use</b> <a href="../sui/display.md#sui_display">sui::display</a>;
 <b>use</b> <a href="../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
 <b>use</b> <a href="../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
-<b>use</b> <a href="../sui/ed25519.md#sui_ed25519">sui::ed25519</a>;
 <b>use</b> <a href="../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
-<b>use</b> <a href="../sui/hash.md#sui_hash">sui::hash</a>;
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../sui/object_bag.md#sui_object_bag">sui::object_bag</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../sui/package.md#sui_package">sui::package</a>;
 <b>use</b> <a href="../sui/party.md#sui_party">sui::party</a>;
-<b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
-<b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
 <b>use</b> <a href="../sui/transfer.md#sui_transfer">sui::transfer</a>;
@@ -183,7 +179,7 @@ Function to initialize ika and share the system object.
 This can only be called once, after which the <code><a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a></code> is destroyed.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(init_cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>, ika_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, ika_system_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, protocol_treasury_cap: <a href="../sui/coin.md#sui_coin_TreasuryCap">sui::coin::TreasuryCap</a>&lt;(ika=0x0)::ika::IKA&gt;, protocol_version: u64, chain_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64, min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, reward_slashing_rate: u16, staked_ika_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, imported_key_dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ProtocolCap">system_inner::ProtocolCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(init_cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>, ika_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, ika_system_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, protocol_treasury_cap: <a href="../sui/coin.md#sui_coin_TreasuryCap">sui::coin::TreasuryCap</a>&lt;(ika=0x0)::ika::IKA&gt;, protocol_version: u64, chain_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64, min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, reward_slashing_rate: u16, staked_ika_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
 </code></pre>
 
 
@@ -211,12 +207,6 @@ This can only be called once, after which the <code><a href="../ika_system/init.
     reward_slashing_rate: u16,
     // Display parameters
     staked_ika_image_url: String,
-    dwallet_cap_image_url: String,
-    imported_key_dwallet_cap_image_url: String,
-    unverified_presign_cap_image_url: String,
-    verified_presign_cap_image_url: String,
-    unverified_partial_user_signature_cap_image_url: String,
-    verified_partial_user_signature_cap_image_url: String,
     ctx: &<b>mut</b> TxContext,
 ): ProtocolCap {
     <b>let</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a> { id, publisher } = init_cap;
@@ -246,7 +236,7 @@ This can only be called once, after which the <code><a href="../ika_system/init.
         stake_subsidy_period_length,
         ctx,
     );
-    <b>let</b> protocol_cap = <a href="../ika_system/system.md#(ika_system=0x0)_system_create">system::create</a>(
+    <b>let</b> <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a> = <a href="../ika_system/system.md#(ika_system=0x0)_system_create">system::create</a>(
         ika_system_package_id,
         upgrade_caps,
         validators,
@@ -260,15 +250,9 @@ This can only be called once, after which the <code><a href="../ika_system/init.
     <a href="../ika_system/display.md#(ika_system=0x0)_display_create">display::create</a>(
         publisher,
         staked_ika_image_url,
-        dwallet_cap_image_url,
-        imported_key_dwallet_cap_image_url,
-        unverified_presign_cap_image_url,
-        verified_presign_cap_image_url,
-        unverified_partial_user_signature_cap_image_url,
-        verified_partial_user_signature_cap_image_url,
         ctx,
     );
-    protocol_cap
+    <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>
 }
 </code></pre>
 

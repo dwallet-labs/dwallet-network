@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{DWalletCheckpointMetrics, DWalletCheckpointStore};
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use async_trait::async_trait;
 use ika_types::crypto::AuthorityName;
@@ -67,15 +67,7 @@ impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointTo
             .dwallet_checkpoint_created(checkpoint_message, epoch_store, checkpoint_store)
             .await?;
 
-        let checkpoint_timestamp = checkpoint_message.timestamp_ms;
         let checkpoint_seq = checkpoint_message.sequence_number;
-        self.metrics.dwallet_checkpoint_creation_latency.observe(
-            checkpoint_message
-                .timestamp()
-                .elapsed()
-                .unwrap_or_default()
-                .as_secs_f64(),
-        );
 
         let highest_verified_checkpoint = checkpoint_store
             .get_highest_verified_dwallet_checkpoint()?
@@ -83,7 +75,8 @@ impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointTo
 
         if Some(checkpoint_seq) > highest_verified_checkpoint {
             debug!(
-                "Sending dwallet checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}."
+                ?checkpoint_message,
+                "Sending dwallet checkpoint signature to consensus."
             );
 
             let summary = SignedDWalletCheckpointMessage::new(
@@ -127,8 +120,7 @@ impl DWalletCheckpointOutput for LogDWalletCheckpointOutput {
     ) -> IkaResult {
         trace!(
             "Including following transactions in dwallet checkpoint {}: {:#?}",
-            checkpoint_message.sequence_number,
-            checkpoint_message.messages,
+            checkpoint_message.sequence_number, checkpoint_message.messages,
         );
         info!(
             "Creating dwallet checkpoint {:?} at epoch {}, sequence {}, messages count {}",

@@ -12,11 +12,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ika_config::node::{
-    AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
-    LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
-};
 use ika_config::NodeConfig;
+use ika_config::node::{
+    AuthorityOverloadConfig, LOCAL_DEFAULT_SUI_FAUCET_URL, LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
+    RunWithRange,
+};
 use ika_node::IkaNodeHandle;
 use ika_protocol_config::ProtocolVersion;
 use ika_swarm_config::network_config::NetworkConfig;
@@ -434,7 +434,9 @@ mod test {
         let mut swarm = Swarm::builder()
             .committee_size(NonZeroUsize::new(4).unwrap())
             .with_fullnode_count(1)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         swarm.launch().await.unwrap();
 

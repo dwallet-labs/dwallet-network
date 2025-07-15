@@ -3,15 +3,17 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::crypto::{
-    random_committee_key_pairs_of_size, AuthorityKeyPair, AuthorityName, AuthorityPublicKey,
-    NetworkPublicKey,
+    AuthorityKeyPair, AuthorityName, AuthorityPublicKey, NetworkPublicKey,
+    random_committee_key_pairs_of_size,
 };
 use crate::error::{IkaError, IkaResult};
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
+use class_groups::CompactIbqf;
+use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, KnowledgeOfDiscreteLogUCProof, MAX_PRIMES,
+};
 use fastcrypto::traits::KeyPair;
 use group::PartyID;
 pub use ika_protocol_config::ProtocolVersion;
-use once_cell::sync::OnceCell;
 use rand::rngs::{StdRng, ThreadRng};
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
@@ -39,7 +41,8 @@ pub type CommitteeDigest = [u8; 32];
 pub struct Committee {
     pub epoch: EpochId,
     pub voting_rights: Vec<(AuthorityName, StakeUnit)>,
-    pub class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
+    pub class_groups_public_keys_and_proofs:
+        HashMap<AuthorityName, ClassGroupsEncryptionKeyAndProof>,
     pub quorum_threshold: u64,
     pub validity_threshold: u64,
     expanded_keys: HashMap<AuthorityName, AuthorityPublicKey>,
@@ -51,7 +54,10 @@ impl Committee {
     pub fn new(
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
-        class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
+        class_groups_public_keys_and_proofs: HashMap<
+            AuthorityName,
+            ClassGroupsEncryptionKeyAndProof,
+        >,
         quorum_threshold: u64,
         validity_threshold: u64,
     ) -> Self {
@@ -177,9 +183,9 @@ impl Committee {
     pub fn class_groups_public_key_and_proof(
         &self,
         authority: &AuthorityName,
-    ) -> IkaResult<&Vec<u8>> {
+    ) -> IkaResult<ClassGroupsEncryptionKeyAndProof> {
         match self.class_groups_public_keys_and_proofs.get(authority) {
-            Some(v) => Ok(v),
+            Some(v) => Ok(v.clone()),
             None => Err(IkaError::InvalidCommittee(format!(
                 "Authority #{} not found, committee size {}",
                 authority,
@@ -196,11 +202,11 @@ impl Committee {
             .unwrap()
     }
 
-    fn choose_multiple_weighted<'a>(
+    fn choose_multiple_weighted<'a, T: Rng>(
         slice: &'a [(AuthorityName, StakeUnit)],
         count: usize,
-        rng: &mut impl Rng,
-    ) -> impl Iterator<Item = &'a AuthorityName> {
+        rng: &mut T,
+    ) -> impl Iterator<Item = &'a AuthorityName> + use<'a, T> {
         // unwrap is safe because we validate the committee composition in `new` above.
         // See https://docs.rs/rand/latest/rand/distributions/weighted/enum.WeightedError.html
         // for possible errors.
@@ -394,61 +400,37 @@ pub trait CommitteeTrait<K: Ord> {
     fn weight(&self, author: &K) -> StakeUnit;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NetworkMetadata {
     pub name: String,
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsEncryptionKeyAndProof>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CommitteeWithNetworkMetadata {
     epoch_id: EpochId,
-    validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
-    committee: OnceCell<Committee>,
+    validators: BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)>,
 }
 
 impl CommitteeWithNetworkMetadata {
     pub fn new(
         epoch_id: EpochId,
-        validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
+        validators: BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)>,
     ) -> Self {
         Self {
             epoch_id,
             validators,
-            committee: OnceCell::new(),
         }
     }
     pub fn epoch(&self) -> EpochId {
         self.epoch_id
     }
 
-    pub fn validators(&self) -> &Vec<(AuthorityName, (StakeUnit, NetworkMetadata))> {
+    pub fn validators(&self) -> &BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)> {
         &self.validators
-    }
-
-    pub fn committee(&self) -> &Committee {
-        let quorum_threshold = (2 * self.validators.len() as u64).div_ceil(3);
-        let validity_threshold = (self.validators.len() as u64).div_ceil(3);
-        self.committee.get_or_init(|| {
-            Committee::new(
-                self.epoch_id,
-                self.validators
-                    .iter()
-                    .map(|(name, (stake, _))| (*name, *stake))
-                    .collect(),
-                self.validators
-                    .iter()
-                    .map(|(name, (_, metadata))| {
-                        (*name, metadata.class_groups_public_key_and_proof.clone())
-                    })
-                    .collect(),
-                quorum_threshold,
-                validity_threshold,
-            )
-        })
     }
 }
 
@@ -462,58 +444,8 @@ impl Display for CommitteeWithNetworkMetadata {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::crypto::{get_key_pair, AuthorityKeyPair};
-    use fastcrypto::traits::KeyPair;
-
-    #[test]
-    fn test_shuffle_by_weight() {
-        let (_, sec1): (_, AuthorityKeyPair) = get_key_pair();
-        let (_, sec2): (_, AuthorityKeyPair) = get_key_pair();
-        let (_, sec3): (_, AuthorityKeyPair) = get_key_pair();
-        let a1: AuthorityName = sec1.public().into();
-        let a2: AuthorityName = sec2.public().into();
-        let a3: AuthorityName = sec3.public().into();
-
-        let mut authorities = BTreeMap::new();
-        authorities.insert(a1, 1);
-        authorities.insert(a2, 1);
-        authorities.insert(a3, 1);
-
-        let committee = Committee::new_for_testing_with_normalized_voting_power(0, authorities);
-
-        assert_eq!(committee.shuffle_by_stake(None, None).len(), 3);
-
-        let mut pref = BTreeSet::new();
-        pref.insert(a2);
-
-        // preference always comes first
-        for _ in 0..100 {
-            assert_eq!(
-                a2,
-                *committee
-                    .shuffle_by_stake(Some(&pref), None)
-                    .first()
-                    .unwrap()
-            );
-        }
-
-        let mut restrict = BTreeSet::new();
-        restrict.insert(a2);
-
-        for _ in 0..100 {
-            let res = committee.shuffle_by_stake(None, Some(&restrict));
-            assert_eq!(1, res.len());
-            assert_eq!(a2, res[0]);
-        }
-
-        // empty preferences are valid
-        let res = committee.shuffle_by_stake(Some(&BTreeSet::new()), None);
-        assert_eq!(3, res.len());
-
-        let res = committee.shuffle_by_stake(None, Some(&BTreeSet::new()));
-        assert_eq!(0, res.len());
-    }
-}
+pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
+pub type ClassGroupsEncryptionKeyAndProof = [(
+    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+    ClassGroupsProof,
+); MAX_PRIMES];

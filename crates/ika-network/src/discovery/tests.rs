@@ -3,8 +3,8 @@
 
 use super::*;
 use crate::utils::{build_network_and_key, build_network_with_anemo_config};
-use anemo::types::PeerAffinity;
 use anemo::Result;
+use anemo::types::PeerAffinity;
 use fastcrypto::ed25519::Ed25519PublicKey;
 use futures::stream::FuturesUnordered;
 use ika_config::p2p::AllowlistedPeer;
@@ -654,14 +654,12 @@ fn assert_peers(
         .collect::<HashSet<_>>();
     assert_eq!(
         actual, expected_network_known_peers,
-        "{} network known peers mismatch. Expected: {:#?}, actual: {:#?}",
-        self_name, expected_network_known_peers, actual,
+        "{self_name} network known peers mismatch. Expected: {expected_network_known_peers:#?}, actual: {actual:#?}",
     );
     let actual = network.peers().iter().copied().collect::<HashSet<_>>();
     assert_eq!(
         actual, expected_network_connected_peers,
-        "{} network connected peers mismatch. Expected: {:#?}, actual: {:#?}",
-        self_name, expected_network_connected_peers, actual,
+        "{self_name} network connected peers mismatch. Expected: {expected_network_connected_peers:#?}, actual: {actual:#?}",
     );
     let actual = state
         .read()
@@ -672,8 +670,7 @@ fn assert_peers(
         .collect::<HashSet<_>>();
     assert_eq!(
         actual, expected_discovery_known_peers,
-        "{} discovery known peers mismatch. Expected: {:#?}, actual: {:#?}",
-        self_name, expected_discovery_known_peers, actual,
+        "{self_name} discovery known peers mismatch. Expected: {expected_discovery_known_peers:#?}, actual: {actual:#?}",
     );
 
     let actual = state
@@ -685,8 +682,7 @@ fn assert_peers(
         .collect::<HashSet<_>>();
     assert_eq!(
         actual, expected_discovery_connected_peers,
-        "{} discovery connected peers mismatch. Expected: {:#?}, actual: {:#?}",
-        self_name, expected_discovery_connected_peers, actual,
+        "{self_name} discovery connected peers mismatch. Expected: {expected_discovery_connected_peers:#?}, actual: {actual:#?}",
     );
 }
 
@@ -700,7 +696,7 @@ fn unwrap_new_peer_event(event: PeerEvent) -> PeerId {
 fn local_allowlisted_peer(peer_id: PeerId, port: Option<u16>) -> AllowlistedPeer {
     AllowlistedPeer {
         peer_id,
-        address: port.map(|port| format!("/dns/localhost/udp/{}", port).parse().unwrap()),
+        address: port.map(|port| format!("/dns/localhost/udp/{port}").parse().unwrap()),
     }
 }
 

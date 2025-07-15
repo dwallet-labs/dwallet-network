@@ -163,7 +163,7 @@ The amount of INKU per IKA token based on the fact that INKU is
     <b>let</b> total_supply_to_mint = <a href="../ika/ika.md#ika_ika_INITIAL_IKA_SUPPLY_TO_MINT">INITIAL_IKA_SUPPLY_TO_MINT</a> * <a href="../ika/ika.md#ika_ika_INKU_PER_IKA">INKU_PER_IKA</a>;
     <b>let</b> minted_coin = treasury_cap.mint(total_supply_to_mint, ctx);
     transfer::public_transfer(treasury_cap, ctx.sender());
-    transfer::public_share_object(coin_metadata);
+    transfer::public_freeze_object(coin_metadata);
     transfer::public_transfer(minted_coin, ctx.sender());
 }
 </code></pre>
