@@ -1054,3 +1054,32 @@ impl DWalletSessionEventTrait for DWalletEncryptionKeyReconfigurationRequestEven
         }
     }
 }
+
+// Since exporting rust `#[cfg(test)]` is impossible, these test helpers exist in a dedicated feature-gated
+// module.
+#[cfg(any(test, feature = "test_helpers"))]
+pub mod test_helpers {
+    use super::*;
+    use sui_types::base_types::ObjectID;
+
+    pub fn mock_dwallet_session_event<E: DWalletSessionEventTrait>(
+        is_system: bool,
+        session_sequence_number: u64,
+        event_data: E,
+    ) -> DWalletSessionEvent<E> {
+        let session_type = if is_system {
+            SessionType::System
+        } else {
+            SessionType::User
+        };
+
+        DWalletSessionEvent {
+            epoch: 1,
+            session_object_id: ObjectID::random(),
+            session_type,
+            session_sequence_number,
+            session_identifier_preimage: vec![42u8],
+            event_data,
+        }
+    }
+}
