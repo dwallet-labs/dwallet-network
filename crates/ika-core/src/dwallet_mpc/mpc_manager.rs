@@ -418,8 +418,7 @@ impl DWalletMPCManager {
             .collect();
 
         ready_to_advance_sessions.sort_by(|(_, mpc_event_data), (_, other_mpc_event_data)| {
-            // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
-            other_mpc_event_data.cmp(mpc_event_data)
+            mpc_event_data.cmp(other_mpc_event_data)
         });
 
         let computation_requests: Vec<_> = ready_to_advance_sessions
