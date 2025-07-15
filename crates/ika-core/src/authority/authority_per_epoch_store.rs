@@ -3,65 +3,54 @@
 
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
-use futures::future::{join_all, select, Either};
 use futures::FutureExt;
+use futures::future::{Either, join_all, select};
 use ika_types::committee::Committee;
 use ika_types::committee::CommitteeTrait;
 use ika_types::crypto::AuthorityName;
 use ika_types::digests::ChainIdentifier;
 use ika_types::error::{IkaError, IkaResult};
-use itertools::Itertools;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::transaction::TransactionKey;
-use tokio::sync::OnceCell;
-use tracing::{debug, error, info, instrument, trace, warn};
-use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
+use tracing::{debug, info, instrument, trace, warn};
+use typed_store::rocks::{DBBatch, DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
 
 use super::epoch_start_configuration::EpochStartConfigTrait;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use crate::authority::{AuthorityMetrics, AuthorityState};
-use crate::checkpoints::{
+use crate::dwallet_checkpoints::{
     BuilderDWalletCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify,
-    PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1,
+    PendingDWalletCheckpoint,
 };
 
 use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
-use crate::dwallet_mpc::mpc_outputs_verifier::{
-    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
-};
+
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
+use crate::stake_aggregator::StakeAggregator;
 use crate::system_checkpoints::{
     BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
     SystemCheckpointServiceNotify,
 };
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput};
 use group::PartyID;
 use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
-    EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
-    NetworkKeyPublicOutputSlice, PartialSignatureVerificationOutput, PresignOutput, SignOutput,
-};
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
+use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_consensus::Round;
 use ika_types::messages_consensus::{
     AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey,
@@ -70,12 +59,10 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo, SessionType,
-};
-use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput};
 use ika_types::messages_system_checkpoints::{
-    SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
+    SystemCheckpointMessage, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
@@ -84,12 +71,10 @@ use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
-use std::time::Duration;
-use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
-use typed_store::DBMapUtils;
 use typed_store::Map;
+use typed_store::{DBMapUtils, DbIterator};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -103,18 +88,25 @@ pub enum CancelConsensusCertificateReason {
 }
 
 pub enum ConsensusCertificateResult {
+    /// The last checkpoint message of the epoch.
+    /// After the Sui smart contract receives this message, it knows that no more system checkpoints will get created
+    /// in this epoch, and it allows external calls to advance the epoch.
+    ///
+    /// This is a certificate result, so both the system & dwallet checkpointing mechanisms will create
+    /// separate checkpoint messages, to update both the DWallet Coordinator & Ika System Sui objects.
+    EndOfPublish,
     /// The consensus message was ignored (e.g. because it has already been processed).
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
-    IkaTransaction(MessageKind),
+    IkaTransaction(DWalletCheckpointMessageKind),
     /// An executable transaction used for large output (e.g., network DKG).
-    IkaBulkTransaction(Vec<MessageKind>),
+    IkaBulkTransaction(Vec<DWalletCheckpointMessageKind>),
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
 
-    SystemTransaction(SystemCheckpointKind),
+    SystemTransaction(SystemCheckpointMessageKind),
     // /// A will-be-cancelled transaction. It'll still go through execution engine (but not be executed),
     // /// unlock any owned objects, and return corresponding cancellation error according to
     // /// `CancelConsensusCertificateReason`.
@@ -249,26 +241,6 @@ pub struct AuthorityPerEpochStore {
 
     consensus_notify_read: NotifyRead<SequencedConsensusTransactionKey, ()>,
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    // Subscribers will get notified when a transaction is executed via checkpoint execution.
-    executed_transactions_to_checkpoint_notify_read:
-        NotifyRead<MessageDigest, DWalletCheckpointSequenceNumber>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    executed_digests_notify_read: NotifyRead<TransactionKey, MessageDigest>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Get notified when a synced checkpoint has reached CheckpointExecutor.
-    synced_checkpoint_notify_read: NotifyRead<DWalletCheckpointSequenceNumber, ()>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Caches the highest synced checkpoint sequence number as this has been notified from the CheckpointExecutor
-    highest_synced_checkpoint: RwLock<DWalletCheckpointSequenceNumber>,
-
     /// This is used to notify all epoch specific tasks that epoch has ended.
     epoch_alive_notify: NotifyOnce,
 
@@ -294,40 +266,30 @@ pub struct AuthorityPerEpochStore {
     pub(crate) metrics: Arc<EpochMetrics>,
     epoch_start_configuration: Arc<EpochStartConfiguration>,
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    executed_in_epoch_table_enabled: once_cell::sync::OnceCell<bool>,
-
     /// Chain identifier
     chain_identifier: ChainIdentifier,
 
-    /// State machine managing dWallet MPC outputs.
-    /// This state machine is used to store outputs and emit ones
-    /// where the quorum of votes is valid.
-    dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::RwLock<DWalletMPCOutputsVerifier>>,
     pub(crate) packages_config: IkaPackagesConfig,
+    reconfig_state: RwLock<ReconfigState>,
+    end_of_publish: Mutex<StakeAggregator<(), true>>,
+}
+
+/// The reconfiguration state of the authority.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReconfigState {
+    status: ReconfigCertStatus,
+}
+
+/// The possible reconfiguration states of the authority.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum ReconfigCertStatus {
+    AcceptAllCerts,
+    RejectAllTx,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
 #[derive(DBMapUtils)]
 pub struct AuthorityEpochTables {
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Transactions that were executed in the current epoch.
-    executed_in_epoch: DBMap<MessageDigest, ()>,
-
-    /// Certificates that have been received from clients or received from consensus, but not yet
-    /// executed. Entries are cleared after execution.
-    /// This table is critical for crash recovery, because usually the consensus output progress
-    /// is updated after a certificate is committed into this table.
-    ///
-    /// In theory, this table may be superseded by storing consensus and checkpoint execution
-    /// progress. But it is more complex, because it would be necessary to track inflight
-    /// executions not ordered by indices. For now, tracking inflight certificates as a map
-    /// seems easier.
-    #[default_options_override_fn = "pending_execution_table_default_config"]
-    pub(crate) pending_execution: DBMap<MessageDigest, TrustedExecutableTransaction>,
-
     /// Track which transactions have been processed in handle_consensus_transaction. We must be
     /// sure to advance next_shared_object_versions exactly once for each transaction we receive from
     /// consensus. But, we may also be processing transactions from checkpoints, so we need to
@@ -359,13 +321,17 @@ pub struct AuthorityEpochTables {
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_dwallet_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
+    #[default_options_override_fn = "verified_dwallet_checkpoint_messages_table_default_config"]
+    verified_dwallet_checkpoint_messages:
+        DBMap<DWalletCheckpointHeight, Vec<DWalletCheckpointMessageKind>>,
+
     /// Stores pending signatures
     /// The key in this table is checkpoint sequence number and an arbitrary integer
     pub(crate) pending_dwallet_checkpoint_signatures:
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_dwallet_checkpoint_message_v1:
+    pub(crate) builder_dwallet_checkpoint_message_v1:
         DBMap<DWalletCheckpointSequenceNumber, BuilderDWalletCheckpointMessage>,
 
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
@@ -382,6 +348,9 @@ pub struct AuthorityEpochTables {
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
+    /// Validators that sent a EndOfPublish message in this epoch.
+    end_of_publish: DBMap<AuthorityName, ()>,
+
     /// Record the every protocol config version sent to the authority at the current epoch.
     /// This is used to check if the authority has already sent the protocol config version,
     /// so it not to be sent again.
@@ -391,35 +360,16 @@ pub struct AuthorityEpochTables {
     /// ProtocolConfig::buffer_stake_for_protocol_upgrade_bps
     override_protocol_upgrade_buffer_stake: DBMap<u64, u64>,
 
-    // todo(zeev): why is it not used in system checkpoint?
-    /// When transaction is executed via checkpoint executor, we store association here
-    pub(crate) executed_transactions_to_checkpoint:
-        DBMap<MessageDigest, DWalletCheckpointSequenceNumber>,
-
     /// Holds all the DWallet MPC related messages that have been
     /// received since the beginning of the epoch.
     /// The key is the consensus round number,
     /// the value is the dWallet-mpc messages that have been received in that
     /// round.
-    pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
-    pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
-    // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
-    // pub struct SessionID([u8; AccountAddress::LENGTH]);
-    pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<SessionIdentifier>>,
-}
-
-// todo(zeev): why is it not used?
-#[allow(dead_code)]
-fn signed_transactions_table_default_config() -> DBOptions {
-    default_db_options()
-        .optimize_for_write_throughput()
-        .optimize_for_large_values_no_scan(1 << 10)
-}
-
-fn pending_execution_table_default_config() -> DBOptions {
-    default_db_options()
-        .optimize_for_write_throughput()
-        .optimize_for_large_values_no_scan(1 << 10)
+    #[default_options_override_fn = "dwallet_mpc_messages_table_default_config"]
+    dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCMessage>>,
+    /// Consensus round -> Output.
+    #[default_options_override_fn = "dwallet_mpc_outputs_table_default_config"]
+    dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutput>>,
 }
 
 fn pending_consensus_transactions_table_default_config() -> DBOptions {
@@ -428,7 +378,25 @@ fn pending_consensus_transactions_table_default_config() -> DBOptions {
         .optimize_for_large_values_no_scan(1 << 10)
 }
 
+fn verified_dwallet_checkpoint_messages_table_default_config() -> DBOptions {
+    default_db_options()
+        .optimize_for_write_throughput()
+        .optimize_for_large_values_no_scan(1 << 10)
+}
+
 fn pending_checkpoints_table_default_config() -> DBOptions {
+    default_db_options()
+        .optimize_for_write_throughput()
+        .optimize_for_large_values_no_scan(1 << 10)
+}
+
+fn dwallet_mpc_messages_table_default_config() -> DBOptions {
+    default_db_options()
+        .optimize_for_write_throughput()
+        .optimize_for_large_values_no_scan(1 << 10)
+}
+
+fn dwallet_mpc_outputs_table_default_config() -> DBOptions {
     default_db_options()
         .optimize_for_write_throughput()
         .optimize_for_large_values_no_scan(1 << 10)
@@ -454,7 +422,7 @@ impl AuthorityEpochTables {
     }
 
     pub fn path(epoch: EpochId, parent_path: &Path) -> PathBuf {
-        parent_path.join(format!("{}{}", EPOCH_DB_PREFIX, epoch))
+        parent_path.join(format!("{EPOCH_DB_PREFIX}{epoch}"))
     }
 
     pub fn get_all_pending_consensus_transactions(&self) -> IkaResult<Vec<ConsensusTransaction>> {
@@ -463,13 +431,6 @@ impl AuthorityEpochTables {
             .safe_iter()
             .map(|item| item.map(|(_k, v)| v))
             .collect::<Result<Vec<_>, _>>()?)
-    }
-
-    /// WARNING: This method is very subtle and can corrupt the database if used incorrectly.
-    /// It should only be used in one-off cases or tests after fully understanding the risk.
-    pub fn remove_executed_tx_subtle(&self, digest: &MessageDigest) -> IkaResult {
-        self.executed_transactions_to_checkpoint.remove(digest)?;
-        Ok(())
     }
 
     pub fn get_last_consensus_index(&self) -> IkaResult<Option<ExecutionIndices>> {
@@ -483,30 +444,37 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
-        Ok(self
-            .dwallet_mpc_messages
-            .safe_iter()
-            .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+    pub fn get_dwallet_mpc_messages_iter(
+        &self,
+        next_consensus_round: Round,
+    ) -> DbIterator<(Round, Vec<DWalletMPCMessage>)> {
+        self.dwallet_mpc_messages
+            .safe_iter_with_bounds(Some(next_consensus_round), None)
     }
 
-    pub fn get_all_dwallet_mpc_outputs(&self) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
-        Ok(self
-            .dwallet_mpc_outputs
-            .safe_iter()
-            .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+    pub fn get_dwallet_mpc_outputs_iter(
+        &self,
+        next_consensus_round: Round,
+    ) -> DbIterator<(Round, Vec<DWalletMPCOutput>)> {
+        self.dwallet_mpc_outputs
+            .safe_iter_with_bounds(Some(next_consensus_round), None)
+    }
+
+    pub fn get_verified_dwallet_checkpoint_messages_iter(
+        &self,
+        next_consensus_round: Round,
+    ) -> DbIterator<(Round, Vec<DWalletCheckpointMessageKind>)> {
+        self.verified_dwallet_checkpoint_messages
+            .safe_iter_with_bounds(Some(next_consensus_round), None)
     }
 }
 
 impl AuthorityPerEpochStore {
+    fn should_accept_tx(&self) -> bool {
+        let reconfig_state = self.reconfig_state.read();
+        !matches!(&reconfig_state.status, &ReconfigCertStatus::RejectAllTx)
+    }
+
     #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
     pub fn new(
         name: AuthorityName,
@@ -517,7 +485,7 @@ impl AuthorityPerEpochStore {
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
         packages_config: IkaPackagesConfig,
-    ) -> Arc<Self> {
+    ) -> IkaResult<Arc<Self>> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
 
@@ -536,15 +504,13 @@ impl AuthorityPerEpochStore {
         let protocol_version = epoch_start_configuration
             .epoch_start_state()
             .protocol_version();
-        // let protocol_config =
-        //     ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-
         let protocol_config =
             ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-
+        let end_of_publish =
+            StakeAggregator::from_iter(committee.clone(), tables.end_of_publish.safe_iter())?;
         let s = Arc::new(Self {
             name,
-            committee,
+            committee: committee.clone(),
             protocol_config,
             tables: ArcSwapOption::new(Some(Arc::new(tables))),
             parent_path: parent_path.to_path_buf(),
@@ -553,22 +519,20 @@ impl AuthorityPerEpochStore {
             user_certs_closed_notify: NotifyOnce::new(),
             epoch_alive: tokio::sync::RwLock::new(true),
             consensus_notify_read: NotifyRead::new(),
-            executed_transactions_to_checkpoint_notify_read: NotifyRead::new(),
-            executed_digests_notify_read: NotifyRead::new(),
-            synced_checkpoint_notify_read: NotifyRead::new(),
-            highest_synced_checkpoint: RwLock::new(0),
             epoch_open_time: current_time,
             epoch_close_time: Default::default(),
             metrics,
             epoch_start_configuration,
-            executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
-            dwallet_mpc_outputs_verifier: OnceCell::new(),
             packages_config,
+            reconfig_state: RwLock::new(ReconfigState {
+                status: ReconfigCertStatus::AcceptAllCerts,
+            }),
+            end_of_publish: Mutex::new(end_of_publish),
         });
 
         s.update_buffer_stake_metric();
-        s
+        Ok(s)
     }
 
     /// Convert a given authority name (address) to it's corresponding [`PartyID`].
@@ -580,94 +544,10 @@ impl AuthorityPerEpochStore {
         authority_name_to_party_id_from_committee(self.committee().as_ref(), authority_name)
     }
 
-    pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
-        &self,
-    ) -> IkaResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
-        let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
-        for (name, _) in self.committee().voting_rights.iter() {
-            let party_id = self.authority_name_to_party_id(name)?;
-            let public_key =
-                bcs::from_bytes(self.committee().class_groups_public_key_and_proof(name)?)
-                    .map_err(DwalletMPCError::BcsError)?;
-            validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
-        }
-        Ok(validators_class_groups_public_keys_and_proofs)
-    }
-
-    /// Loads the DWallet MPC completed sessions from the given mystecity round.
-    pub(crate) async fn load_dwallet_mpc_completed_sessions_from_round(
-        &self,
-        round: Round,
-    ) -> IkaResult<Vec<SessionIdentifier>> {
-        Ok(self
-            .tables()?
-            .dwallet_mpc_completed_sessions
-            .safe_iter_with_bounds(Some(round), None)
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flat_map(|(_, events)| events)
-            .collect())
-    }
-
-    /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
-    /// This outputs verifier handles storing all the outputs of dWallet MPC session,
-    /// and writes them to the chain once all the outputs are ready and verified.
-    pub fn set_dwallet_mpc_outputs_verifier(
-        &self,
-        verifier: DWalletMPCOutputsVerifier,
-    ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_outputs_verifier
-            .set(tokio::sync::RwLock::new(verifier))
-            .is_err()
-        {
-            error!(
-                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_verifier` called more than once; this should never happen"
-            );
-        }
-        Ok(())
-    }
-
     pub fn get_weighted_threshold_access_structure(
         &self,
     ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
         generate_access_structure_from_committee(self.committee().as_ref())
-    }
-
-    /// Return the [`DWalletMPCOutputsVerifier`].
-    /// Uses a Mutex because the instance is initialized from a different thread.
-    pub async fn get_dwallet_mpc_outputs_verifier_write(
-        &self,
-    ) -> tokio::sync::RwLockWriteGuard<DWalletMPCOutputsVerifier> {
-        loop {
-            match self.dwallet_mpc_outputs_verifier.get() {
-                Some(dwallet_mpc_outputs_verifier) => {
-                    return dwallet_mpc_outputs_verifier.write().await
-                }
-                None => {
-                    error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-    }
-
-    /// Return the [`DWalletMPCOutputsVerifier`].
-    /// Uses a Mutex because the instance is initialized from a different thread.
-    pub async fn get_dwallet_mpc_outputs_verifier_read(
-        &self,
-    ) -> tokio::sync::RwLockReadGuard<DWalletMPCOutputsVerifier> {
-        loop {
-            match self.dwallet_mpc_outputs_verifier.get() {
-                Some(dwallet_mpc_outputs_verifier) => {
-                    return dwallet_mpc_outputs_verifier.read().await
-                }
-                None => {
-                    error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
     }
 
     pub fn tables(&self) -> IkaResult<Arc<AuthorityEpochTables>> {
@@ -710,7 +590,7 @@ impl AuthorityPerEpochStore {
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
-    ) -> Arc<Self> {
+    ) -> IkaResult<Arc<Self>> {
         assert_eq!(self.epoch() + 1, new_committee.epoch);
         self.record_reconfig_halt_duration_metric();
         self.record_epoch_total_duration_metric();
@@ -726,7 +606,7 @@ impl AuthorityPerEpochStore {
         )
     }
 
-    pub fn new_at_next_epoch_for_testing(&self) -> Arc<Self> {
+    pub fn new_at_next_epoch_for_testing(&self) -> IkaResult<Arc<Self>> {
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,
@@ -775,28 +655,6 @@ impl AuthorityPerEpochStore {
                 })
             }
         }
-    }
-
-    /// Called when transaction outputs are committed to disk
-    #[instrument(level = "trace", skip_all)]
-    pub fn handle_committed_transactions(&self, digests: &[MessageDigest]) -> IkaResult<()> {
-        let tables = match self.tables() {
-            Ok(tables) => tables,
-            // After Epoch ends, it is no longer necessary to remove pending transactions
-            // because the table will not be used anymore and be deleted eventually.
-            Err(IkaError::EpochEnded(_)) => return Ok(()),
-            Err(e) => return Err(e),
-        };
-        let mut batch = tables.pending_execution.batch();
-        // pending_execution stores transactions received from consensus which may not have
-        // been executed yet. At this point, they have been committed to the db durably and
-        // can be removed.
-        // After end-to-end quarantining, we will not need pending_execution since the consensus
-        // log itself will be used for recovery.
-        batch.delete_batch(&tables.pending_execution, digests)?;
-
-        batch.write()?;
-        Ok(())
     }
 
     pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
@@ -933,6 +791,13 @@ impl AuthorityPerEpochStore {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
+    pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {
+        self.tables()?
+            .end_of_publish
+            .insert(origin_authority, &())?;
+        Ok(())
+    }
+
     pub fn record_protocol_config_version_sent(
         &self,
         protocol_version: ProtocolVersion,
@@ -1022,47 +887,17 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, ..),
-                ..
-            }) => {
-                // When sending a `DWalletMPCSessionFailedWithMalicious`,
-                // the validator also includes its public key.
-                // Here, we verify that the public key used to sign this transaction matches
-                // the provided public key.
-                // This public key is later used to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, ..),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        ?authority,
-                        certificate_author_index=?transaction.certificate_author_index,
-                        "DWalletMPCSessionFailedWithMalicious: authority does not match its author from consensus",
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(output),
                 ..
             }) => {
                 // When sending an MPC output, the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
                 // the provided public key.
                 // This public key is later used to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
+                if transaction.sender_authority() != output.authority {
                     warn!(
                         "DWalletMPCOutput authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
+                        output.authority, transaction.certificate_author_index
                     );
                     return None;
                 }
@@ -1088,12 +923,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority()
-                    != data.dwallet_checkpoint_message.auth_sig().authority
-                {
+                if transaction.sender_authority() != data.checkpoint_message.auth_sig().authority {
                     warn!(
                         "CheckpointSignature authority {} does not match its author from consensus {}",
-                        data.dwallet_checkpoint_message.auth_sig().authority,
+                        data.checkpoint_message.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
@@ -1119,16 +952,28 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SystemCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority() != data.system_checkpoint.auth_sig().authority {
+                if transaction.sender_authority() != data.checkpoint_message.auth_sig().authority {
                     warn!(
                         "SystemCheckpoint authority {} does not match its author from consensus {}",
-                        data.system_checkpoint.auth_sig().authority,
+                        data.checkpoint_message.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
                 }
             }
             SequencedConsensusTransactionKind::System(_) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::EndOfPublish(authority),
+                ..
+            }) => {
+                if &transaction.sender_authority() != authority {
+                    warn!(
+                        "EndOfPublish authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
@@ -1155,7 +1000,10 @@ impl AuthorityPerEpochStore {
         system_checkpoint_service: &Arc<SystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
-    ) -> IkaResult<(Vec<MessageKind>, Vec<SystemCheckpointKind>)> {
+    ) -> IkaResult<(
+        Vec<DWalletCheckpointMessageKind>,
+        Vec<SystemCheckpointMessageKind>,
+    )> {
         // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
             .into_iter()
@@ -1192,7 +1040,11 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (verified_messages, system_checkpoint_verified_messages, notifications) = self
+        let (
+            verified_dwallet_checkpoint_messages,
+            verified_system_checkpoint_messages,
+            notifications,
+        ) = self
             .process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
@@ -1204,33 +1056,30 @@ impl AuthorityPerEpochStore {
             )
             .await?;
         //self.finish_consensus_certificate_process_with_batch(&mut output, &verified_transactions)?;
+        output.record_verified_dwallet_checkpoint_messages(
+            verified_dwallet_checkpoint_messages.clone(),
+        );
         output.record_consensus_commit_stats(consensus_stats.clone());
+        // Create pending checkpoints if we are still accepting tx.
+        let should_accept_tx = self.should_accept_tx();
+        let final_round = verified_system_checkpoint_messages
+            .iter()
+            .last()
+            .is_some_and(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
+        let make_checkpoint = should_accept_tx || final_round;
+        if make_checkpoint {
+            let checkpoint_height = consensus_commit_info.round;
 
-        let checkpoint_height = consensus_commit_info.round;
-
-        let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
-            messages: verified_messages.clone(),
-            details: PendingDWalletCheckpointInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                dwallet_checkpoint_height: checkpoint_height,
-            },
-        });
-        self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
-
-        let system_checkpoint_height = consensus_commit_info.round;
-
-        let pending_system_checkpoint = PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
-            messages: system_checkpoint_verified_messages.clone(),
-            details: PendingSystemCheckpointInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                system_checkpoint_height,
-            },
-        });
-        self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
-
-        system_checkpoint_verified_messages.iter().for_each(
+            let pending_system_checkpoint =
+                PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
+                    messages: verified_system_checkpoint_messages.clone(),
+                    details: PendingSystemCheckpointInfo { checkpoint_height },
+                });
+            self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
+        }
+        verified_system_checkpoint_messages.iter().for_each(
             |system_checkpoint_kind| match system_checkpoint_kind {
-                SystemCheckpointKind::SetNextConfigVersion(version) => {
+                SystemCheckpointMessageKind::SetNextConfigVersion(version) => {
                     if let Ok(tables) = self.tables() {
                         if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
                             warn!(
@@ -1242,17 +1091,19 @@ impl AuthorityPerEpochStore {
                         warn!("Failed to insert params message digest into the table");
                     }
                 }
+                SystemCheckpointMessageKind::EndOfPublish => {}
                 // For now, we only handle NextConfigVersion. Other variants are ignored.
-                SystemCheckpointKind::SetEpochDurationMs(_)
-                | SystemCheckpointKind::SetStakeSubsidyStartEpoch(_)
-                | SystemCheckpointKind::SetStakeSubsidyRate(_)
-                | SystemCheckpointKind::SetStakeSubsidyPeriodLength(_)
-                | SystemCheckpointKind::SetMinValidatorCount(_)
-                | SystemCheckpointKind::SetMaxValidatorCount(_)
-                | SystemCheckpointKind::SetMinValidatorJoiningStake(_)
-                | SystemCheckpointKind::SetMaxValidatorChangeCount(_)
-                | SystemCheckpointKind::SetRewardSlashingRate(_)
-                | SystemCheckpointKind::SetApprovedUpgrade { .. } => {
+                SystemCheckpointMessageKind::SetEpochDurationMs(_)
+                | SystemCheckpointMessageKind::SetStakeSubsidyStartEpoch(_)
+                | SystemCheckpointMessageKind::SetStakeSubsidyRate(_)
+                | SystemCheckpointMessageKind::SetStakeSubsidyPeriodLength(_)
+                | SystemCheckpointMessageKind::SetMinValidatorCount(_)
+                | SystemCheckpointMessageKind::SetMaxValidatorCount(_)
+                | SystemCheckpointMessageKind::SetMinValidatorJoiningStake(_)
+                | SystemCheckpointMessageKind::SetMaxValidatorChangeCount(_)
+                | SystemCheckpointMessageKind::SetRewardSlashingRate(_)
+                | SystemCheckpointMessageKind::SetApprovedUpgrade { .. }
+                | SystemCheckpointMessageKind::SetOrRemoveWitnessApprovingAdvanceEpochMessageType { .. } => {
                     todo!(
                         "Handle other SystemCheckpointKind variants in process_consensus_transactions_and_commit_boundary"
                     );
@@ -1268,19 +1119,16 @@ impl AuthorityPerEpochStore {
         // pending checkpoints.
         debug!(
             ?consensus_commit_info.round,
-            "Notifying checkpoint service about new pending checkpoint(s)",
-        );
-        checkpoint_service.notify_checkpoint()?;
-
-        debug!(
-            ?consensus_commit_info.round,
             "Notifying system_checkpoint service about new pending checkpoint(s)",
         );
-        system_checkpoint_service.notify_system_checkpoint()?;
+        system_checkpoint_service.notify_checkpoint()?;
 
         self.process_notifications(&notifications);
 
-        Ok((verified_messages, system_checkpoint_verified_messages))
+        Ok((
+            verified_dwallet_checkpoint_messages,
+            verified_system_checkpoint_messages,
+        ))
     }
 
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
@@ -1305,8 +1153,8 @@ impl AuthorityPerEpochStore {
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<(
-        Vec<MessageKind>, // transactions to schedule
-        Vec<SystemCheckpointKind>,
+        Vec<DWalletCheckpointMessageKind>, // transactions to schedule
+        Vec<SystemCheckpointMessageKind>,
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
@@ -1365,27 +1213,24 @@ impl AuthorityPerEpochStore {
                     ignored = true;
                     // filter_roots = true;
                 }
+                ConsensusCertificateResult::EndOfPublish => {
+                    verified_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
+                    verified_system_checkpoint_certificates
+                        .push_back(SystemCheckpointMessageKind::EndOfPublish);
+                    let mut reconfig_state = self.reconfig_state.write();
+                    reconfig_state.status = ReconfigCertStatus::RejectAllTx;
+                    break;
+                }
             }
             if !ignored {
                 output.record_consensus_message_processed(key.clone());
             }
         }
-
         // Save all the dWallet-MPC related DB data to the consensus commit output to
         // write it to the local DB. After saving the data, clear the data from the epoch store.
         let new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
-        let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
-        output.set_dwallet_mpc_round_completed_sessions(
-            outputs_verifier
-                .consensus_round_completed_sessions
-                .clone()
-                .into_iter()
-                .collect(),
-        );
-
-        outputs_verifier.consensus_round_completed_sessions.clear();
 
         authority_metrics
             .consensus_handler_cancelled_transactions
@@ -1405,7 +1250,7 @@ impl AuthorityPerEpochStore {
     /// them from the DB.
     fn filter_dwallet_mpc_messages(
         transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> Vec<DWalletMPCDBMessage> {
+    ) -> Vec<DWalletMPCMessage> {
         transactions
             .iter()
             .filter_map(|transaction| {
@@ -1417,22 +1262,7 @@ impl AuthorityPerEpochStore {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                         ..
-                    }) => Some(DWalletMPCDBMessage::Message(message.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind:
-                            ConsensusTransactionKind::DWalletMPCMaliciousReport(
-                                authority_name,
-                                report,
-                            ),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::MaliciousReport(
-                        *authority_name,
-                        report.clone(),
-                    )),
+                    }) => Some(message.clone()),
                     _ => None,
                 }
             })
@@ -1444,7 +1274,7 @@ impl AuthorityPerEpochStore {
     /// them from the DB.
     fn filter_dwallet_mpc_outputs(
         transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> Vec<DWalletMPCOutputMessage> {
+    ) -> Vec<DWalletMPCOutput> {
         transactions
             .iter()
             .filter_map(|transaction| {
@@ -1454,18 +1284,9 @@ impl AuthorityPerEpochStore {
                 }) = transaction;
                 match transaction {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind:
-                            ConsensusTransactionKind::DWalletMPCOutput(
-                                origin_authority,
-                                session_info,
-                                output,
-                            ),
+                        kind: ConsensusTransactionKind::DWalletMPCOutput(output),
                         ..
-                    }) => Some(DWalletMPCOutputMessage {
-                        authority: *origin_authority,
-                        session_info: *session_info.clone(),
-                        output: output.clone(),
-                    }),
+                    }) => Some(output.clone()),
                     _ => None,
                 }
             })
@@ -1486,7 +1307,7 @@ impl AuthorityPerEpochStore {
 
         let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
             certificate_author_index: _,
-            certificate_author,
+            certificate_author: _certificate_author,
             consensus_index: _consensus_index,
             transaction,
         }) = transaction;
@@ -1494,22 +1315,7 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output),
-                ..
-            }) => {
-                self.process_dwallet_mpc_output(
-                    *certificate_author,
-                    *session_info.clone(),
-                    output.clone(),
-                )
-                .await
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(..),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -1565,7 +1371,7 @@ impl AuthorityPerEpochStore {
                             capabilities.first()
                         );
                         return Ok(ConsensusCertificateResult::SystemTransaction(
-                            SystemCheckpointKind::SetNextConfigVersion(new_version),
+                            SystemCheckpointMessageKind::SetNextConfigVersion(new_version),
                         ));
                     }
                     Ok(ConsensusCertificateResult::ConsensusMessage)
@@ -1577,330 +1383,51 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SystemCheckpointSignature(data),
                 ..
             }) => {
-                system_checkpoint_service.notify_system_checkpoint_signature(self, data)?;
+                system_checkpoint_service.notify_checkpoint_signature(self, data)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
-        }
-    }
-
-    async fn process_dwallet_mpc_output(
-        &self,
-        origin_authority: AuthorityName,
-        session_info: SessionInfo,
-        output: Vec<u8>,
-    ) -> IkaResult<ConsensusCertificateResult> {
-        let authority_index = self.authority_name_to_party_id(&origin_authority);
-        let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
-        let output_verification_result = dwallet_mpc_verifier
-                .try_verify_output(&output, &session_info, origin_authority)
-                .await
-                .unwrap_or_else(|e| {
-                    error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
-                    OutputVerificationResult {
-                        result: OutputVerificationStatus::Malicious,
-                        malicious_actors: vec![origin_authority],
-                    }
-                });
-
-        match output_verification_result.result {
-            OutputVerificationStatus::FirstQuorumReached(output) => self
-                .process_dwallet_transaction(output, session_info)
-                .map_err(IkaError::from),
-            OutputVerificationStatus::NotEnoughVotes => {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::EndOfPublish(authority),
+                ..
+            }) => {
+                self.record_end_of_publish_vote(authority)?;
+                let mut end_of_publish = self.end_of_publish.lock();
+                // Note that we don't check here that the sender didn't already vote,
+                // but that would be OK for two reasons:
+                // The first, its transaction would be denied because its key is the same
+                // (so the second wouldn't reach this flow).
+                // The second, the stake aggregator is implemented by a HashMap,
+                // and duplicate votes cannot be registered.
+                if !end_of_publish.has_quorum()
+                    && end_of_publish
+                        .insert_generic(*authority, ())
+                        .is_quorum_reached()
+                {
+                    return Ok(ConsensusCertificateResult::EndOfPublish);
+                }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
-            }
-            OutputVerificationStatus::AlreadyCommitted | OutputVerificationStatus::Malicious => {
-                // Ignore this output,
-                // since there is nothing to do with it,
-                // at this stage.
-                Ok(ConsensusCertificateResult::IgnoredSystem)
             }
         }
     }
 
     fn process_consensus_system_transaction(
         &self,
-        system_transaction: &MessageKind,
+        system_transaction: &DWalletCheckpointMessageKind,
     ) -> ConsensusCertificateResult {
         ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
     }
 
-    fn process_consensus_system_bulk_transaction(
+    pub fn insert_pending_dwallet_checkpoint(
         &self,
-        system_transaction: &[MessageKind],
-    ) -> ConsensusCertificateResult {
-        ConsensusCertificateResult::IkaBulkTransaction(system_transaction.to_owned())
-    }
-
-    fn process_dwallet_transaction(
-        &self,
-        output: Vec<u8>,
-        session_info: SessionInfo,
-    ) -> DwalletMPCResult<ConsensusCertificateResult> {
-        info!(
-            validator=?self.name,
-            mpc_protocol=?session_info.mpc_round,
-            session_identifier=?session_info.session_identifier,
-            "Creating session output checkpoint transaction"
-        );
-        let (is_rejected, output) = match bcs::from_bytes(&output)? {
-            MPCSessionPublicOutput::CompletedSuccessfully(output) => (false, output),
-            MPCSessionPublicOutput::SessionFailed => (true, vec![]),
-        };
-        match &session_info.mpc_round {
-            MPCProtocolInitData::DKGFirst(event_data) => {
-                let SessionType::User { sequence_number } = event_data.session_type else {
-                    unreachable!("DKGFirst round should be a user session");
-                };
-                let tx = MessageKind::RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput {
-                    dwallet_id: event_data.event_data.dwallet_id.to_vec(),
-                    output,
-                    session_sequence_number: sequence_number,
-                    rejected: is_rejected,
-                });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::DKGSecond(init_event_data) => {
-                let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    unreachable!("DKGSecond round should be a user session");
-                };
-                let tx = MessageKind::RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput {
-                    output,
-                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                    encrypted_secret_share_id: init_event_data
-                        .event_data
-                        .encrypted_user_secret_key_share_id
-                        .to_vec(),
-                    rejected: is_rejected,
-                    session_sequence_number: sequence_number,
-                });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::Presign(init_event_data) => {
-                let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    unreachable!("Presign round should be a user session");
-                };
-                let tx = MessageKind::RespondDWalletPresign(PresignOutput {
-                    presign: output,
-                    dwallet_id: init_event_data.event_data.dwallet_id.map(|id| id.to_vec()),
-                    presign_id: init_event_data.event_data.presign_id.to_vec(),
-                    rejected: is_rejected,
-                    session_sequence_number: sequence_number,
-                });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::Sign(init_event) => {
-                let SessionType::User { sequence_number } = init_event.session_type else {
-                    unreachable!("Sign round should be a user session");
-                };
-                let tx = MessageKind::RespondDWalletSign(SignOutput {
-                    signature: output,
-                    dwallet_id: init_event.event_data.dwallet_id.to_vec(),
-                    is_future_sign: init_event.event_data.is_future_sign,
-                    sign_id: init_event.event_data.sign_id.to_vec(),
-                    rejected: is_rejected,
-                    session_sequence_number: sequence_number,
-                });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::EncryptedShareVerification(init_event_data) => {
-                let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    unreachable!("EncryptedShareVerification round should be a user session");
-                };
-                let tx = MessageKind::RespondDWalletEncryptedUserShare(EncryptedUserShareOutput {
-                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                    encrypted_user_secret_key_share_id: init_event_data
-                        .event_data
-                        .encrypted_user_secret_key_share_id
-                        .to_vec(),
-                    rejected: is_rejected,
-                    session_sequence_number: sequence_number,
-                });
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
-                let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    unreachable!("PartialSignatureVerification round should be a user session");
-                };
-                let tx = MessageKind::RespondDWalletPartialSignatureVerificationOutput(
-                    PartialSignatureVerificationOutput {
-                        dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                        partial_centralized_signed_message_id: init_event_data
-                            .event_data
-                            .partial_centralized_signed_message_id
-                            .to_vec(),
-                        rejected: is_rejected,
-                        session_sequence_number: sequence_number,
-                    },
-                );
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(key_scheme, init_event) => {
-                match key_scheme {
-                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let slices = if is_rejected {
-                            vec![NetworkKeyPublicOutputSlice {
-                                session_id: init_event.session_object_id.to_vec(),
-                                dwallet_network_decryption_key_id: init_event
-                                    .event_data
-                                    .dwallet_network_decryption_key_id
-                                    .clone()
-                                    .to_vec(),
-                                public_output: vec![],
-                                supported_curves: vec![
-                                    DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-                                ],
-                                is_last: true,
-                                rejected: true,
-                            }]
-                        } else {
-                            Self::slice_network_dkg_public_output_into_messages(
-                                &init_event.event_data.dwallet_network_decryption_key_id,
-                                output,
-                                init_event.session_object_id.to_vec(),
-                            )
-                        };
-
-                        let messages: Vec<_> = slices
-                            .into_iter()
-                            .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
-                            .collect();
-                        Ok(self.process_consensus_system_bulk_transaction(&messages))
-                    }
-                    DWalletMPCNetworkKeyScheme::Ristretto => {
-                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                    }
-                }
-            }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
-                let slices = if is_rejected {
-                    vec![NetworkKeyPublicOutputSlice {
-                        session_id: init_event.session_object_id.to_vec(),
-                        dwallet_network_decryption_key_id: init_event
-                            .event_data
-                            .dwallet_network_decryption_key_id
-                            .clone()
-                            .to_vec(),
-                        public_output: vec![],
-                        supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
-                        is_last: true,
-                        rejected: true,
-                    }]
-                } else {
-                    Self::slice_network_dkg_public_output_into_messages(
-                        &init_event.event_data.dwallet_network_decryption_key_id,
-                        output,
-                        init_event.session_object_id.to_vec(),
-                    )
-                };
-
-                let messages: Vec<_> = slices
-                    .into_iter()
-                    .map(MessageKind::RespondDWalletMPCNetworkReconfigurationOutput)
-                    .collect();
-                Ok(self.process_consensus_system_bulk_transaction(&messages))
-            }
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
-                let SessionType::User { sequence_number } = init_event.session_type else {
-                    unreachable!(
-                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
-                    );
-                };
-                let tx = MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(
-                    MakeDWalletUserSecretKeySharesPublicOutput {
-                        dwallet_id: init_event.event_data.dwallet_id.to_vec(),
-                        public_user_secret_key_shares: init_event
-                            .event_data
-                            .public_user_secret_key_shares
-                            .clone(),
-                        rejected: is_rejected,
-                        session_sequence_number: sequence_number,
-                    },
-                );
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(init_event) => {
-                let SessionType::User { sequence_number } = init_event.session_type else {
-                    unreachable!(
-                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
-                    );
-                };
-                let tx = MessageKind::RespondDWalletImportedKeyVerificationOutput(
-                    DWalletImportedKeyVerificationOutput {
-                        dwallet_id: init_event.event_data.dwallet_id.to_vec().clone(),
-                        public_output: output,
-                        encrypted_user_secret_key_share_id: init_event
-                            .event_data
-                            .encrypted_user_secret_key_share_id
-                            .to_vec()
-                            .clone(),
-                        rejected: is_rejected,
-                        session_sequence_number: sequence_number,
-                    },
-                );
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
-        }
-    }
-
-    /// Break down the key to slices because of chain transaction size limits.
-    /// Limit 16 KB per Tx `pure` argument.
-    fn slice_network_dkg_public_output_into_messages(
-        dwallet_network_decryption_key_id: &ObjectID,
-        public_output: Vec<u8>,
-        session_id: Vec<u8>,
-    ) -> Vec<NetworkKeyPublicOutputSlice> {
-        let mut slices = Vec::new();
-        // We set a total of 5 KB since we need 6 KB buffer for other params.
-        let five_kbytes = 5 * 1024;
-        let public_chunks = public_output.chunks(five_kbytes).collect_vec();
-        let empty: &[u8] = &[];
-        // Take the max of the two lengths to ensure we have enough slices.
-        for i in 0..public_chunks.len() {
-            // If the chunk is missing, use an empty slice, as the size of the slices can be different.
-            let public_chunk = public_chunks.get(i).unwrap_or(&empty);
-            slices.push(NetworkKeyPublicOutputSlice {
-                session_id: session_id.clone(),
-                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
-                    .clone()
-                    .to_vec(),
-                public_output: (*public_chunk).to_vec(),
-                supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
-                is_last: i == public_chunks.len() - 1,
-                rejected: false,
-            });
-        }
-        slices
-    }
-
-    pub(crate) fn write_pending_checkpoint(
-        &self,
-        output: &mut ConsensusCommitOutput,
-        checkpoint: &PendingDWalletCheckpoint,
-    ) -> IkaResult {
-        assert!(
-            self.get_pending_checkpoint(&checkpoint.height())?.is_none(),
-            "Duplicate pending checkpoint notification at height {:?}",
-            checkpoint.height()
-        );
-
-        debug!(
-            checkpoint_commit_height = checkpoint.height(),
-            "Pending checkpoint has {} messages",
-            checkpoint.messages().len(),
-        );
-        trace!(
-            checkpoint_commit_height = checkpoint.height(),
-            "Messages for pending checkpoint: {:?}",
-            checkpoint.messages()
-        );
-
-        output.insert_pending_checkpoint(checkpoint.clone());
-
-        Ok(())
+        checkpoint: PendingDWalletCheckpoint,
+    ) -> IkaResult<()> {
+        let tables = self.tables()?;
+        Ok(tables
+            .pending_dwallet_checkpoints
+            .insert(&checkpoint.height(), &checkpoint)?)
     }
 
     pub fn get_pending_dwallet_checkpoints(
@@ -1921,7 +1448,7 @@ impl AuthorityPerEpochStore {
         Ok(self.tables()?.pending_dwallet_checkpoints.get(index)?)
     }
 
-    pub fn process_pending_checkpoint(
+    pub fn process_pending_dwallet_checkpoint(
         &self,
         commit_height: DWalletCheckpointHeight,
         checkpoint_messages: Vec<DWalletCheckpointMessage>,
@@ -1934,8 +1461,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderDWalletCheckpointMessage {
-                dwallet_checkpoint_message: summary,
-                dwallet_checkpoint_height: Some(commit_height),
+                checkpoint_message: summary,
+                checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -1978,10 +1505,10 @@ impl AuthorityPerEpochStore {
             .reversed_safe_iter_with_bounds(None, None)?
             .next()
             .transpose()?
-            .map(|(seq, s)| (seq, s.dwallet_checkpoint_message)))
+            .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
-    pub fn get_built_checkpoint_message(
+    pub fn get_built_dwallet_checkpoint_message(
         &self,
         sequence: DWalletCheckpointSequenceNumber,
     ) -> IkaResult<Option<DWalletCheckpointMessage>> {
@@ -1989,7 +1516,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_dwallet_checkpoint_message_v1
             .get(&sequence)?
-            .map(|s| s.dwallet_checkpoint_message))
+            .map(|s| s.checkpoint_message))
     }
 
     pub fn get_last_dwallet_checkpoint_signature_index(&self) -> IkaResult<u64> {
@@ -2000,7 +1527,7 @@ impl AuthorityPerEpochStore {
             .next()
             .transpose()?
             .map(|((_, index), _)| index)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 
     pub fn insert_checkpoint_signature(
@@ -2064,7 +1591,7 @@ impl AuthorityPerEpochStore {
     pub fn process_pending_system_checkpoint(
         &self,
         commit_height: SystemCheckpointHeight,
-        system_checkpoint_messages: Vec<SystemCheckpoint>,
+        system_checkpoint_messages: Vec<SystemCheckpointMessage>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
         // All created system_checkpoints are inserted in builder_system_checkpoint_summary in a single batch.
@@ -2074,8 +1601,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderSystemCheckpoint {
-                system_checkpoint_message: summary,
-                system_checkpoint_height: Some(commit_height),
+                checkpoint_message: summary,
+                checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -2111,25 +1638,25 @@ impl AuthorityPerEpochStore {
 
     pub fn last_built_system_checkpoint_message(
         &self,
-    ) -> IkaResult<Option<(SystemCheckpointSequenceNumber, SystemCheckpoint)>> {
+    ) -> IkaResult<Option<(SystemCheckpointSequenceNumber, SystemCheckpointMessage)>> {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
             .reversed_safe_iter_with_bounds(None, None)?
             .next()
             .transpose()?
-            .map(|(seq, s)| (seq, s.system_checkpoint_message)))
+            .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
     pub fn get_built_system_checkpoint_message(
         &self,
         sequence: SystemCheckpointSequenceNumber,
-    ) -> IkaResult<Option<SystemCheckpoint>> {
+    ) -> IkaResult<Option<SystemCheckpointMessage>> {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
             .get(&sequence)?
-            .map(|s| s.system_checkpoint_message))
+            .map(|s| s.checkpoint_message))
     }
 
     pub fn get_last_system_checkpoint_signature_index(&self) -> IkaResult<u64> {
@@ -2140,7 +1667,7 @@ impl AuthorityPerEpochStore {
             .next()
             .transpose()?
             .map(|((_, index), _)| index)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 
     pub fn insert_system_checkpoint_signature(
@@ -2153,16 +1680,6 @@ impl AuthorityPerEpochStore {
             .tables()?
             .pending_system_checkpoint_signatures
             .insert(&(system_checkpoint_seq, index), info)?)
-    }
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
-        if let Some(epoch_close_time) = *self.epoch_close_time.read() {
-            self.metrics
-                .epoch_pending_certs_processed_time_since_epoch_close_ms
-                .set(epoch_close_time.elapsed().as_millis() as i64);
-        }
     }
 
     pub fn record_epoch_reconfig_start_time_metric(&self) {
@@ -2203,20 +1720,18 @@ impl AuthorityPerEpochStore {
 
 #[derive(Default)]
 pub(crate) struct ConsensusCommitOutput {
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
     // Consensus and reconfig state
     consensus_round: Round,
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
-    pending_checkpoints: Vec<PendingDWalletCheckpoint>,
     pending_system_checkpoints: Vec<PendingSystemCheckpoint>,
 
     /// All the dWallet-MPC related TXs that have been received in this round.
-    dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
-    dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
-    dwallet_mpc_completed_sessions: Vec<SessionIdentifier>,
+    dwallet_mpc_round_messages: Vec<DWalletMPCMessage>,
+    dwallet_mpc_round_outputs: Vec<DWalletMPCOutput>,
+
+    verified_dwallet_checkpoint_messages: Vec<DWalletCheckpointMessageKind>,
 }
 
 impl ConsensusCommitOutput {
@@ -2227,22 +1742,19 @@ impl ConsensusCommitOutput {
         }
     }
 
-    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCDBMessage>) {
+    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCMessage>) {
         self.dwallet_mpc_round_messages = new_value;
     }
 
-    pub(crate) fn set_dwallet_mpc_round_outputs(
-        &mut self,
-        new_value: Vec<DWalletMPCOutputMessage>,
-    ) {
+    pub(crate) fn set_dwallet_mpc_round_outputs(&mut self, new_value: Vec<DWalletMPCOutput>) {
         self.dwallet_mpc_round_outputs = new_value;
     }
 
-    pub(crate) fn set_dwallet_mpc_round_completed_sessions(
+    fn record_verified_dwallet_checkpoint_messages(
         &mut self,
-        new_value: Vec<SessionIdentifier>,
+        verified_dwallet_checkpoint_messages: Vec<DWalletCheckpointMessageKind>,
     ) {
-        self.dwallet_mpc_completed_sessions = new_value;
+        self.verified_dwallet_checkpoint_messages = verified_dwallet_checkpoint_messages;
     }
 
     fn record_consensus_commit_stats(&mut self, stats: ExecutionIndicesWithStats) {
@@ -2251,10 +1763,6 @@ impl ConsensusCommitOutput {
 
     fn record_consensus_message_processed(&mut self, key: SequencedConsensusTransactionKey) {
         self.consensus_messages_processed.insert(key);
-    }
-
-    fn insert_pending_checkpoint(&mut self, checkpoint: PendingDWalletCheckpoint) {
-        self.pending_checkpoints.push(checkpoint);
     }
 
     fn insert_pending_system_checkpoint(&mut self, checkpoint: PendingSystemCheckpoint) {
@@ -2275,12 +1783,15 @@ impl ConsensusCommitOutput {
             [(self.consensus_round, self.dwallet_mpc_round_messages)],
         )?;
         batch.insert_batch(
-            &tables.dwallet_mpc_completed_sessions,
-            [(self.consensus_round, self.dwallet_mpc_completed_sessions)],
-        )?;
-        batch.insert_batch(
             &tables.dwallet_mpc_outputs,
             [(self.consensus_round, self.dwallet_mpc_round_outputs)],
+        )?;
+        batch.insert_batch(
+            &tables.verified_dwallet_checkpoint_messages,
+            [(
+                self.consensus_round,
+                self.verified_dwallet_checkpoint_messages,
+            )],
         )?;
 
         batch.insert_batch(
@@ -2296,13 +1807,6 @@ impl ConsensusCommitOutput {
                 [(LAST_CONSENSUS_STATS_ADDR, consensus_commit_stats)],
             )?;
         }
-
-        batch.insert_batch(
-            &tables.pending_dwallet_checkpoints,
-            self.pending_checkpoints
-                .into_iter()
-                .map(|cp| (cp.height(), cp)),
-        )?;
 
         batch.insert_batch(
             &tables.pending_system_checkpoints,

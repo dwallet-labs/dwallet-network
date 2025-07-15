@@ -1,7 +1,7 @@
 [package]
 name = "ika-archival"
 version.workspace = true
-edition = "2021"
+edition = "2024"
 publish = false
 license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
@@ -15,7 +15,7 @@ tracing.workspace = true
 bytes.workspace = true
 num_enum.workspace = true
 futures.workspace = true
-rand.workspace = true
+rand = "0.8" # use old version for compatability with fastcrypto
 object_store.workspace = true
 prometheus.workspace = true
 ika-config.workspace = true

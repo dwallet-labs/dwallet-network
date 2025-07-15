@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ObjectID;
-use typed_store::rocks::{default_db_options, DBMap, DBOptions, MetricConf};
+use typed_store::rocks::{DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
 
 use typed_store::DBMapUtils;

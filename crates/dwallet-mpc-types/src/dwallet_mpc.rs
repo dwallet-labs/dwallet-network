@@ -5,22 +5,11 @@ use thiserror::Error;
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
-/// MPC session public output sent through the consensus.
-/// Used to indicate the session status.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MPCSessionPublicOutput {
-    CompletedSuccessfully(SerializedWrappedMPCPublicOutput),
-    SessionFailed,
-}
-
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
 /// The MPC Public Output.
 pub type MPCPublicOutput = Vec<u8>;
-
-/// Alias for an MPC private output.
-pub type MPCPrivateOutput = Vec<u8>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
@@ -50,7 +39,7 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Active,
-    Finished,
+    Completed,
     Failed,
 }
 
@@ -58,7 +47,7 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished => write!(f, "Finished"),
+            MPCSessionStatus::Completed => write!(f, "Completed"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }
@@ -67,22 +56,22 @@ impl fmt::Display for MPCSessionStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub enum NetworkDecryptionKeyPublicOutputType {
     NetworkDkg,
-    Reshare,
+    Reconfiguration,
 }
 
-/// Network decryption key shares for the MPC protocol.
-/// Created for each DKG protocol and modified for each Reshare Protocol.
+/// The public output of the DKG and/or Reconfiguration protocols, which holds the (encrypted) decryption key shares.
+/// Created for each DKG protocol and modified for each Reconfiguration Protocol.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
 
     pub state: NetworkDecryptionKeyPublicOutputType,
-    /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
+    /// The public output of the `latest` decryption key update (NetworkDKG/Reconfiguration).
     pub latest_public_output: VersionedNetworkDkgOutput,
 
     /// The public parameters of the decryption key shares,
-    /// updated only after a successful network DKG or Reshare.
+    /// updated only after a successful network DKG or Reconfiguration.
     pub decryption_key_share_public_parameters:
         class_groups::Secp256k1DecryptionKeySharePublicParameters,
 
@@ -153,7 +142,7 @@ pub enum VersionedNetworkDkgOutput {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum VersionedDecryptionKeyReshareOutput {
+pub enum VersionedDecryptionKeyReconfigurationOutput {
     V1(MPCPublicOutput),
 }
 

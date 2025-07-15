@@ -10,10 +10,10 @@ use itertools::Itertools;
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
 use prometheus::{
+    Histogram, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Registry,
     register_histogram_vec_with_registry, register_histogram_with_registry,
     register_int_counter_vec_with_registry, register_int_counter_with_registry,
-    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, Histogram,
-    HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Registry,
+    register_int_gauge_vec_with_registry, register_int_gauge_with_registry,
 };
 use std::path::PathBuf;
 use std::time::Duration;
@@ -49,7 +49,7 @@ use crate::metrics::RateTracker;
 use crate::stake_aggregator::StakeAggregator;
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::checkpoints::DWalletCheckpointStore;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 
@@ -693,12 +693,11 @@ impl AuthorityState {
         info!("supported versions are: {:?}", supported_protocol_versions);
         if !supported_protocol_versions.is_version_supported(current_version) {
             let msg = format!(
-                "Unsupported protocol version. The network is at {:?}, but this IkaNode only supports: {:?}. Shutting down.",
-                current_version, supported_protocol_versions,
+                "Unsupported protocol version. The network is at {current_version:?}, but this IkaNode only supports: {supported_protocol_versions:?}. Shutting down.",
             );
 
             error!("{}", msg);
-            eprintln!("{}", msg);
+            eprintln!("{msg}");
 
             #[cfg(not(msim))]
             std::process::exit(1);
@@ -803,29 +802,6 @@ impl AuthorityState {
         // see also assert in AuthorityState::process_certificate
         // on the epoch store and execution lock epoch match
         Ok(new_epoch_store)
-    }
-
-    /// Advance the epoch store to the next epoch for testing only.
-    /// This only manually sets all the places where we have the epoch number.
-    /// It doesn't properly reconfigure the node, hence should be only used for testing.
-    pub async fn reconfigure_for_testing(&self) {
-        let mut execution_lock = self.execution_lock_for_reconfiguration().await;
-        let epoch_store = self.epoch_store_for_testing().clone();
-        let protocol_config = epoch_store.protocol_config().clone();
-        // The current protocol config used in the epoch store may have been overridden and diverged from
-        // the protocol config definitions. That override may have now been dropped when the initial guard was dropped.
-        // We reapply the override before creating the new epoch store, to make sure that
-        // the new epoch store has the same protocol config as the current one.
-        // Since this is for testing only, we mostly like to keep the protocol config the same
-        // across epochs.
-        let _guard =
-            ProtocolConfig::apply_overrides_for_testing(move |_, _| protocol_config.clone());
-        let new_epoch_store = epoch_store.new_at_next_epoch_for_testing();
-        let new_epoch = new_epoch_store.epoch();
-        //self.transaction_manager.reconfigure(new_epoch);
-        self.epoch_store.store(new_epoch_store);
-        epoch_store.epoch_terminated().await;
-        *execution_lock = new_epoch;
     }
 
     pub fn current_epoch_for_testing(&self) -> EpochId {
@@ -962,7 +938,7 @@ impl AuthorityState {
                 let f = committee.total_votes() - committee.quorum_threshold();
 
                 // multiple by buffer_stake_bps / 10000, rounded up.
-                let buffer_stake = (f * buffer_stake_bps + 9999) / 10000;
+                let buffer_stake = (f * buffer_stake_bps).div_ceil(10000);
                 let effective_threshold = quorum_threshold + buffer_stake;
 
                 info!(
@@ -1030,7 +1006,7 @@ impl AuthorityState {
             new_committee,
             epoch_start_configuration,
             cur_epoch_store.get_chain_identifier(),
-        );
+        )?;
         self.epoch_store.store(new_epoch_store.clone());
         Ok(new_epoch_store)
     }

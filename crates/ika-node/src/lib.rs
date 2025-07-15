@@ -7,16 +7,16 @@ use anemo_tower::callback::CallbackLayer;
 use anemo_tower::trace::DefaultMakeSpan;
 use anemo_tower::trace::DefaultOnFailure;
 use anemo_tower::trace::TraceLayer;
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use arc_swap::ArcSwap;
 use prometheus::Registry;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::time::Duration;
 
 use ika_core::consensus_adapter::ConsensusClient;
@@ -27,7 +27,7 @@ use ika_types::sui::SystemInner;
 use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, watch, Mutex};
+use tokio::sync::{Mutex, broadcast, watch};
 use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tracing::info;
@@ -40,13 +40,9 @@ use ika_config::node::RunWithRange;
 use ika_config::node_config_metrics::NodeConfigMetrics;
 use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_config::{ConsensusConfig, NodeConfig};
+use ika_core::authority::AuthorityState;
 use ika_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
-use ika_core::authority::AuthorityState;
-use ika_core::checkpoints::{
-    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
-    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
-};
 use ika_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
 };
@@ -55,6 +51,10 @@ use ika_core::consensus_throughput_calculator::{
     ConsensusThroughputCalculator, ConsensusThroughputProfiler, ThroughputProfileRanges,
 };
 use ika_core::consensus_validator::{IkaTxValidator, IkaTxValidatorMetrics};
+use ika_core::dwallet_checkpoints::{
+    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
+    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
+};
 use ika_core::epoch::committee_store::CommitteeStore;
 use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;
@@ -62,7 +62,7 @@ use ika_core::storage::RocksDbStore;
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::{discovery, state_sync};
 use ika_protocol_config::ProtocolConfig;
-use mysten_metrics::{spawn_monitored_task, RegistryService};
+use mysten_metrics::{RegistryService, spawn_monitored_task};
 use sui_json_rpc_types::SuiEvent;
 use sui_macros::{fail_point_async, replay_log};
 use sui_storage::{FileCompression, StorageFormat};
@@ -72,15 +72,15 @@ use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction};
+use ika_types::sui::SystemInnerTrait;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use ika_types::sui::SystemInnerTrait;
 use sui_types::crypto::KeypairTraits;
 
 use ika_core::consensus_adapter::SubmitToConsensus;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
-use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
+use typed_store::rocks::default_db_options;
 
 use crate::metrics::IkaNodeMetrics;
 
@@ -89,7 +89,7 @@ mod handle;
 pub mod metrics;
 
 pub struct ValidatorComponents {
-    consensus_manager: ConsensusManager,
+    consensus_manager: Arc<ConsensusManager>,
     consensus_store_pruner: ConsensusStorePruner,
     consensus_adapter: Arc<ConsensusAdapter>,
     // Keeping the handle to the checkpoint service tasks to shut them down during reconfiguration.
@@ -162,22 +162,21 @@ mod simulator {
     }
 }
 
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
-use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use ika_core::sui_connector::SuiConnectorService;
+use ika_core::sui_connector::end_of_publish_sender::EndOfPublishSender;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
-use ika_core::sui_connector::SuiConnectorService;
 use ika_core::system_checkpoints::{
     SendSystemCheckpointToStateSync, SubmitSystemCheckpointToConsensus, SystemCheckpointMetrics,
     SystemCheckpointService, SystemCheckpointStore,
 };
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, IkaPackagesConfig};
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
@@ -223,6 +222,8 @@ impl fmt::Debug for IkaNode {
     }
 }
 
+const EVENTS_CHANNEL_BUFFER_SIZE: usize = 10_000;
+
 impl IkaNode {
     pub async fn start(
         config: NodeConfig,
@@ -254,7 +255,7 @@ impl IkaNode {
         );
 
         // Initialize metrics to track db usage before creating any stores
-        DBMetrics::init(&prometheus_registry);
+        DBMetrics::init(registry_service.clone());
 
         // Initialize Mysten metrics.
         mysten_metrics::init_metrics(&prometheus_registry);
@@ -269,20 +270,25 @@ impl IkaNode {
                 &config.sui_connector_config.sui_rpc_url,
                 sui_client_metrics,
                 config.sui_connector_config.ika_package_id,
+                config.sui_connector_config.ika_common_package_id,
+                config.sui_connector_config.ika_dwallet_2pc_mpc_package_id,
                 config.sui_connector_config.ika_system_package_id,
                 config.sui_connector_config.ika_system_object_id,
+                config
+                    .sui_connector_config
+                    .ika_dwallet_coordinator_object_id,
             )
             .await?,
         );
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_system_checkpoint_sequence_number =
-            latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
+            latest_system_state.previous_epoch_last_checkpoint_sequence_number();
         let epoch_start_system_state = sui_client
             .must_get_epoch_start_system(&latest_system_state)
             .await;
         let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
-        let previous_epoch_last_checkpoint_sequence_number =
+        let previous_epoch_last_dwallet_checkpoint_sequence_number =
             dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
         let committee = epoch_start_system_state.get_ika_committee();
@@ -313,8 +319,15 @@ impl IkaNode {
         let epoch_options = default_db_options().optimize_db_for_write_throughput(4);
         let packages_config = IkaPackagesConfig {
             ika_package_id: config.sui_connector_config.ika_package_id,
+            ika_common_package_id: config.sui_connector_config.ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id: config
+                .sui_connector_config
+                .ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
+            ika_dwallet_coordinator_object_id: config
+                .sui_connector_config
+                .ika_dwallet_coordinator_object_id,
         };
 
         let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
@@ -328,7 +341,7 @@ impl IkaNode {
             epoch_start_configuration,
             chain_identifier,
             packages_config,
-        );
+        )?;
 
         info!("created epoch store");
 
@@ -364,30 +377,13 @@ impl IkaNode {
             system_checkpoint_store.clone(),
         );
 
-        let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
-
-        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
-        let (next_epoch_committee_sender, next_epoch_committee_receiver) =
-            watch::channel::<Committee>(committee);
-        let (new_events_sender, new_events_receiver) = tokio::sync::broadcast::channel(10000);
-        let sui_connector_service = Arc::new(
-            SuiConnectorService::new(
-                dwallet_checkpoint_store.clone(),
-                system_checkpoint_store.clone(),
-                sui_client.clone(),
-                config.sui_connector_config.clone(),
-                sui_connector_metrics,
-                network_keys_sender,
-                next_epoch_committee_sender,
-                new_events_sender,
-            )
-            .await?,
-        );
-
         info!("creating archive reader");
         // Create network
         // TODO only configure validators as seed/preferred peers for validators and not for
         // fullnodes once we've had a chance to re-work fullnode configuration generation.
+
+        let authority_name = config.protocol_public_key();
+
         let archive_readers =
             ArchiveReaderBalancer::new(config.archive_reader_config(), &prometheus_registry)?;
         let (trusted_peer_change_tx, trusted_peer_change_rx) = watch::channel(Default::default());
@@ -403,6 +399,7 @@ impl IkaNode {
             trusted_peer_change_rx,
             archive_readers.clone(),
             &prometheus_registry,
+            !epoch_store.committee().authority_exists(&authority_name),
         )?;
 
         // We must explicitly send this instead of relying on the initial value to trigger
@@ -420,8 +417,6 @@ impl IkaNode {
             Self::start_state_archival(&config, &prometheus_registry, state_sync_store.clone())
                 .await?;
 
-        let authority_name = config.protocol_public_key();
-
         info!("create authority state");
         let state = AuthorityState::new(
             authority_name,
@@ -435,8 +430,26 @@ impl IkaNode {
             config.clone(),
         )
         .await;
-
         info!("created authority state");
+
+        let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
+        let (next_epoch_committee_sender, next_epoch_committee_receiver) =
+            watch::channel::<Committee>(committee);
+        let (new_events_sender, new_events_receiver) =
+            broadcast::channel(EVENTS_CHANNEL_BUFFER_SIZE);
+        let (end_of_publish_sender, end_of_publish_receiver) = watch::channel::<Option<u64>>(None);
+        let (sui_connector_service, network_keys_receiver) = SuiConnectorService::new(
+            dwallet_checkpoint_store.clone(),
+            system_checkpoint_store.clone(),
+            sui_client.clone(),
+            config.sui_connector_config.clone(),
+            sui_connector_metrics,
+            state.is_validator(&epoch_store),
+            next_epoch_committee_sender,
+            new_events_sender,
+            end_of_publish_sender.clone(),
+        )
+        .await?;
 
         let (end_of_epoch_channel, _end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
@@ -478,7 +491,7 @@ impl IkaNode {
                 connection_monitor_status.clone(),
                 &registry_service,
                 ika_node_metrics.clone(),
-                previous_epoch_last_checkpoint_sequence_number,
+                previous_epoch_last_dwallet_checkpoint_sequence_number,
                 previous_epoch_last_system_checkpoint_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
                 network_keys_receiver.clone(),
@@ -536,6 +549,7 @@ impl IkaNode {
                 next_epoch_committee_receiver.clone(),
                 sui_client_clone,
                 dwallet_mpc_metrics,
+                end_of_publish_receiver.clone(),
             )
             .await;
             if let Err(error) = result {
@@ -610,6 +624,7 @@ impl IkaNode {
         trusted_peer_change_rx: watch::Receiver<TrustedPeerChangeEvent>,
         archive_readers: ArchiveReaderBalancer,
         prometheus_registry: &Registry,
+        is_notifier: bool,
     ) -> Result<P2pComponents> {
         let (state_sync, state_sync_server) = state_sync::Builder::new()
             .config(config.p2p_config.state_sync.clone().unwrap_or_default())
@@ -715,7 +730,7 @@ impl IkaNode {
             }
             anemo_config.quic = Some(quic_config);
 
-            let server_name = format!("ika-{}", chain_identifier);
+            let server_name = format!("ika-{chain_identifier}");
             let network = Network::bind(config.p2p_config.listen_address)
                 .server_name(&server_name)
                 .private_key(config.network_key_pair().copy().private().0.to_bytes())
@@ -733,7 +748,7 @@ impl IkaNode {
 
         let discovery_handle =
             discovery.start(p2p_network.clone(), config.network_key_pair().copy());
-        let state_sync_handle = state_sync.start(p2p_network.clone());
+        let state_sync_handle = state_sync.start(p2p_network.clone(), is_notifier);
 
         Ok(P2pComponents {
             p2p_network,
@@ -756,7 +771,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -778,8 +793,13 @@ impl IkaNode {
             epoch_store.protocol_config().clone(),
             client.clone(),
         ));
-        let consensus_manager =
-            ConsensusManager::new(&config, consensus_config, registry_service, client);
+
+        let consensus_manager = Arc::new(ConsensusManager::new(
+            &config,
+            consensus_config,
+            registry_service,
+            client,
+        ));
 
         // This only gets started up once, not on every epoch. (Make call to remove every epoch.)
         let consensus_store_pruner = ConsensusStorePruner::new(
@@ -828,16 +848,16 @@ impl IkaNode {
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state_sync_handle: state_sync::Handle,
-        consensus_manager: ConsensusManager,
+        consensus_manager: Arc<ConsensusManager>,
         consensus_store_pruner: ConsensusStorePruner,
         dwallet_checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
         system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
-        previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -850,7 +870,7 @@ impl IkaNode {
             state.clone(),
             state_sync_handle.clone(),
             dwallet_checkpoint_metrics.clone(),
-            previous_epoch_last_checkpoint_sequence_number,
+            previous_epoch_last_dwallet_checkpoint_sequence_number,
         );
 
         let (system_checkpoint_service, system_checkpoint_service_tasks) =
@@ -865,23 +885,20 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
-        let dwallet_mpc_service_exit_sender = Self::start_dwallet_mpc_service(
+        let (dwallet_mpc_service_exit_sender, dwallet_mpc_service_exit_receiver) =
+            watch::channel(());
+        let mut dwallet_mpc_service = DWalletMPCService::new(
             epoch_store.clone(),
-            sui_client,
+            dwallet_mpc_service_exit_receiver,
             Arc::new(consensus_adapter.clone()),
             config.clone(),
+            sui_client,
+            checkpoint_service.clone(),
             network_keys_receiver,
             new_events_receiver,
             next_epoch_committee_receiver,
             dwallet_mpc_metrics.clone(),
-        )
-        .await;
-        // This verifier is in sync with the consensus,
-        // used to verify outputs before sending a system TX to store them.
-        epoch_store.set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(
-            &epoch_store,
-            dwallet_mpc_metrics.clone(),
-        ))?;
+        );
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
@@ -914,20 +931,36 @@ impl IkaNode {
             throughput_calculator,
         );
 
-        consensus_manager
-            .start(
-                config,
-                epoch_store.clone(),
-                consensus_handler_initializer,
-                IkaTxValidator::new(
-                    state.clone(),
-                    consensus_adapter.clone(),
-                    checkpoint_service.clone(),
-                    system_checkpoint_service.clone(),
-                    ika_tx_validator_metrics.clone(),
-                ),
-            )
-            .await;
+        info!("Starting consensus manager asynchronously");
+
+        // Spawn consensus startup asynchronously to avoid blocking other components
+        tokio::spawn({
+            let config = config.clone();
+            let epoch_store = epoch_store.clone();
+            let sui_tx_validator = IkaTxValidator::new(
+                state.clone(),
+                consensus_adapter.clone(),
+                checkpoint_service.clone(),
+                system_checkpoint_service.clone(),
+                ika_tx_validator_metrics.clone(),
+            );
+            let consensus_manager = consensus_manager.clone();
+            async move {
+                consensus_manager
+                    .start(
+                        &config,
+                        epoch_store,
+                        consensus_handler_initializer,
+                        sui_tx_validator,
+                    )
+                    .await;
+            }
+        });
+        let replay_waiter = consensus_manager.replay_waiter();
+
+        // Spawn the dWallet MPC Service now that we are done with bootstrapping both
+        // from storage and from the consensus.
+        spawn_monitored_task!(dwallet_mpc_service.spawn(replay_waiter));
 
         Ok(ValidatorComponents {
             consensus_manager,
@@ -951,7 +984,7 @@ impl IkaNode {
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
         checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
-        previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
     ) -> (Arc<DWalletCheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
@@ -985,7 +1018,7 @@ impl IkaNode {
             checkpoint_metrics,
             max_tx_per_checkpoint,
             max_dwallet_checkpoint_size_bytes,
-            previous_epoch_last_checkpoint_sequence_number,
+            previous_epoch_last_dwallet_checkpoint_sequence_number,
         )
     }
 
@@ -1081,11 +1114,12 @@ impl IkaNode {
     /// after which it initiates reconfiguration of the entire system.
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        end_of_publish_receiver: Receiver<Option<u64>>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
         loop {
@@ -1099,10 +1133,12 @@ impl IkaNode {
                         self.state.name,
                         cur_epoch_store.get_chain_identifier().chain(),
                         supported_versions,
-                        sui_client
-                            .get_available_move_packages()
-                            .await
-                            .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                        vec![],
+                        // Note: this is a temp fix, we will handle package upgrades later.
+                        // sui_client
+                        // .get_available_move_packages()
+                        //     .await
+                        //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
                     ),
                 );
 
@@ -1114,6 +1150,22 @@ impl IkaNode {
                         .await?;
                 }
             }
+
+            let end_of_publish_sender_handle =
+                if let Some(components) = &*self.validator_components.lock().await {
+                    let end_of_publish_sender = EndOfPublishSender::new(
+                        Arc::downgrade(&cur_epoch_store),
+                        Arc::new(components.consensus_adapter.clone()),
+                        end_of_publish_receiver.clone(),
+                        cur_epoch_store.epoch(),
+                    );
+
+                    Some(tokio::spawn(async move {
+                        end_of_publish_sender.run().await;
+                    }))
+                } else {
+                    None
+                };
 
             let stop_condition = self
                 .sui_connector_service
@@ -1132,6 +1184,10 @@ impl IkaNode {
                     return Ok(());
                 }
             };
+            end_of_publish_sender_handle.map(|handle| {
+                handle.abort();
+                Some(())
+            });
 
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self
@@ -1164,7 +1220,7 @@ impl IkaNode {
 
             let system_inner = sui_client.must_get_system_inner_object().await;
             let previous_epoch_last_system_checkpoint_sequence_number =
-                system_inner.previous_epoch_last_system_checkpoint_sequence_number();
+                system_inner.previous_epoch_last_checkpoint_sequence_number();
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();
@@ -1212,14 +1268,17 @@ impl IkaNode {
             }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
-                // Cancel the old checkpoint service tasks.
+                // Cancel the old dwallet checkpoint service & system checkpoint service tasks.
                 // Waiting for checkpoint builder to finish gracefully is not possible, because it
                 // may wait on transactions while consensus on peers have already shut down.
                 checkpoint_service_tasks.abort_all();
+                system_checkpoint_service_tasks.abort_all();
+
                 if let Err(err) = dwallet_mpc_service_exit.send(()) {
                     warn!(?err, "failed to send exit signal to dwallet mpc service");
                 }
                 drop(dwallet_mpc_service_exit);
+
                 while let Some(result) = checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
@@ -1230,7 +1289,6 @@ impl IkaNode {
                 }
                 info!("DWallet checkpoint service has shut down.");
 
-                system_checkpoint_service_tasks.abort_all();
                 while let Some(result) = system_checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
@@ -1371,35 +1429,6 @@ impl IkaNode {
     pub fn get_config(&self) -> &NodeConfig {
         &self.config
     }
-
-    async fn start_dwallet_mpc_service(
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        sui_client: Arc<SuiConnectorClient>,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        node_config: NodeConfig,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-        new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Receiver<Committee>,
-        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-    ) -> watch::Sender<()> {
-        let (exit_sender, exit_receiver) = watch::channel(());
-        let mut service = DWalletMPCService::new(
-            epoch_store.clone(),
-            exit_receiver,
-            consensus_adapter,
-            node_config,
-            sui_client,
-            network_keys_receiver,
-            new_events_receiver,
-            next_epoch_committee_receiver,
-            dwallet_mpc_metrics,
-        )
-        .await;
-
-        spawn_monitored_task!(service.spawn());
-
-        exit_sender
-    }
 }
 
 #[cfg(msim)]
@@ -1469,20 +1498,20 @@ async fn health_check_handler(
             }
         };
 
-        // Calculate the threshold time based on the provided threshold_seconds
-        let latest_chain_time = summary.timestamp();
-        let threshold =
-            std::time::SystemTime::now() - Duration::from_secs(threshold_seconds as u64);
-
-        // Check if the latest checkpoint is within the threshold
-        if latest_chain_time < threshold {
-            warn!(
-                ?latest_chain_time,
-                ?threshold,
-                "failing healthcheck due to checkpoint lag"
-            );
-            return (axum::http::StatusCode::SERVICE_UNAVAILABLE, "down");
-        }
+        // // Calculate the threshold time based on the provided threshold_seconds
+        // let latest_chain_time = summary.timestamp();
+        // let threshold =
+        //     std::time::SystemTime::now() - Duration::from_secs(threshold_seconds as u64);
+        //
+        // // Check if the latest checkpoint is within the threshold
+        // if latest_chain_time < threshold {
+        //     warn!(
+        //         ?latest_chain_time,
+        //         ?threshold,
+        //         "failing healthcheck due to checkpoint lag"
+        //     );
+        //     return (axum::http::StatusCode::SERVICE_UNAVAILABLE, "down");
+        // }
     }
     // if health endpoint is responding and no threshold is given, respond success
     (axum::http::StatusCode::OK, "up")

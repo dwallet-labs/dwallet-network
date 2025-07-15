@@ -3,10 +3,10 @@
 
 use std::sync::Arc;
 
-use crate::system_checkpoints::SystemCheckpointServiceNotify;
 use crate::{
-    authority::AuthorityState, checkpoints::DWalletCheckpointServiceNotify,
-    consensus_adapter::ConsensusOverloadChecker,
+    authority::AuthorityState, consensus_adapter::ConsensusOverloadChecker,
+    dwallet_checkpoints::DWalletCheckpointServiceNotify,
+    system_checkpoints::SystemCheckpointServiceNotify,
 };
 use consensus_core::{TransactionIndex, TransactionVerifier, ValidationError};
 use ika_types::committee::Committee;
@@ -15,13 +15,13 @@ use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
 use ika_types::messages_dwallet_checkpoint::SignedDWalletCheckpointMessage;
-use ika_types::messages_system_checkpoints::SignedSystemCheckpoint;
+use ika_types::messages_system_checkpoints::SignedSystemCheckpointMessage;
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
 use mysten_metrics::monitored_scope;
-use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
+use prometheus::{IntCounter, Registry, register_int_counter_with_registry};
 use tap::TapFallible;
 use tracing::{info, warn};
 
@@ -72,16 +72,15 @@ impl IkaTxValidator {
             match tx {
                 ConsensusTransactionKind::DWalletCheckpointSignature(signature) => {
                     ckpt_messages.push(signature.as_ref());
-                    ckpt_batch.push(&signature.dwallet_checkpoint_message);
+                    ckpt_batch.push(&signature.checkpoint_message);
                 }
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
+                | ConsensusTransactionKind::EndOfPublish(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
-                | ConsensusTransactionKind::DWalletMPCOutput(..)
-                | ConsensusTransactionKind::DWalletMPCMaliciousReport(..)
-                | ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {}
+                | ConsensusTransactionKind::DWalletMPCOutput(..) => {}
                 ConsensusTransactionKind::SystemCheckpointSignature(signature) => {
                     system_checkpoints.push(signature.as_ref());
-                    params_batch.push(&signature.system_checkpoint);
+                    params_batch.push(&signature.checkpoint_message);
                 }
             }
         }
@@ -116,7 +115,7 @@ impl IkaTxValidator {
         // All checkpoint sigs have been verified, forward them to the checkpoint service
         for ckpt in system_checkpoints {
             self.system_checkpoint_service
-                .notify_system_checkpoint_signature(&epoch_store, ckpt)?;
+                .notify_checkpoint_signature(&epoch_store, ckpt)?;
         }
 
         self.metrics
@@ -158,7 +157,7 @@ impl IkaTxValidator {
     /// Verifies all certificates - if any fail return error.
     fn batch_verify_all_certificates_and_system_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedSystemCheckpoint],
+        checkpoints: &[&SignedSystemCheckpointMessage],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
@@ -171,7 +170,7 @@ impl IkaTxValidator {
 
     fn batch_verify_system_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedSystemCheckpoint],
+        checkpoints: &[&SignedSystemCheckpointMessage],
     ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
@@ -235,10 +234,7 @@ impl IkaTxValidator {
 fn tx_kind_from_bytes(tx: &[u8]) -> Result<ConsensusTransactionKind, ValidationError> {
     bcs::from_bytes::<ConsensusTransaction>(tx)
         .map_err(|e| {
-            ValidationError::InvalidTransaction(format!(
-                "Failed to parse transaction bytes: {:?}",
-                e
-            ))
+            ValidationError::InvalidTransaction(format!("Failed to parse transaction bytes: {e:?}"))
         })
         .map(|tx| tx.kind)
 }

@@ -134,7 +134,7 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
 	const tx = new Transaction();
 	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::get_active_encryption_key`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::get_active_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
@@ -184,7 +184,7 @@ async function registerEncryptionKey(
 
 	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::register_encryption_key`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::register_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
@@ -361,10 +361,10 @@ export async function transferEncryptedSecretShare(
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
-		sourceConf.ikaConfig.ika_system_package_id,
+		sourceConf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
 	);
 	tx.moveCall({
-		target: `${sourceConf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_re_encrypt_user_share_for`,
+		target: `${sourceConf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_re_encrypt_user_share_for`,
 		arguments: [
 			dwalletStateArg,
 			dwalletIDArg,

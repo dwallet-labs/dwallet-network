@@ -1,23 +1,23 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::checkpoints::DWalletCheckpointStore;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::system_checkpoints::SystemCheckpointStore;
 use ika_types::committee::Committee;
 use ika_types::committee::EpochId;
-use ika_types::digests::SystemCheckpointDigest;
+use ika_types::digests::SystemCheckpointMessageDigest;
 use ika_types::error::IkaError;
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessageDigest;
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::messages_dwallet_checkpoint::VerifiedDWalletCheckpointMessage;
 use ika_types::messages_system_checkpoints::{
-    SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
+    SystemCheckpointSequenceNumber, VerifiedSystemCheckpointMessage,
 };
-use ika_types::storage::error::Error as StorageError;
-use ika_types::storage::error::Result;
 use ika_types::storage::ReadStore;
 use ika_types::storage::WriteStore;
+use ika_types::storage::error::Error as StorageError;
+use ika_types::storage::error::Result;
 use parking_lot::Mutex;
 use std::sync::Arc;
 
@@ -127,7 +127,7 @@ impl ReadStore for RocksDbStore {
             })
     }
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
         self.system_checkpoint_store
             .get_highest_executed_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
@@ -136,13 +136,17 @@ impl ReadStore for RocksDbStore {
             })
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.system_checkpoint_store
             .get_highest_verified_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.system_checkpoint_store
             .get_highest_synced_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)
@@ -163,8 +167,8 @@ impl ReadStore for RocksDbStore {
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.system_checkpoint_store
             .get_system_checkpoint_by_digest(digest)
             .map_err(ika_types::storage::error::Error::custom)
@@ -173,7 +177,7 @@ impl ReadStore for RocksDbStore {
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.system_checkpoint_store
             .get_system_checkpoint_by_sequence_number(sequence_number)
             .map_err(ika_types::storage::error::Error::custom)
@@ -220,7 +224,10 @@ impl WriteStore for RocksDbStore {
         Ok(())
     }
 
-    fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
+    fn insert_system_checkpoint(
+        &self,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
+    ) -> Result<()> {
         self.system_checkpoint_store
             .insert_verified_system_checkpoint(system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)
@@ -228,7 +235,7 @@ impl WriteStore for RocksDbStore {
 
     fn update_highest_synced_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         let mut locked = self.highest_synced_system_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= system_checkpoint.sequence_number {
@@ -243,7 +250,7 @@ impl WriteStore for RocksDbStore {
 
     fn update_highest_verified_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         let mut locked = self.highest_verified_system_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= system_checkpoint.sequence_number {

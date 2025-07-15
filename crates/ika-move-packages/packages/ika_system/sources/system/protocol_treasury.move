@@ -3,17 +3,14 @@
 
 module ika_system::protocol_treasury;
 
-// === Imports ===
-
 use ika::ika::IKA;
-use sui::{
-    bag::{Self, Bag},
-    balance::Balance,
-    coin::TreasuryCap
-};
+use sui::bag::{Self, Bag};
+use sui::balance::Balance;
+use sui::coin::TreasuryCap;
 
 // === Errors ===
 
+/// The stake subsidy rate is too large.
 const ESubsidyDecreaseRateTooLarge: u64 = 0;
 
 // === Constants ===
@@ -100,27 +97,32 @@ public(package) fun stake_subsidy_for_distribution(
 public(package) fun set_stake_subsidy_rate(self: &mut ProtocolTreasury, stake_subsidy_rate: u16) {
     // Rate can't be higher than 100%.
     assert!(stake_subsidy_rate <= BASIS_POINT_DENOMINATOR as u16, ESubsidyDecreaseRateTooLarge);
-    
+
     // Update the stored rate
     self.stake_subsidy_rate = stake_subsidy_rate;
-    
+
     // Recalculate the stake subsidy amount per distribution with the new rate
-    self.stake_subsidy_amount_per_distribution = calculate_stake_subsidy_amount_per_distribution(
-        self.total_supply_at_period_start,
-        stake_subsidy_rate,
-        self.stake_subsidy_period_length,
-    );
+    self.stake_subsidy_amount_per_distribution =
+        calculate_stake_subsidy_amount_per_distribution(
+            self.total_supply_at_period_start,
+            stake_subsidy_rate,
+            self.stake_subsidy_period_length,
+        );
 }
 
-public(package) fun set_stake_subsidy_period_length(self: &mut ProtocolTreasury, stake_subsidy_period_length: u64) {
+public(package) fun set_stake_subsidy_period_length(
+    self: &mut ProtocolTreasury,
+    stake_subsidy_period_length: u64,
+) {
     self.stake_subsidy_period_length = stake_subsidy_period_length;
-    
+
     // Recalculate the stake subsidy amount per distribution with the new period length
-    self.stake_subsidy_amount_per_distribution = calculate_stake_subsidy_amount_per_distribution(
-        self.total_supply_at_period_start,
-        self.stake_subsidy_rate,
-        stake_subsidy_period_length,
-    );
+    self.stake_subsidy_amount_per_distribution =
+        calculate_stake_subsidy_amount_per_distribution(
+            self.total_supply_at_period_start,
+            self.stake_subsidy_rate,
+            stake_subsidy_period_length,
+        );
 }
 
 /// Returns the stake subsidy amount per distribution.
@@ -134,7 +136,10 @@ public(package) fun get_stake_subsidy_distribution_counter(self: &ProtocolTreasu
 }
 
 #[test_only]
-public(package) fun set_stake_subsidy_distribution_counter(self: &mut ProtocolTreasury, stake_subsidy_distribution_counter: u64) {
+public(package) fun set_stake_subsidy_distribution_counter(
+    self: &mut ProtocolTreasury,
+    stake_subsidy_distribution_counter: u64,
+) {
     self.stake_subsidy_distribution_counter = stake_subsidy_distribution_counter;
 }
 

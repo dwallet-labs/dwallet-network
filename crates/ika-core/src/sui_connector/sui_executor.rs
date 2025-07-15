@@ -1,43 +1,50 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
-use crate::checkpoints::DWalletCheckpointStore;
-use crate::sui_connector::metrics::SuiConnectorMetrics;
+
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::SuiNotifier;
+use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
-use ika_sui_client::{SuiClient, SuiClientInner};
+use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkEncryptionKeyState, DKG_FIRST_ROUND_PROTOCOL_FLAG,
-    DKG_SECOND_ROUND_PROTOCOL_FLAG, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWalletNetworkEncryptionKeyData,
     FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
-use ika_types::messages_system_checkpoints::SystemCheckpoint;
+use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
-    DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
-    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
-    REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME,
+    DWalletCoordinatorInner, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
+    INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
+    REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    SystemInner, SystemInnerTrait,
 };
 use itertools::Itertools;
 use move_core_types::ident_str;
 use roaring::RoaringBitmap;
+use std::collections::HashMap;
 use std::sync::Arc;
+use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
+use tokio::sync::watch;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
@@ -47,8 +54,11 @@ pub enum StopReason {
     RunWithRangeCondition,
 }
 
+const ONE_HOUR_IN_SECONDS: u64 = 60 * 60;
+
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
     dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
     system_checkpoint_store: Arc<SystemCheckpointStore>,
     sui_notifier: Option<SuiNotifier>,
@@ -70,6 +80,7 @@ where
 {
     pub fn new(
         ika_system_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_notifier: Option<SuiNotifier>,
@@ -78,6 +89,7 @@ where
     ) -> Self {
         Self {
             ika_system_package_id,
+            ika_dwallet_2pc_mpc_package_id,
             dwallet_checkpoint_store,
             system_checkpoint_store,
             sui_notifier,
@@ -99,16 +111,11 @@ where
         &self,
         sui_notifier: &SuiNotifier,
         ika_system_state_inner: &SystemInner,
+        network_encryption_key_ids: Vec<ObjectID>,
         epoch_switch_state: &mut EpochSwitchState,
     ) {
         let Ok(clock) = self.sui_client.get_clock().await else {
             error!("failed to get clock when running epoch switch");
-            return;
-        };
-        let Some(dwallet_2pc_mpc_coordinator_id) =
-            ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
-        else {
-            error!("failed to get `dwallet_2pc_mpc_coordinator_id` when running epoch switch");
             return;
         };
         let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
@@ -119,29 +126,32 @@ where
             system_inner_v1.validator_set.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time
             && next_epoch_committee_is_empty
-            && self.is_completed_network_dkg_for_all_keys().await
             && !epoch_switch_state.ran_mid_epoch
         {
             info!("Calling `process_mid_epoch()`");
-            if let Err(e) = Self::process_mid_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!("`process_mid_epoch()` failed: {:?}", e);
-            } else {
-                info!("`process_mid_epoch()` successful");
-                epoch_switch_state.ran_mid_epoch = true;
+            // After mid-epoch reconfiguration, the next epoch committee is set, and
+            // we can't call request dkg for the network encryption keys for the epoch.
+            let response = retry_with_max_elapsed_time!(
+                Self::process_mid_epoch(
+                    self.ika_system_package_id,
+                    self.ika_dwallet_2pc_mpc_package_id,
+                    sui_notifier,
+                    &self.sui_client,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit mid-epoch for over an hour: {:?}",
+                    response.err()
+                );
             }
+            info!("Successfully processed mid-epoch");
+            epoch_switch_state.ran_mid_epoch = true;
         }
-        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
-            .sui_client
-            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
-            .await
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) =
+            self.sui_client.get_dwallet_coordinator_inner().await
         else {
             error!("failed to get dwallet coordinator inner when running epoch switch");
             return;
@@ -152,123 +162,97 @@ where
                 .pricing_and_fee_management
                 .calculation_votes
                 .is_some()
+            && coordinator.next_epoch_active_committee.is_some()
+            // network_encryption_key_ids holds only keys that finished dkg
+            && coordinator.dwallet_network_encryption_keys.size == network_encryption_key_ids.len() as u64
             && !epoch_switch_state.calculated_protocol_pricing
         {
-            info!("Calculating protocols pricing");
-            match Self::calculate_protocols_pricing(
-                &self.sui_client,
-                self.ika_system_package_id,
-                sui_notifier,
-                dwallet_2pc_mpc_coordinator_id,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                Ok(..) => {
-                    info!("Successfully calculated protocols pricing");
-                    epoch_switch_state.calculated_protocol_pricing = true;
-                }
-                Err(err) => {
-                    error!(?err, "failed to calculate protocols pricing");
-                }
+            info!(
+                "Running network encryption key mid-epoch reconfiguration and Calculating protocol pricing"
+            );
+            let result = retry_with_max_elapsed_time!(
+                Self::request_mid_epoch_reconfiguration_and_calculate_protocols_pricing(
+                    &self.sui_client,
+                    self.ika_dwallet_2pc_mpc_package_id,
+                    network_encryption_key_ids.clone(),
+                    sui_notifier,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if result.is_err() {
+                panic!(
+                    "failed to calculate protocols' pricing for over an hour: {:?}",
+                    result.err()
+                );
             }
+            info!("Successfully calculated protocols pricing");
+            epoch_switch_state.calculated_protocol_pricing = true;
         }
 
         // The Epoch was finished.
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + ika_system_state_inner.epoch_duration_ms();
         let epoch_not_locked = !coordinator
-            .session_management
-            .locked_last_session_to_complete_in_current_epoch;
+            .sessions_manager
+            .locked_last_user_initiated_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time
             && epoch_not_locked
             && !epoch_switch_state.ran_lock_last_session
         {
             info!("Calling `lock_last_active_session_sequence_number()`");
-            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!(
-                    "failed to lock last active session sequence number: {:?}",
-                    e
+            let response = retry_with_max_elapsed_time!(
+                Self::lock_last_session_to_complete_in_current_epoch(
+                    self.ika_system_package_id,
+                    self.ika_dwallet_2pc_mpc_package_id,
+                    sui_notifier,
+                    &self.sui_client,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit lock-last session for over an hour: {:?}",
+                    response.err()
                 );
-            } else {
-                info!("Successfully locked last active session sequence number");
-                epoch_switch_state.ran_lock_last_session = true;
             }
+            epoch_switch_state.ran_lock_last_session = true;
+            info!("Successfully locked last session in current epoch");
         }
-
-        // Check if we can advance the epoch.
-        let all_epoch_sessions_finished =
-            coordinator.session_management.number_of_completed_sessions
-                == coordinator
-                    .session_management
-                    .last_session_to_complete_in_current_epoch;
-        let all_immediate_sessions_completed =
-            coordinator.session_management.started_system_sessions_count
-                == coordinator
-                    .session_management
-                    .completed_system_sessions_count;
-        let next_epoch_committee_exists =
-            system_inner_v1.validator_set.next_epoch_committee.is_some();
-        if coordinator
-            .session_management
-            .locked_last_session_to_complete_in_current_epoch
-            && all_epoch_sessions_finished
-            && all_immediate_sessions_completed
-            && next_epoch_committee_exists
+        if coordinator.received_end_of_publish
+            && system_inner_v1.received_end_of_publish
             && !epoch_switch_state.ran_request_advance_epoch
-            && coordinator
-                .pricing_and_fee_management
-                .calculation_votes
-                .is_none()
         {
             info!("Calling `process_request_advance_epoch()`");
-            if let Err(e) = Self::process_request_advance_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!("failed to process request advance epoch: {:?}", e);
-            } else {
-                info!("Successfully processed request advance epoch");
-                epoch_switch_state.ran_request_advance_epoch = true;
+            let response = retry_with_max_elapsed_time!(
+                Self::process_request_advance_epoch(
+                    self.ika_system_package_id,
+                    self.ika_dwallet_2pc_mpc_package_id,
+                    sui_notifier,
+                    &self.sui_client.clone(),
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit request advance epoch for over an hour: {:?}",
+                    response.err()
+                );
             }
+            info!("Successfully requested advance epoch");
+            epoch_switch_state.ran_request_advance_epoch = true;
         }
-    }
-
-    async fn is_completed_network_dkg_for_all_keys(&self) -> bool {
-        let network_encryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
-            Ok(network_encryption_keys) => network_encryption_keys,
-            Err(e) => {
-                error!("failed to get dwallet MPC network keys: {e}");
-                return false;
-            }
-        };
-
-        for (_, key) in network_encryption_keys.iter() {
-            if key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {
-                return false;
-            }
-        }
-
-        true
     }
 
     pub async fn run_epoch(
         &self,
         epoch: EpochId,
         run_with_range: Option<RunWithRange>,
+        mut network_keys_receiver: watch::Receiver<
+            Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>,
+        >,
     ) -> StopReason {
         info!(?epoch, "Starting sui connector SuiExecutor run_epoch");
         // Check if we want to run this epoch based on RunWithRange condition value
@@ -317,24 +301,29 @@ where
                 .sui_client
                 .must_get_dwallet_coordinator_inner_v1()
                 .await;
-            let last_processed_dwallet_checkpoint_sequence_number: Option<u64> =
+            let last_processed_dwallet_checkpoint_sequence_number: u64 =
                 dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_dwallet_checkpoint_sequence_number =
-                last_processed_dwallet_checkpoint_sequence_number
-                    .map(|s| s + 1)
-                    .unwrap_or(0);
+                last_processed_dwallet_checkpoint_sequence_number + 1;
 
-            let last_processed_system_checkpoint_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_system_checkpoint_sequence_number();
+            let last_processed_system_checkpoint_sequence_number: u64 =
+                ika_system_state_inner.last_processed_checkpoint_sequence_number();
             let next_system_checkpoint_sequence_number =
-                last_processed_system_checkpoint_sequence_number
-                    .map(|s| s + 1)
-                    .unwrap_or(0);
+                last_processed_system_checkpoint_sequence_number + 1;
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
+                let network_encryption_key_ids = {
+                    network_keys_receiver
+                        .borrow_and_update()
+                        .clone()
+                        .keys()
+                        .cloned()
+                        .collect_vec()
+                };
                 self.run_epoch_switch(
                     sui_notifier,
                     &ika_system_state_inner,
+                    network_encryption_key_ids,
                     &mut epoch_switch_state,
                 )
                 .await;
@@ -354,78 +343,58 @@ where
                             self.metrics
                                 .dwallet_checkpoint_sequence
                                 .set(next_dwallet_checkpoint_sequence_number as i64);
-                            match ika_system_state_inner.dwallet_2pc_mpc_coordinator_id() {
-                                Some(dwallet_2pc_mpc_coordinator_id) => {
-                                    let active_members: BlsCommittee = ika_system_state_inner
-                                        .validator_set()
-                                        .clone()
-                                        .active_committee;
-                                    let auth_sig = dwallet_checkpoint_message.auth_sig();
-                                    let signature = auth_sig.signature.as_bytes().to_vec();
-                                    let signers_bitmap = Self::calculate_signers_bitmap(
-                                        &auth_sig.signers_map,
-                                        &active_members,
-                                    );
-                                    let signers_len = auth_sig.signers_map.len();
-                                    let message = bcs::to_bytes::<DWalletCheckpointMessage>(
-                                        &dwallet_checkpoint_message.into_message(),
-                                    )
-                                    .expect("Serializing checkpoint message cannot fail");
 
-                                    info!(
-                                        signers_len=?signers_len,
-                                        ?signers_bitmap,
-                                        "Processing checkpoint with signers"
-                                    );
+                            let active_members: BlsCommittee = ika_system_state_inner
+                                .validator_set()
+                                .clone()
+                                .active_committee;
+                            let auth_sig = dwallet_checkpoint_message.auth_sig();
+                            let signature = auth_sig.signature.as_bytes().to_vec();
+                            let signers_bitmap = Self::calculate_signers_bitmap(
+                                &auth_sig.signers_map,
+                                &active_members,
+                            );
+                            let signers_len = auth_sig.signers_map.len();
+                            let message = bcs::to_bytes::<DWalletCheckpointMessage>(
+                                &dwallet_checkpoint_message.into_message(),
+                            )
+                            .expect("Serializing checkpoint message cannot fail");
 
-                                    let task = Self::handle_dwallet_checkpoint_execution_task(
-                                        self.ika_system_package_id,
-                                        dwallet_2pc_mpc_coordinator_id,
-                                        signature,
-                                        signers_bitmap,
-                                        message,
-                                        sui_notifier,
-                                        &self.sui_client,
-                                        &self.metrics,
-                                        self.notifier_tx_lock.clone(),
-                                    )
-                                    .await;
-                                    match task {
-                                        Ok(_) => {
-                                            self.metrics
-                                                .dwallet_checkpoint_writes_success_total
-                                                .inc();
-                                            self.metrics
-                                                .last_written_dwallet_checkpoint_sequence
-                                                .set(
-                                                    next_dwallet_checkpoint_sequence_number as i64,
-                                                );
-                                            last_submitted_dwallet_checkpoint =
-                                                Some(next_dwallet_checkpoint_sequence_number);
-                                            info!(
-                                                ?next_dwallet_checkpoint_sequence_number,
-                                                "Sui transaction successfully executed for checkpoint sequence number"
-                                            );
-                                        }
-                                        Err(err) => {
-                                            self.metrics
-                                                .dwallet_checkpoint_writes_failure_total
-                                                .inc();
-                                            error!(
-                                            ?next_dwallet_checkpoint_sequence_number,
-                                            ?err,
-                                            "Sui transaction execution failed for checkpoint sequence number"
-                                        );
-                                        }
-                                    };
-                                }
-                                None => {
-                                    info!(
-                                        ?next_dwallet_checkpoint_sequence_number,
-                                        "No `dwallet_2pc_mpc_coordinator_id` found for checkpoint"
-                                    );
-                                }
+                            info!(
+                                signers_len=?signers_len,
+                                ?signers_bitmap,
+                                "Processing checkpoint with signers"
+                            );
+
+                            let response = retry_with_max_elapsed_time!(
+                                Self::handle_dwallet_checkpoint_execution_task(
+                                    self.ika_dwallet_2pc_mpc_package_id,
+                                    signature.clone(),
+                                    signers_bitmap.clone(),
+                                    message.clone(),
+                                    sui_notifier,
+                                    &self.sui_client.clone(),
+                                    &self.metrics.clone(),
+                                    self.notifier_tx_lock.clone().clone(),
+                                ),
+                                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+                            );
+                            if response.is_err() {
+                                panic!(
+                                    "failed to submit dwallet checkpoint for over an hour, err: {:?}",
+                                    response.err()
+                                );
                             }
+                            info!(
+                                ?next_dwallet_checkpoint_sequence_number,
+                                "Successfully submitted dwallet checkpoint"
+                            );
+                            self.metrics.dwallet_checkpoint_writes_success_total.inc();
+                            self.metrics
+                                .last_written_dwallet_checkpoint_sequence
+                                .set(next_dwallet_checkpoint_sequence_number as i64);
+                            last_submitted_dwallet_checkpoint =
+                                Some(next_dwallet_checkpoint_sequence_number);
                         }
                         Err(e) => {
                             error!(
@@ -448,53 +417,51 @@ where
                         self.metrics
                             .system_checkpoint_sequence
                             .set(next_dwallet_checkpoint_sequence_number as i64);
-                        if let Some(_dwallet_2pc_mpc_coordinator_id) =
-                            ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
-                        {
-                            let active_members: BlsCommittee = ika_system_state_inner
-                                .validator_set()
-                                .clone()
-                                .active_committee;
-                            let auth_sig = system_checkpoint.auth_sig();
-                            let signature = auth_sig.signature.as_bytes().to_vec();
-                            let signers_bitmap = Self::calculate_signers_bitmap(
-                                &auth_sig.signers_map,
-                                &active_members,
-                            );
-                            let message = bcs::to_bytes::<SystemCheckpoint>(
-                                &system_checkpoint.into_message(),
-                            )
-                            .expect("Serializing system_checkpoint message cannot fail");
 
-                            info!("Signers_bitmap: {:?}", signers_bitmap);
-                            self.metrics.system_checkpoint_write_requests_total.inc();
-                            let task = Self::handle_system_checkpoint_execution_task(
+                        let active_members: BlsCommittee = ika_system_state_inner
+                            .validator_set()
+                            .clone()
+                            .active_committee;
+                        let auth_sig = system_checkpoint.auth_sig();
+                        let signature = auth_sig.signature.as_bytes().to_vec();
+                        let signers_bitmap =
+                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
+                        let message = bcs::to_bytes::<SystemCheckpointMessage>(
+                            &system_checkpoint.into_message(),
+                        )
+                        .expect("Serializing `system_checkpoint` message cannot fail");
+
+                        info!("Signers_bitmap: {:?}", signers_bitmap);
+                        self.metrics.system_checkpoint_write_requests_total.inc();
+                        let response = retry_with_max_elapsed_time!(
+                            Self::handle_system_checkpoint_execution_task(
                                 self.ika_system_package_id,
-                                signature,
-                                signers_bitmap,
-                                message,
+                                signature.clone(),
+                                signers_bitmap.clone(),
+                                message.clone(),
                                 sui_notifier,
-                                &self.sui_client,
-                                &self.metrics,
+                                &self.sui_client.clone(),
+                                &self.metrics.clone(),
                                 self.notifier_tx_lock.clone(),
-                            )
-                            .await;
-                            match task {
-                                Ok(_) => {
-                                    self.metrics.system_checkpoint_writes_success_total.inc();
-                                    self.metrics
-                                        .last_written_system_checkpoint_sequence
-                                        .set(next_dwallet_checkpoint_sequence_number as i64);
-                                    last_submitted_system_checkpoint =
-                                        Some(next_system_checkpoint_sequence_number);
-                                    info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
-                                }
-                                Err(err) => {
-                                    self.metrics.system_checkpoint_writes_failure_total.inc();
-                                    error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
-                                }
-                            };
+                            ),
+                            Duration::from_secs(ONE_HOUR_IN_SECONDS)
+                        );
+                        if response.is_err() {
+                            panic!(
+                                "failed to submit system checkpoint for over an hour, err: {:?}",
+                                response.err()
+                            );
                         }
+                        self.metrics.system_checkpoint_writes_success_total.inc();
+                        self.metrics
+                            .last_written_system_checkpoint_sequence
+                            .set(next_dwallet_checkpoint_sequence_number as i64);
+                        last_submitted_system_checkpoint =
+                            Some(next_system_checkpoint_sequence_number);
+                        info!(
+                            "Sui transaction successfully executed for system_checkpoint sequence number: {}",
+                            next_system_checkpoint_sequence_number
+                        );
                     }
                 }
             }
@@ -532,13 +499,13 @@ where
         slices
     }
 
-    async fn calculate_protocols_pricing(
+    async fn request_mid_epoch_reconfiguration_and_calculate_protocols_pricing(
         sui_client: &Arc<SuiClient<C>>,
-        ika_system_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
+        network_encryption_key_ids: Vec<ObjectID>,
         sui_notifier: &SuiNotifier,
-        dwallet_coordinator_id: ObjectID,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<SuiTransactionBlockResponse> {
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
             .first()
@@ -548,7 +515,7 @@ where
         let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
         let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
         let dwallet_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_coordinator_id)
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
         let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
@@ -575,9 +542,21 @@ where
             bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
         ))?;
         let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+
+        for network_encryption_key_id in network_encryption_key_ids {
+            let network_encryption_key_id_arg =
+                ptb.input(CallArg::Pure(bcs::to_bytes(&network_encryption_key_id)?))?;
+            ptb.programmable_move_call(
+                ika_dwallet_2pc_mpc_package_id,
+                DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+                REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
+                vec![],
+                vec![dwallet_coordinator_ptb_arg, network_encryption_key_id_arg],
+            );
+        }
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -587,10 +566,9 @@ where
                 dkg_first_round_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -600,10 +578,9 @@ where
                 dkg_second_round_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -613,10 +590,9 @@ where
                 re_encrypt_user_share_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -626,10 +602,9 @@ where
                 make_dwallet_user_secret_key_share_public_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -639,10 +614,9 @@ where
                 imported_key_dwallet_verification_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -652,10 +626,9 @@ where
                 presign_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -665,10 +638,9 @@ where
                 sign_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -678,10 +650,9 @@ where
                 future_sign_protocol_flag,
             ],
         );
-        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
         ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
@@ -707,7 +678,7 @@ where
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
         transaction: Transaction,
         sui_client: &Arc<SuiClient<C>>,
-    ) -> DwalletMPCResult<()> {
+    ) -> DwalletMPCResult<SuiTransactionBlockResponse> {
         loop {
             // Small delay to avoid spamming the node.
             tokio::time::sleep(Duration::from_millis(500)).await;
@@ -725,8 +696,15 @@ where
                     let result = sui_client
                         .execute_transaction_block_with_effects(transaction)
                         .await?;
+                    if !result.errors.is_empty() {
+                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
+                            "{:?}",
+                            result.errors
+                        ))
+                        .into());
+                    }
                     *digest_guard = Some(result.digest);
-                    return Ok(());
+                    return Ok(result);
                 }
 
                 // ──────────────── Previous transaction exists → check its status ────────────────
@@ -751,7 +729,7 @@ where
                                 .execute_transaction_block_with_effects(transaction)
                                 .await?;
                             *digest_guard = Some(result.digest);
-                            return Ok(());
+                            return Ok(result);
                         }
                     }
                 }
@@ -761,11 +739,11 @@ where
 
     async fn process_mid_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_coordinator_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Running `process_mid_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -777,29 +755,48 @@ where
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
-                dwallet_2pc_mpc_coordinator_id,
-            )
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
-        let args = vec![
-            CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
-            CallArg::Object(clock_arg),
-        ];
+        let system_arg = ptb
+            .input(CallArg::Object(ika_system_state_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on system_arg: {e}"))
+            })?;
 
-        ptb.move_call(
+        let coordinator_arg = ptb
+            .input(CallArg::Object(dwallet_2pc_mpc_coordinator_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on coordinator_arg: {e}"))
+            })?;
+
+        let clock_arg = ptb.input(CallArg::Object(clock_arg)).map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!("failed on clock_arg: {e}"))
+        })?;
+
+        ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
-            REQUEST_MID_EPOCH_FUNCTION_NAME.into(),
+            INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
             vec![],
-            args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+            vec![system_arg, clock_arg],
+        );
+
+        let system_current_status_info = ptb.programmable_move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME.into(),
+            vec![],
+            vec![system_arg, clock_arg],
+        );
+
+        ptb.programmable_move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+            INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
+            vec![],
+            vec![coordinator_arg, system_current_status_info],
+        );
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -815,11 +812,11 @@ where
 
     async fn lock_last_session_to_complete_in_current_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_coordinator_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Process `lock_last_active_session_sequence_number()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -832,29 +829,40 @@ where
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
-                dwallet_2pc_mpc_coordinator_id,
-            )
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
-        let args = vec![
-            CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
-            CallArg::Object(clock_arg),
-        ];
+        let system_arg = ptb
+            .input(CallArg::Object(ika_system_state_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on system_arg: {e}"))
+            })?;
 
-        ptb.move_call(
+        let coordinator_arg = ptb
+            .input(CallArg::Object(dwallet_2pc_mpc_coordinator_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on coordinator_arg: {e}"))
+            })?;
+
+        let clock_arg = ptb.input(CallArg::Object(clock_arg)).map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!("failed on clock_arg: {e}"))
+        })?;
+
+        let system_current_status_info = ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
+            CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME.into(),
+            vec![],
+            vec![system_arg, clock_arg],
+        );
+
+        ptb.programmable_move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME.into(),
             vec![],
-            args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+            vec![coordinator_arg, system_current_status_info],
+        );
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -870,11 +878,11 @@ where
 
     async fn process_request_advance_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_coordinator_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Running `process_request_advance_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -887,29 +895,48 @@ where
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
-                dwallet_2pc_mpc_coordinator_id,
-            )
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
-        let args = vec![
-            CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
-            CallArg::Object(clock_arg),
-        ];
+        let system_arg = ptb
+            .input(CallArg::Object(ika_system_state_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on system_arg: {e}"))
+            })?;
 
-        ptb.move_call(
+        let coordinator_arg = ptb
+            .input(CallArg::Object(dwallet_2pc_mpc_coordinator_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on coordinator_arg: {e}"))
+            })?;
+
+        let clock_arg = ptb.input(CallArg::Object(clock_arg)).map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!("failed on clock_arg: {e}"))
+        })?;
+
+        let advance_epoch_approver = ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
-            REQUEST_ADVANCE_EPOCH_FUNCTION_NAME.into(),
+            INITIATE_ADVANCE_EPOCH_FUNCTION_NAME.into(),
             vec![],
-            args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on ProgrammableTransactionBuilder::move_call {e}"
-            ))
-        })?;
+            vec![system_arg, clock_arg],
+        );
+
+        ptb.programmable_move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+            ADVANCE_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            vec![coordinator_arg, advance_epoch_approver],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            SYSTEM_MODULE_NAME.into(),
+            ADVANCE_EPOCH_FUNCTION_NAME.into(),
+            vec![],
+            vec![system_arg, advance_epoch_approver, clock_arg],
+        );
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -924,49 +951,25 @@ where
     }
 
     async fn handle_dwallet_checkpoint_execution_task(
-        ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_coordinator_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
+        metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
+        merge_gas_coins(&mut ptb, &gas_coins)?;
         let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
-                dwallet_2pc_mpc_coordinator_id,
-            )
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
         info!(
@@ -1000,8 +1003,8 @@ where
             .collect::<Result<Vec<_>, _>>()?;
 
         let gas_fee_reimbursement_sui = ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ika_dwallet_2pc_mpc_package_id,
+            DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
@@ -1021,7 +1024,14 @@ where
         )
         .await;
 
-        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(result) => Ok(result),
+            Err(err) => {
+                error!(?err, "failed to submit dwallet checkpoint to consensus",);
+                metrics.dwallet_checkpoint_writes_failure_total.inc();
+                Err(err.into())
+            }
+        }
     }
 
     async fn handle_system_checkpoint_execution_task(
@@ -1031,34 +1041,13 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
+        metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
+        merge_gas_coins(&mut ptb, &gas_coins)?;
         let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
@@ -1110,85 +1099,49 @@ where
         )
         .await;
 
-        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                error!(?err, "failed to submit a system checkpoint to consensus");
+                metrics.system_checkpoint_writes_failure_total.inc();
+                Err(err.into())
+            }
+        }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use roaring::RoaringBitmap;
-    use sui_sdk::SuiClient as SuiSdkClient;
-
-    /// Test helper: assert that each expected validator index has its bit set in the output bitmap.
-    fn assert_bitmap_has_indices(bitmap: &[u8], indices: &[u32]) {
-        for &i in indices {
-            let byte = bitmap[(i / 8) as usize];
-            let bit = (byte >> (i % 8)) & 1;
-            assert_eq!(bit, 1, "Bit for validator {} should be set", i);
-        }
-        println!("{:?}", bitmap);
+/// Merge multiple gas coins into one by adding a `MergeCoins` command to the
+/// provided `ProgrammableTransactionBuilder`.
+/// If `gas_coins` has zero or one element, the function is no‑op.
+fn merge_gas_coins(
+    ptb: &mut ProgrammableTransactionBuilder,
+    gas_coins: &[sui_types::base_types::ObjectRef],
+) -> IkaResult<()> {
+    if gas_coins.len() <= 1 {
+        return Ok(());
     }
 
-    #[test]
-    fn test_calculate_signers_bitmap_various_sizes() {
-        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
+    info!("More than one gas coin was found, merging them into one gas coin.");
 
-        for &num_validators in &test_cases {
-            let mut signers = RoaringBitmap::new();
-            for i in 0..num_validators {
-                signers.insert(i);
-            }
+    let coins: IkaResult<Vec<_>> = gas_coins
+        .iter()
+        .skip(1)
+        .map(|c| {
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
+                .map_err(|e| {
+                    IkaError::SuiConnectorInternalError(format!(
+                        "error merging coin ProgrammableTransactionBuilder::input: {e}"
+                    ))
+                })
+        })
+        .collect();
 
-            let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
-            println!("Bitmap: {:?}", bitmap);
+    let coins = coins?;
 
-            // Ensure the bitmap is large enough.
-            let expected_size = (num_validators / 8) as usize;
-            assert!(
-                bitmap.len() >= expected_size,
-                "Bitmap too small for {} validators: got {}, expected at least {}",
-                num_validators,
-                bitmap.len(),
-                expected_size
-            );
+    ptb.command(sui_types::transaction::Command::MergeCoins(
+        Argument::GasCoin,
+        coins,
+    ));
 
-            // Validate that all expected bits are set
-            let indices: Vec<u32> = (0..num_validators).collect();
-            // assert_bitmap_has_indices(&bitmap, &indices);
-        }
-    }
-
-    #[test]
-    fn test_calculate_signers_bitmap_with_index_exceeding_bitmap_size() {
-        // Simulate a case where there are more validators than entries in the bitmap.
-        let num_validators = 10;
-        let mut signers = RoaringBitmap::new();
-
-        // Add the 9th index (zero-based),
-        // which is out of bounds if bitmap only accounts for 8.
-        signers.insert(9);
-
-        let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
-        println!("Bitmap: {:?}", bitmap);
-
-        // Bitmap should be large enough to include index 9.
-        // Index 9 needs 2 bytes.
-        let required_length = (9 / 8) + 1;
-        assert!(
-            bitmap.len() >= required_length,
-            "Bitmap is too small: expected at least {} bytes for validator index 9, got {}",
-            required_length,
-            bitmap.len()
-        );
-
-        // Optionally: verify that the 10th bit is set
-        let byte_index = 9 / 8;
-        let bit_position = 9 % 8;
-        assert_eq!(
-            (bitmap[byte_index] >> bit_position) & 1,
-            1,
-            "Expected bit at index 9 to be set"
-        );
-    }
+    Ok(())
 }

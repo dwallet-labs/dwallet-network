@@ -5,13 +5,13 @@ use super::error::Result;
 use crate::committee::{Committee, EpochId};
 use crate::digests::{
     DWalletCheckpointContentsDigest, DWalletCheckpointMessageDigest,
-    SystemCheckpointContentsDigest, SystemCheckpointDigest,
+    SystemCheckpointContentsDigest, SystemCheckpointMessageDigest,
 };
 use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, VerifiedDWalletCheckpointMessage,
 };
 use crate::messages_system_checkpoints::{
-    SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
+    SystemCheckpointSequenceNumber, VerifiedSystemCheckpointMessage,
 };
 use crate::storage::{ReadStore, WriteStore};
 use std::collections::HashMap;
@@ -87,18 +87,22 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
         todo!()
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.inner()
             .get_highest_verified_system_checkpoint()
             .cloned()
             .pipe(Ok)
     }
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.inner()
             .get_highest_synced_system_checkpoint()
             .cloned()
@@ -111,8 +115,8 @@ impl ReadStore for SharedInMemoryStore {
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.inner()
             .get_system_checkpoint_by_digest(digest)
             .cloned()
@@ -122,7 +126,7 @@ impl ReadStore for SharedInMemoryStore {
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.inner()
             .get_system_checkpoint_by_sequence_number(sequence_number)
             .cloned()
@@ -157,14 +161,17 @@ impl WriteStore for SharedInMemoryStore {
         Ok(())
     }
 
-    fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
+    fn insert_system_checkpoint(
+        &self,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
+    ) -> Result<()> {
         self.inner_mut().insert_system_checkpoint(system_checkpoint);
         Ok(())
     }
 
     fn update_highest_synced_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         self.inner_mut()
             .update_highest_synced_system_checkpoint(system_checkpoint);
@@ -173,7 +180,7 @@ impl WriteStore for SharedInMemoryStore {
 
     fn update_highest_verified_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         self.inner_mut()
             .update_highest_verified_system_checkpoint(system_checkpoint);
@@ -191,7 +198,10 @@ impl SharedInMemoryStore {
         self.inner_mut().insert_certified_checkpoint(checkpoint);
     }
 
-    pub fn insert_certified_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) {
+    pub fn insert_certified_system_checkpoint(
+        &self,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
+    ) {
         self.inner_mut()
             .insert_certified_system_checkpoint(system_checkpoint);
     }
@@ -217,15 +227,19 @@ pub struct InMemoryStore {
 
     lowest_dwallet_checkpoint_number: DWalletCheckpointSequenceNumber,
 
-    highest_verified_system_checkpoint:
-        Option<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
-    highest_synced_system_checkpoint:
-        Option<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
-    system_checkpoints: HashMap<SystemCheckpointDigest, VerifiedSystemCheckpoint>,
+    highest_verified_system_checkpoint: Option<(
+        SystemCheckpointSequenceNumber,
+        SystemCheckpointMessageDigest,
+    )>,
+    highest_synced_system_checkpoint: Option<(
+        SystemCheckpointSequenceNumber,
+        SystemCheckpointMessageDigest,
+    )>,
+    system_checkpoints: HashMap<SystemCheckpointMessageDigest, VerifiedSystemCheckpointMessage>,
     system_checkpoint_contents_digest_to_sequence_number:
         HashMap<SystemCheckpointContentsDigest, SystemCheckpointSequenceNumber>,
     system_checkpoint_sequence_number_to_digest:
-        HashMap<SystemCheckpointSequenceNumber, SystemCheckpointDigest>,
+        HashMap<SystemCheckpointSequenceNumber, SystemCheckpointMessageDigest>,
     lowest_system_checkpoint_number: SystemCheckpointSequenceNumber,
 }
 
@@ -233,7 +247,7 @@ impl InMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedDWalletCheckpointMessage,
-        system_checkpoint: VerifiedSystemCheckpoint,
+        system_checkpoint: VerifiedSystemCheckpointMessage,
         committee: Committee,
     ) {
         self.insert_committee(committee);
@@ -387,27 +401,29 @@ impl InMemoryStore {
 
     pub fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Option<&VerifiedSystemCheckpoint> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Option<&VerifiedSystemCheckpointMessage> {
         self.system_checkpoints.get(digest)
     }
 
     pub fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Option<&VerifiedSystemCheckpoint> {
+    ) -> Option<&VerifiedSystemCheckpointMessage> {
         self.system_checkpoint_sequence_number_to_digest
             .get(&sequence_number)
             .and_then(|digest| self.get_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_verified_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
+    pub fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Option<&VerifiedSystemCheckpointMessage> {
         self.highest_verified_system_checkpoint
             .as_ref()
             .and_then(|(_, digest)| self.get_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_synced_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
+    pub fn get_highest_synced_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpointMessage> {
         self.highest_synced_system_checkpoint
             .as_ref()
             .and_then(|(_, digest)| self.get_system_checkpoint_by_digest(digest))
@@ -424,7 +440,10 @@ impl InMemoryStore {
         self.lowest_system_checkpoint_number = system_checkpoint_seq_num;
     }
 
-    pub fn insert_system_checkpoint(&mut self, system_checkpoint: &VerifiedSystemCheckpoint) {
+    pub fn insert_system_checkpoint(
+        &mut self,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
+    ) {
         self.insert_certified_system_checkpoint(system_checkpoint);
         let digest = *system_checkpoint.digest();
         let sequence_number = *system_checkpoint.sequence_number();
@@ -438,7 +457,7 @@ impl InMemoryStore {
     // without bumping the highest_verified_system_checkpoint watermark.
     pub fn insert_certified_system_checkpoint(
         &mut self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) {
         let digest = *system_checkpoint.digest();
         let sequence_number = *system_checkpoint.sequence_number();
@@ -451,7 +470,7 @@ impl InMemoryStore {
 
     pub fn update_highest_synced_system_checkpoint(
         &mut self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) {
         if !self
             .system_checkpoints
@@ -472,7 +491,7 @@ impl InMemoryStore {
 
     pub fn update_highest_verified_system_checkpoint(
         &mut self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) {
         if !self
             .system_checkpoints
@@ -491,13 +510,15 @@ impl InMemoryStore {
         ));
     }
 
-    pub fn system_checkpoints(&self) -> &HashMap<SystemCheckpointDigest, VerifiedSystemCheckpoint> {
+    pub fn system_checkpoints(
+        &self,
+    ) -> &HashMap<SystemCheckpointMessageDigest, VerifiedSystemCheckpointMessage> {
         &self.system_checkpoints
     }
 
     pub fn system_checkpoint_sequence_number_to_digest(
         &self,
-    ) -> &HashMap<SystemCheckpointSequenceNumber, SystemCheckpointDigest> {
+    ) -> &HashMap<SystemCheckpointSequenceNumber, SystemCheckpointMessageDigest> {
         &self.system_checkpoint_sequence_number_to_digest
     }
 }
@@ -511,10 +532,10 @@ impl SingleCheckpointSharedInMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedDWalletCheckpointMessage,
-        system_checkpoint: VerifiedSystemCheckpoint,
+        system_checkpoint: VerifiedSystemCheckpointMessage,
         committee: Committee,
     ) {
-        let mut locked = self.0 .0.write().unwrap();
+        let mut locked = self.0.0.write().unwrap();
         locked.insert_genesis_state(checkpoint, system_checkpoint, committee);
     }
 }
@@ -559,15 +580,19 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
             .get_dwallet_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
         todo!()
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.0.get_highest_verified_system_checkpoint()
     }
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.0.get_highest_synced_system_checkpoint()
     }
 
@@ -577,15 +602,15 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.0.get_system_checkpoint_by_digest(digest)
     }
 
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         self.0
             .get_system_checkpoint_by_sequence_number(sequence_number)
     }
@@ -597,7 +622,7 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
         {
-            let mut locked = self.0 .0.write().unwrap();
+            let mut locked = self.0.0.write().unwrap();
             locked.checkpoints.clear();
             locked.sequence_number_to_digest.clear();
         }
@@ -623,9 +648,12 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         Ok(())
     }
 
-    fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
+    fn insert_system_checkpoint(
+        &self,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
+    ) -> Result<()> {
         {
-            let mut locked = self.0 .0.write().unwrap();
+            let mut locked = self.0.0.write().unwrap();
             locked.system_checkpoints.clear();
             locked.system_checkpoint_sequence_number_to_digest.clear();
         }
@@ -635,7 +663,7 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
 
     fn update_highest_synced_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         self.0
             .update_highest_synced_system_checkpoint(system_checkpoint)?;
@@ -644,7 +672,7 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
 
     fn update_highest_verified_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         self.0
             .update_highest_verified_system_checkpoint(system_checkpoint)?;

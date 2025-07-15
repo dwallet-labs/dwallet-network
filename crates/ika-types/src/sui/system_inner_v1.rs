@@ -63,57 +63,61 @@ pub struct SystemInnerV1 {
     pub validator_set: ValidatorSetV1,
     pub epoch_duration_ms: u64,
     pub stake_subsidy_start_epoch: u64,
-    pub ika_treasury: ProtocolTreasuryV1,
+    pub protocol_treasury: ProtocolTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
-    pub last_processed_system_checkpoint_sequence_number: Option<u64>,
-    pub previous_epoch_last_system_checkpoint_sequence_number: u64,
+    pub last_processed_checkpoint_sequence_number: u64,
+    pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub total_messages_processed: u64,
-    pub computation_reward: Balance,
+    pub remaining_rewards: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
-    pub dwallet_2pc_mpc_coordinator_id: Option<ObjectID>,
-    pub dwallet_2pc_mpc_coordinator_network_encryption_keys: Vec<DWalletNetworkEncryptionKeyCap>,
+    pub witness_approving_advance_epoch: Vec<String>,
+    pub received_end_of_publish: bool,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricing {
-    pub pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
+pub struct PricingInfo {
+    pub pricing_map: VecMap<PricingInfoKey, PricingInfoValue>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricingKey {
+pub struct PricingInfoKey {
     pub curve: u32,
     pub signature_algorithm: Option<u32>,
     pub protocol: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricingValue {
-    pub consensus_validation_ika: u64,
-    pub computation_ika: u64,
+pub struct PricingInfoValue {
+    pub fee_ika: u64,
     pub gas_fee_reimbursement_sui: u64,
     pub gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricingCalculationVotes {
+pub struct PricingInfoCalculationVotes {
     pub bls_committee: BlsCommittee,
-    pub default_pricing: DWalletPricing,
-    pub working_pricing: DWalletPricing,
+    pub default_pricing: PricingInfo,
+    pub working_pricing: PricingInfo,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct SessionManagement {
-    pub registered_session_identifiers: Table,
+pub struct SessionsKeeper {
     pub sessions: ObjectTable,
-    pub user_requested_sessions_events: Bag,
-    pub number_of_completed_sessions: u64,
-    pub started_system_sessions_count: u64,
-    pub completed_system_sessions_count: u64,
+    pub session_events: Bag,
+    pub started_sessions_count: u64,
+    pub completed_sessions_count: u64,
     pub next_session_sequence_number: u64,
-    pub last_session_to_complete_in_current_epoch: u64,
-    pub locked_last_session_to_complete_in_current_epoch: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct SessionsManager {
+    pub registered_user_session_identifiers: Table,
+    pub user_sessions_keeper: SessionsKeeper,
+    pub system_sessions_keeper: SessionsKeeper,
+    pub last_user_initiated_session_to_complete_in_current_epoch: u64,
+    pub locked_last_user_initiated_session_to_complete_in_current_epoch: bool,
     pub max_active_sessions_buffer: u64,
 }
 
@@ -129,32 +133,34 @@ pub struct SupportConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct PricingAndFeeManagement {
-    pub current: DWalletPricing,
-    pub default: DWalletPricing,
+    pub current: PricingInfo,
+    pub default: PricingInfo,
     pub validator_votes: Table,
-    pub calculation_votes: Option<DWalletPricingCalculationVotes>,
+    pub calculation_votes: Option<PricingInfoCalculationVotes>,
     pub gas_fee_reimbursement_sui_system_call_value: u64,
-    pub gas_fee_reimbursement_sui: Balance,
-    pub consensus_validation_fee_charged_ika: Balance,
+    pub gas_fee_reimbursement_sui_system_call_balance: Balance,
+    pub fee_charged_ika: Balance,
 }
 
 /// Rust version of the Move DWalletCoordinatorInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
-    pub session_management: SessionManagement,
+    pub sessions_manager: SessionsManager,
     pub dwallets: ObjectTable,
     pub dwallet_network_encryption_keys: ObjectTable,
+    pub epoch_dwallet_network_encryption_keys_reconfiguration_completed: u64,
     pub encryption_keys: ObjectTable,
     pub presigns: ObjectTable,
     pub partial_centralized_signed_messages: ObjectTable,
     pub pricing_and_fee_management: PricingAndFeeManagement,
     pub active_committee: BlsCommittee,
-    pub previous_committee: BlsCommittee,
+    pub next_epoch_active_committee: Option<BlsCommittee>,
     pub total_messages_processed: u64,
-    pub last_processed_checkpoint_sequence_number: Option<u64>,
+    pub last_processed_checkpoint_sequence_number: u64,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub support_config: SupportConfig,
+    pub received_end_of_publish: bool,
     pub extra_fields: Bag,
 }
 
@@ -199,12 +205,12 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.next_protocol_version
     }
 
-    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64> {
-        self.last_processed_system_checkpoint_sequence_number
+    fn last_processed_checkpoint_sequence_number(&self) -> u64 {
+        self.last_processed_checkpoint_sequence_number
     }
 
-    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_system_checkpoint_sequence_number
+    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64 {
+        self.previous_epoch_last_checkpoint_sequence_number
     }
 
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {
@@ -217,16 +223,6 @@ impl SystemInnerTrait for SystemInnerV1 {
 
     fn epoch_duration_ms(&self) -> u64 {
         self.epoch_duration_ms
-    }
-
-    fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID> {
-        self.dwallet_2pc_mpc_coordinator_id
-    }
-
-    fn dwallet_2pc_mpc_coordinator_network_encryption_keys(
-        &self,
-    ) -> &Vec<DWalletNetworkEncryptionKeyCap> {
-        &self.dwallet_2pc_mpc_coordinator_network_encryption_keys
     }
 
     fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee> {
@@ -277,11 +273,4 @@ pub struct ValidatorCapV1 {
 pub struct ValidatorOperationCapV1 {
     pub id: ObjectID,
     pub validator_id: ObjectID,
-}
-
-/// Rust version of the Move ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap type
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletNetworkEncryptionKeyCap {
-    pub id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
 }

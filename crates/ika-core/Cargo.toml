@@ -4,23 +4,26 @@ version = "0.1.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
 
 [dependencies]
+merlin.workspace = true
 k256.workspace = true
 group.workspace = true
 mpc.workspace = true
+proof.workspace = true
 twopc_mpc.workspace = true
 homomorphic_encryption.workspace = true
-class_groups.workspace = true
+class_groups = { workspace = true, features = ["threshold", "parallel"]}
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "e5eaa62"}
-shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
-rand_core = "0.6.4"
+commitment.workspace = true
+message-digest = { path = "../message-digest" }
+rand_core = "0.9"
 dwallet-mpc-types.workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
 arc-swap.workspace = true
@@ -50,6 +53,7 @@ once_cell.workspace = true
 parking_lot.workspace = true
 prometheus.workspace = true
 rand.workspace = true
+rand_chacha.workspace = true
 roaring.workspace = true
 rayon.workspace = true
 reqwest.workspace = true
@@ -110,10 +114,9 @@ num_enum.workspace = true
 strum_macros.workspace = true
 derive_more.workspace = true
 backoff.workspace = true
-sha3 = "0.10.8"
-sha2 = "0.10.8"
+sha3 = "0.11.0-rc.0"
+sha2 = "0.11.0-rc.0"
 base64 = "0.22.1"
-
 
 [dev-dependencies]
 clap.workspace = true
@@ -149,18 +152,6 @@ moka = { workspace = true, default-features = false, features = [
 [target.'cfg(not(msim))'.dependencies]
 moka = { workspace = true, features = ["sync"] }
 
-[[example]]
-name = "generate-format"
-path = "src/generate_format.rs"
-test = false
-
-[[bench]]
-name = "verified_cert_cache_bench"
-harness = false
-
-[[bench]]
-name = "batch_verification_bench"
-harness = false
-
 [features]
 test-utils = []
+enforce-minimum-cpu = []

@@ -4,18 +4,19 @@ version = "0.0.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
 
 [dependencies]
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 anemo.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
 fastcrypto.workspace = true
-rand.workspace = true
+rand = "0.8" # use old version for compatability with fastcrypto
 serde.workspace = true
 serde_with.workspace = true
 serde_yaml.workspace = true
@@ -31,7 +32,6 @@ ika-config.workspace = true
 sui-macros.workspace = true
 ika-protocol-config.workspace = true
 ika-types.workspace = true
-sui-rpc-api.workspace = true
 
 sui.workspace = true
 sui-config.workspace = true
@@ -49,6 +49,7 @@ move-core-types.workspace = true
 clap.workspace = true
 serde_json.workspace = true
 flate2 = "1.0.35"
+move-package.workspace = true
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true
@@ -58,6 +59,3 @@ insta.workspace = true
 tempfile.workspace = true
 
 sui-execution.workspace = true
-
-[features]
-mock-class-groups = []

@@ -7,8 +7,6 @@
 /// is performed via the `withdraw_stake` method in the `staking_pool`.
 module ika_system::staked_ika;
 
-// === Imports ===
-
 use ika::ika::IKA;
 use sui::balance::Balance;
 
@@ -26,9 +24,9 @@ const EMetadataMismatch: u64 = 1;
 /// The amount for the split is invalid.
 const EInvalidAmount: u64 = 2;
 /// Trying to mark stake as withdrawing when it is already marked as withdrawing.
-const EAlreadyWithdrawing: u64 = 6;
+const EAlreadyWithdrawing: u64 = 3;
 /// Stake is below the minimum staking threshold.
-const EStakeBelowThreshold: u64 = 7;
+const EStakeBelowThreshold: u64 = 4;
 
 // === Structs ===
 

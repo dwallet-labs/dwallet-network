@@ -3,18 +3,15 @@
 
 module ika_system::validator_info;
 
-// === Imports ===
-
+use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use ika_common::extended_field::{Self, ExtendedField};
+use ika_common::multiaddr;
+use ika_system::validator_metadata::ValidatorMetadata;
 use std::string::String;
-use sui::{bls12381::{UncompressedG1, g1_from_bytes, g1_to_uncompressed_g1, bls12381_min_pk_verify}, group_ops::Element};
-use sui::table_vec::{TableVec};
 use sui::bcs;
-use ika_system::{
-    extended_field::{Self, ExtendedField},
-    validator_metadata::{ValidatorMetadata}
-};
-use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::multiaddr;
+use sui::bls12381::{UncompressedG1, g1_from_bytes, g1_to_uncompressed_g1, bls12381_min_pk_verify};
+use sui::group_ops::Element;
+use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -33,33 +30,24 @@ const ED25519_KEY_LEN: u64 = 32;
 
 // === Errors ===
 
-/// The proof of possession verification failed
-#[error]
-const EInvalidProofOfPossession: vector<u8> = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
-
-#[error]
-const EInvalidNameLength: vector<u8> = b"Validator name length exceeds maximum allowed length.";
-
-#[error]
-const EMetadataInvalidProtocolPubkey: vector<u8> = b"Invalid protocol_pubkey_bytes field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidNetworkPubkey: vector<u8> = b"Invalid network_pubkey_bytes field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidConsensusPubkey: vector<u8> = b"Invalid consensus_pubkey_bytes field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidNetworkAddress: vector<u8> = b"Invalid network_address field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidP2pAddress: vector<u8> = b"Invalid p2p_address field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidConsensusAddress: vector<u8> = b"Invalid consensus_address field in ValidatorMetadata.";
-
-#[error]
-const EValidatorMetadataExceedingLengthLimit: vector<u8> = b"Validator Metadata is too long.";
+/// Invalid proof_of_possession_bytes field in ValidatorMetadata.
+const EInvalidProofOfPossession: u64 = 0;
+/// Validator name length exceeds maximum allowed length.
+const EInvalidNameLength: u64 = 1;
+/// Invalid protocol_pubkey_bytes field in ValidatorMetadata.
+const EMetadataInvalidProtocolPubkey: u64 = 2;
+/// Invalid network_pubkey_bytes field in ValidatorMetadata.
+const EMetadataInvalidNetworkPubkey: u64 = 3;
+/// Invalid consensus_pubkey_bytes field in ValidatorMetadata.
+const EMetadataInvalidConsensusPubkey: u64 = 4;
+/// Invalid network_address field in ValidatorMetadata.
+const EMetadataInvalidNetworkAddress: u64 = 5;
+/// Invalid p2p_address field in ValidatorMetadata.
+const EMetadataInvalidP2pAddress: u64 = 6;
+/// Invalid consensus_address field in ValidatorMetadata.
+const EMetadataInvalidConsensusAddress: u64 = 7;
+/// Validator Metadata is too long.
+const EValidatorMetadataExceedingLengthLimit: u64 = 8;
 
 // === Structs ===
 
@@ -71,14 +59,12 @@ public struct ValidatorInfo has store {
     name: String,
     /// Unique identifier for this validator
     validator_id: ID,
-
     /// The network address of the validator (could also contain extra info such as port, DNS and etc.)
     network_address: String,
     /// The address of the validator used for p2p activities such as state sync (could also contain extra info such as port, DNS and etc.)
     p2p_address: String,
     /// The address of the consensus
     consensus_address: String,
-
     /// Current epoch public keys
     /// The public key bytes corresponding to the private key that the validator
     /// holds to sign checkpoint messages
@@ -93,7 +79,6 @@ public struct ValidatorInfo has store {
     /// The validator's Class Groups public key and its associated proof.
     /// This key is used for the network DKG process and for resharing the network MPC key
     class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
-
     /// Next epoch configurations - only take effect in the next epoch
     /// If none, current value will stay unchanged.
     next_epoch_protocol_pubkey_bytes: Option<vector<u8>>,
@@ -103,7 +88,6 @@ public struct ValidatorInfo has store {
     next_epoch_network_address: Option<String>,
     next_epoch_p2p_address: Option<String>,
     next_epoch_consensus_address: Option<String>,
-
     /// Extended metadata field for additional validator information
     metadata: ExtendedField<ValidatorMetadata>,
 }
@@ -135,9 +119,9 @@ public(package) fun new(
             DEFAULT_EPOCH_ID,
             ctx.sender(),
             protocol_pubkey_bytes,
-            proof_of_possession_bytes
+            proof_of_possession_bytes,
         ),
-        EInvalidProofOfPossession
+        EInvalidProofOfPossession,
     );
 
     let validator_info = ValidatorInfo {
@@ -217,9 +201,9 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
             DEFAULT_EPOCH_ID,
             ctx.sender(),
             protocol_pubkey_bytes,
-            proof_of_possession_bytes
+            proof_of_possession_bytes,
         ),
-        EInvalidProofOfPossession
+        EInvalidProofOfPossession,
     );
     self.next_epoch_protocol_pubkey_bytes = option::some(protocol_pubkey_bytes);
     self.validate();
@@ -246,9 +230,11 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 /// Sets class groups public key and proof for next epoch.
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut ValidatorInfo,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
 ) {
-    let old_value = self.next_epoch_class_groups_pubkey_and_proof_bytes.swap_or_fill(class_groups_pubkey_and_proof);
+    let old_value = self
+        .next_epoch_class_groups_pubkey_and_proof_bytes
+        .swap_or_fill(class_groups_pubkey_and_proof);
     old_value.destroy!(|v| {
         v.drop();
     });
@@ -291,8 +277,13 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
     };
 
     if (self.next_epoch_class_groups_pubkey_and_proof_bytes.is_some()) {
-        let next_epoch_class_groups_pubkey_and_proof_bytes = self.next_epoch_class_groups_pubkey_and_proof_bytes.extract();
-        update_class_groups_key_and_proof(&mut self.class_groups_pubkey_and_proof_bytes, next_epoch_class_groups_pubkey_and_proof_bytes);
+        let next_epoch_class_groups_pubkey_and_proof_bytes = self
+            .next_epoch_class_groups_pubkey_and_proof_bytes
+            .extract();
+        update_class_groups_key_and_proof(
+            &mut self.class_groups_pubkey_and_proof_bytes,
+            next_epoch_class_groups_pubkey_and_proof_bytes,
+        );
     };
 }
 
@@ -328,7 +319,7 @@ public(package) fun verify_proof_of_possession(
 
 /// Aborts if validator info is invalid
 public(package) fun validate(self: &ValidatorInfo) {
-        // Verify name length.
+    // Verify name length.
     assert!(self.name.length() <= MAX_VALIDATOR_NAME_LENGTH, EInvalidNameLength);
 
     // Verify address length.
@@ -342,34 +333,64 @@ public(package) fun validate(self: &ValidatorInfo) {
 
     assert!(multiaddr::validate_tcp(&self.network_address), EMetadataInvalidNetworkAddress);
     if (self.next_epoch_network_address.is_some()) {
-        assert!(self.next_epoch_network_address.borrow().length() <= MAX_VALIDATOR_TEXT_FIELD_LENGTH, EValidatorMetadataExceedingLengthLimit);
-        assert!(multiaddr::validate_tcp(self.next_epoch_network_address.borrow()), EMetadataInvalidNetworkAddress);
+        assert!(
+            self.next_epoch_network_address.borrow().length() <= MAX_VALIDATOR_TEXT_FIELD_LENGTH,
+            EValidatorMetadataExceedingLengthLimit,
+        );
+        assert!(
+            multiaddr::validate_tcp(self.next_epoch_network_address.borrow()),
+            EMetadataInvalidNetworkAddress,
+        );
     };
 
     assert!(multiaddr::validate_udp(&self.p2p_address), EMetadataInvalidP2pAddress);
     if (self.next_epoch_p2p_address.is_some()) {
-        assert!(self.next_epoch_p2p_address.borrow().length() <= MAX_VALIDATOR_TEXT_FIELD_LENGTH, EValidatorMetadataExceedingLengthLimit);
-        assert!(multiaddr::validate_udp(self.next_epoch_p2p_address.borrow()), EMetadataInvalidP2pAddress);
+        assert!(
+            self.next_epoch_p2p_address.borrow().length() <= MAX_VALIDATOR_TEXT_FIELD_LENGTH,
+            EValidatorMetadataExceedingLengthLimit,
+        );
+        assert!(
+            multiaddr::validate_udp(self.next_epoch_p2p_address.borrow()),
+            EMetadataInvalidP2pAddress,
+        );
     };
 
     assert!(multiaddr::validate_udp(&self.consensus_address), EMetadataInvalidConsensusAddress);
     if (self.next_epoch_consensus_address.is_some()) {
-        assert!(self.next_epoch_consensus_address.borrow().length() <= MAX_VALIDATOR_TEXT_FIELD_LENGTH, EValidatorMetadataExceedingLengthLimit);
-        assert!(multiaddr::validate_udp(self.next_epoch_consensus_address.borrow()), EMetadataInvalidConsensusAddress);
+        assert!(
+            self.next_epoch_consensus_address.borrow().length() <= MAX_VALIDATOR_TEXT_FIELD_LENGTH,
+            EValidatorMetadataExceedingLengthLimit,
+        );
+        assert!(
+            multiaddr::validate_udp(self.next_epoch_consensus_address.borrow()),
+            EMetadataInvalidConsensusAddress,
+        );
     };
 
     assert!(self.network_pubkey_bytes.length() == ED25519_KEY_LEN, EMetadataInvalidNetworkPubkey);
     if (self.next_epoch_network_pubkey_bytes.is_some()) {
-        assert!(self.next_epoch_network_pubkey_bytes.borrow().length() == ED25519_KEY_LEN, EMetadataInvalidNetworkPubkey);
+        assert!(
+            self.next_epoch_network_pubkey_bytes.borrow().length() == ED25519_KEY_LEN,
+            EMetadataInvalidNetworkPubkey,
+        );
     };
-    assert!(self.consensus_pubkey_bytes.length() == ED25519_KEY_LEN, EMetadataInvalidConsensusPubkey);
+    assert!(
+        self.consensus_pubkey_bytes.length() == ED25519_KEY_LEN,
+        EMetadataInvalidConsensusPubkey,
+    );
     if (self.next_epoch_consensus_pubkey_bytes.is_some()) {
-        assert!(self.next_epoch_consensus_pubkey_bytes.borrow().length() == ED25519_KEY_LEN, EMetadataInvalidConsensusPubkey);
+        assert!(
+            self.next_epoch_consensus_pubkey_bytes.borrow().length() == ED25519_KEY_LEN,
+            EMetadataInvalidConsensusPubkey,
+        );
     };
 
     assert!(self.protocol_pubkey_bytes.length() == BLS_KEY_LEN, EMetadataInvalidProtocolPubkey);
     if (self.next_epoch_protocol_pubkey_bytes.is_some()) {
-        assert!(self.next_epoch_protocol_pubkey_bytes.borrow().length() == BLS_KEY_LEN, EMetadataInvalidProtocolPubkey);
+        assert!(
+            self.next_epoch_protocol_pubkey_bytes.borrow().length() == BLS_KEY_LEN,
+            EMetadataInvalidProtocolPubkey,
+        );
     };
 
     // TODO(omersadika): add test for next epoch
@@ -377,15 +398,19 @@ public(package) fun validate(self: &ValidatorInfo) {
 
 /// Destroy the validator info.
 public(package) fun destroy(self: ValidatorInfo) {
-    let ValidatorInfo { metadata, mut class_groups_pubkey_and_proof_bytes, next_epoch_class_groups_pubkey_and_proof_bytes, .. } = self;
+    let ValidatorInfo {
+        metadata,
+        mut class_groups_pubkey_and_proof_bytes,
+        next_epoch_class_groups_pubkey_and_proof_bytes,
+        ..,
+    } = self;
     metadata.destroy();
-    while(class_groups_pubkey_and_proof_bytes.length() != 0) {
+    while (class_groups_pubkey_and_proof_bytes.length() != 0) {
         class_groups_pubkey_and_proof_bytes.pop_back();
     };
     class_groups_pubkey_and_proof_bytes.destroy_empty();
     next_epoch_class_groups_pubkey_and_proof_bytes.destroy!(|c| c.drop());
 }
-
 
 public(package) fun is_duplicate(self: &ValidatorInfo, other: &ValidatorInfo): bool {
     self.name == other.name
@@ -505,7 +530,9 @@ public fun next_epoch_consensus_pubkey_bytes(self: &ValidatorInfo): &Option<vect
 }
 
 /// Returns the next epoch class groups public key and proof
-public fun next_epoch_class_groups_pubkey_and_proof_bytes(self: &ValidatorInfo): &Option<ClassGroupsPublicKeyAndProof> {
+public fun next_epoch_class_groups_pubkey_and_proof_bytes(
+    self: &ValidatorInfo,
+): &Option<ClassGroupsPublicKeyAndProof> {
     &self.next_epoch_class_groups_pubkey_and_proof_bytes
 }
 

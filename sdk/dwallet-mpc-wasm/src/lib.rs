@@ -5,21 +5,20 @@ use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, create_dkg_output,
     create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
-    sample_dwallet_keypair_inner, verify_secp_signature_inner, verify_secret_share,
+    network_dkg_public_output_to_protocol_pp_inner, sample_dwallet_keypair_inner,
+    verify_secp_signature_inner, verify_secret_share,
 };
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
-    network_dkg_public_output: Vec<u8>,
-    key_scheme: u32,
+    protocol_pp: Vec<u8>,
     decentralized_first_round_public_output: Vec<u8>,
     session_identifier: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let dkg_centralized_result = &create_dkg_output(
-        network_dkg_public_output,
-        key_scheme,
+        protocol_pp,
         decentralized_first_round_public_output,
         session_identifier,
     )
@@ -50,20 +49,26 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
+#[wasm_bindgen]
+pub fn network_dkg_public_output_to_protocol_pp(
+    network_dkg_public_output: Vec<u8>,
+) -> Result<JsValue, JsError> {
+    let protocol_pp = network_dkg_public_output_to_protocol_pp_inner(network_dkg_public_output)
+        .map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&protocol_pp)?)
+}
+
 /// Encrypts the given secret share to the given encryption key.
 /// Returns a tuple of the encryption key and proof of encryption.
 #[wasm_bindgen]
 pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
-    network_dkg_public_output: Vec<u8>,
+    protocol_pp: Vec<u8>,
 ) -> Result<JsValue, JsError> {
-    let encryption_and_proof = encrypt_secret_key_share_and_prove(
-        secret_key_share,
-        encryption_key,
-        network_dkg_public_output,
-    )
-    .map_err(to_js_err)?;
+    let encryption_and_proof =
+        encrypt_secret_key_share_and_prove(secret_key_share, encryption_key, protocol_pp)
+            .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
@@ -147,7 +152,6 @@ pub fn create_imported_dwallet_centralized_step(
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
     network_dkg_public_output: Vec<u8>,
-    key_scheme: u32,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_dkg_secret_output: Vec<u8>,
     presign: Vec<u8>,
@@ -156,7 +160,6 @@ pub fn create_sign_centralized_output(
 ) -> Result<JsValue, JsError> {
     let signed_message = advance_centralized_sign_party(
         network_dkg_public_output,
-        key_scheme,
         decentralized_party_dkg_public_output,
         centralized_party_dkg_secret_output,
         presign,
@@ -171,5 +174,5 @@ pub fn create_sign_centralized_output(
 // There is no way to implement From<anyhow::Error> for JsErr
 // since the current From<Error> is generic, and it results in a conflict.
 fn to_js_err(e: anyhow::Error) -> JsError {
-    JsError::new(format!("{}", e).as_str())
+    JsError::new(format!("{e}").as_str())
 }

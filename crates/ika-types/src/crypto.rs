@@ -5,7 +5,7 @@ use crate::committee::{Committee, EpochId, StakeUnit};
 use crate::error::{IkaError, IkaResult};
 use crate::ika_serde::IkaBitmap;
 use crate::intent::{Intent, IntentMessage, IntentScope};
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use derive_more::{AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use fastcrypto::bls12381::min_pk::{
@@ -25,12 +25,12 @@ pub use fastcrypto::traits::{
     VerifyingKey,
 };
 use move_core_types::account_address::AccountAddress;
-use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rand::rngs::StdRng;
 use roaring::RoaringBitmap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, Bytes};
+use serde_with::{Bytes, serde_as};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
@@ -160,7 +160,7 @@ pub struct AuthorityPublicKeyBytes(
 impl AuthorityPublicKeyBytes {
     fn fmt_impl(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let s = Hex::encode(self.0);
-        write!(f, "k#{}", s)?;
+        write!(f, "k#{s}")?;
         Ok(())
     }
 }
@@ -187,8 +187,8 @@ pub struct ConciseAuthorityPublicKeyBytesRef<'a>(&'a AuthorityPublicKeyBytes);
 
 impl Debug for ConciseAuthorityPublicKeyBytesRef<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let s = Hex::encode(self.0 .0.get(0..4).ok_or(std::fmt::Error)?);
-        write!(f, "k#{}..", s)
+        let s = Hex::encode(self.0.0.get(0..4).ok_or(std::fmt::Error)?);
+        write!(f, "k#{s}..")
     }
 }
 
@@ -204,8 +204,8 @@ pub struct ConciseAuthorityPublicKeyBytes(AuthorityPublicKeyBytes);
 
 impl Debug for ConciseAuthorityPublicKeyBytes {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let s = Hex::encode(self.0 .0.get(0..4).ok_or(std::fmt::Error)?);
-        write!(f, "k#{}..", s)
+        let s = Hex::encode(self.0.0.get(0..4).ok_or(std::fmt::Error)?);
+        write!(f, "k#{s}..")
     }
 }
 
@@ -781,13 +781,9 @@ mod bcs_signable {
     pub trait BcsSignable: serde::Serialize + serde::de::DeserializeOwned {}
     impl BcsSignable for crate::committee::Committee {}
     impl BcsSignable for crate::messages_dwallet_checkpoint::DWalletCheckpointMessage {}
-    impl BcsSignable for crate::messages_system_checkpoints::SystemCheckpoint {}
+    impl BcsSignable for crate::messages_system_checkpoints::SystemCheckpointMessage {}
 
-    impl BcsSignable for crate::message::MessageKind {}
-
-    impl BcsSignable for super::bcs_signable_test::Foo {}
-    #[cfg(test)]
-    impl BcsSignable for super::bcs_signable_test::Bar {}
+    impl BcsSignable for crate::message::DWalletCheckpointMessageKind {}
 }
 
 impl<T, W> Signable<W> for T
@@ -798,7 +794,7 @@ where
     fn write(&self, writer: &mut W) {
         let name = serde_name::trace_name::<Self>().expect("Self must be a struct or an enum");
         // Note: This assumes that names never contain the separator `::`.
-        write!(writer, "{}::", name).expect("Hasher should not fail");
+        write!(writer, "{name}::").expect("Hasher should not fail");
         bcs::serialize_into(writer, &self).expect("Message serialization should not fail");
     }
 }
@@ -819,7 +815,7 @@ where
     fn from_signable_bytes(bytes: &[u8]) -> Result<Self, Error> {
         // Remove name tag before deserialization using BCS
         let name = serde_name::trace_name::<Self>().expect("Self should be a struct or an enum");
-        let name_byte_len = format!("{}::", name).bytes().len();
+        let name_byte_len = format!("{name}::").bytes().len();
         Ok(bcs::from_bytes(bytes.get(name_byte_len..).ok_or_else(
             || anyhow!("Failed to deserialize to {name}."),
         )?)?)
@@ -939,40 +935,9 @@ impl<'a> VerificationObligation<'a> {
             }
 
             IkaError::InvalidSignature {
-                error: format!("Failed to batch verify aggregated auth sig: {}", e),
+                error: format!("Failed to batch verify aggregated auth sig: {e}"),
             }
         })?;
         Ok(())
-    }
-}
-
-pub mod bcs_signable_test {
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Clone, Serialize, Deserialize)]
-    pub struct Foo(pub String);
-
-    #[cfg(test)]
-    #[derive(Serialize, Deserialize)]
-    pub struct Bar(pub String);
-
-    #[cfg(test)]
-    use super::VerificationObligation;
-
-    #[cfg(test)]
-    pub fn get_obligation_input<T>(value: &T) -> (VerificationObligation<'_>, usize)
-    where
-        T: super::bcs_signable::BcsSignable,
-    {
-        use shared_crypto::intent::{Intent, IntentScope};
-
-        let mut obligation = VerificationObligation::default();
-        // Add the obligation of the authority signature verifications.
-        let idx = obligation.add_message(
-            value,
-            0,
-            Intent::sui_app(IntentScope::SenderSignedTransaction),
-        );
-        (obligation, idx)
     }
 }

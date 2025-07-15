@@ -40,10 +40,10 @@ pub const DWALLET_COORDINATOR_STRUCT_NAME: &IdentStr = ident_str!("DWalletCoordi
 pub const SYSTEM_MODULE_NAME: &IdentStr = ident_str!("system");
 pub const INIT_MODULE_NAME: &IdentStr = ident_str!("init");
 pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
+pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
 pub const VALIDATOR_METADATA_MODULE_NAME: &IdentStr = ident_str!("validator_metadata");
 pub const SYSTEM_INNER_MODULE_NAME: &IdentStr = ident_str!("system_inner");
-pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_coordinator");
+pub const DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME: &IdentStr = ident_str!("coordinator");
 
 pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
@@ -54,10 +54,16 @@ pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
     ident_str!("request_remove_validator");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
-pub const REQUEST_MID_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_reconfig_mid_epoch");
+pub const INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME: &IdentStr =
+    ident_str!("initiate_mid_epoch_reconfiguration");
+pub const REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_network_encryption_key_mid_epoch_reconfiguration");
+pub const CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME: &IdentStr =
+    ident_str!("create_system_current_status_info");
 pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
     ident_str!("request_lock_epoch_sessions");
-pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
+pub const INITIATE_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("initiate_advance_epoch");
+pub const ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_encryption_key_dkg_by_cap");
 pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_pricing");
@@ -126,15 +132,11 @@ pub trait SystemInnerTrait {
     fn epoch_start_tx_digest(&self) -> Vec<u8>;
     fn protocol_version(&self) -> u64;
     fn next_protocol_version(&self) -> Option<u64>;
-    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64>;
-    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64;
+    fn last_processed_checkpoint_sequence_number(&self) -> u64;
+    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
-    fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID>;
-    fn dwallet_2pc_mpc_coordinator_network_encryption_keys(
-        &self,
-    ) -> &Vec<DWalletNetworkEncryptionKeyCap>;
     fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee>;
     fn get_ika_active_committee(&self) -> BlsCommittee;
     fn read_bls_committee(
