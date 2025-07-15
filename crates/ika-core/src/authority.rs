@@ -20,7 +20,7 @@ use std::time::Duration;
 use std::{pin::Pin, sync::Arc, vec};
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use tracing::{error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use ika_types::committee::EpochId;
 use ika_types::committee::ProtocolVersion;
@@ -887,7 +887,7 @@ impl AuthorityState {
         let mut desired_upgrades: Vec<_> = capabilities
             .into_iter()
             .filter_map(|cap| {
-                info!(
+                debug!(
                     "validator {:?} supports {:?} with move packages: {:?}",
                     cap.authority.concise(),
                     cap.supported_protocol_versions,
@@ -925,7 +925,7 @@ impl AuthorityState {
                 let buffer_stake = (f * buffer_stake_bps).div_ceil(10000);
                 let effective_threshold = quorum_threshold + buffer_stake;
 
-                info!(
+                debug!(
                     protocol_config_digest = ?digest,
                     ?total_votes,
                     ?quorum_threshold,

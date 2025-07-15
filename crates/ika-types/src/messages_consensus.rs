@@ -131,7 +131,7 @@ impl AuthorityCapabilitiesV1 {
         authority: AuthorityName,
         chain: Chain,
         supported_protocol_versions: SupportedProtocolVersions,
-        available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+        move_contracts_to_upgrade: Vec<(ObjectID, MovePackageDigest)>,
     ) -> Self {
         let generation = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -147,7 +147,7 @@ impl AuthorityCapabilitiesV1 {
                     supported_protocol_versions,
                     chain,
                 ),
-            move_contracts_to_upgrade: available_move_packages,
+            move_contracts_to_upgrade,
         }
     }
 }
@@ -161,7 +161,7 @@ impl Debug for AuthorityCapabilitiesV1 {
                 "supported_protocol_versions",
                 &self.supported_protocol_versions,
             )
-            .field("available_move_packages", &self.move_contracts_to_upgrade)
+            .field("move_contracts_to_upgrade", &self.move_contracts_to_upgrade)
             .finish()
     }
 }

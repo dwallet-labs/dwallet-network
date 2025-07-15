@@ -757,12 +757,14 @@ impl AuthorityPerEpochStore {
 
     /// Record most recently advertised capabilities of all authorities
     pub fn record_capabilities_v1(&self, capabilities: &AuthorityCapabilitiesV1) -> IkaResult {
-        info!("received capabilities v1 {:?}", capabilities);
+        info!(capabilities=?capabilities, "received capabilities v1");
         let authority = &capabilities.authority;
         let tables = self.tables()?;
 
         // Read-compare-write pattern assumes we are only called from the consensus handler task.
         if let Some(cap) = tables.authority_capabilities_v1.get(authority)? {
+        println!("previous capabilities generation {:?}", cap.supported_protocol_versions);
+            println!("new capabilities generation {:?}", capabilities.supported_protocol_versions);
             if cap.generation >= capabilities.generation {
                 debug!(
                     "ignoring new capabilities {:?} in favor of previous capabilities {:?}",
@@ -771,6 +773,7 @@ impl AuthorityPerEpochStore {
                 return Ok(());
             }
         }
+        println!("recording capabilities v1 {:?}", capabilities);
         tables
             .authority_capabilities_v1
             .insert(authority, capabilities)?;
@@ -1307,8 +1310,10 @@ impl AuthorityPerEpochStore {
                     "Received CapabilityNotificationV1 from {:?}",
                     authority.concise()
                 );
-                self.record_capabilities_v1(authority_capabilities)?;
+
+            self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
+                println!("Capabilities v1: {:?}", capabilities);
                 let (new_version, move_contracts_to_upgrade) =
                     AuthorityState::choose_highest_protocol_version_and_move_contracts_upgrades_v1(
                         self.protocol_version(),
@@ -1318,6 +1323,8 @@ impl AuthorityPerEpochStore {
                     );
 
                 let mut system_transactions: Vec<ConsensusCertificateResult> = Vec::new();
+                println!("New version: {:?}", new_version);
+                println!("current version: {:?}", self.protocol_version());
                 if self.protocol_version() != new_version {
                     info!(
                         validator=?self.name,
