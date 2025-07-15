@@ -33,7 +33,7 @@ impl RootSeed {
     pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> DwalletMPCResult<Self> {
         let contents = std::fs::read_to_string(path)
             .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
-        let decoded = Base64::decode(contents.as_str())
+        let decoded = Base64::decode(contents.as_str().trim())
             .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
         Ok(RootSeed::new(decoded.try_into().map_err(|e| {
             DwalletMPCError::FailedToReadSeed(format!("failed to read class group seed: {e:?}"))
