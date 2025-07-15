@@ -265,18 +265,22 @@ pub(crate) fn advance_network_dkg(
             DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
                 session_id,
                 1,
-                &weighted_threshold_access_structure,
+                &access_structure,
                 messages,
-                bcs::from_bytes(public_input)?,
+                public_input,
                 class_groups_decryption_key,
+                &logger,
+                rng
             ),
             DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
                 session_id,
                 1,
-                &weighted_threshold_access_structure,
+                &access_structure,
                 messages,
-                bcs::from_bytes(public_input)?,
+                public_input,
                 class_groups_decryption_key,
+                &logger,
+                rng,
             ),
         }?;
         return Ok(res);
