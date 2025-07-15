@@ -62,11 +62,11 @@ async function createConf(
 	console.log(`Address: ${address}`);
 	// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
 	const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
-	await requestSuiFromFaucetV2({
+	await requestSuiFromFaucetWithRetry(
 		// host: getFaucetHost('localnet'),
-		host: 'https://faucet.sui.beta.devnet.ika-network.net',
-		recipient: address,
-	});
+		'https://faucet.sui.beta.devnet.ika-network.net',
+		address,
+	);
 
 	return {
 		suiClientKeypair: keypair,
@@ -86,6 +86,43 @@ function getRandomDelay(maxDelayMs: number): number {
 	return Math.floor(Math.random() * maxDelayMs);
 }
 
+// Helper function to retry faucet request until success
+async function requestSuiFromFaucetWithRetry(
+	host: string,
+	recipient: string,
+	maxRetries: number = 10,
+	baseDelayMs: number = 1000,
+): Promise<void> {
+	let lastError: Error | null = null;
+
+	for (let attempt = 1; attempt <= maxRetries; attempt++) {
+		try {
+			console.log(`Faucet request attempt ${attempt}/${maxRetries} for address: ${recipient}`);
+			await requestSuiFromFaucetV2({
+				host,
+				recipient,
+			});
+			console.log(`Faucet request successful on attempt ${attempt}`);
+			return; // Success, exit the function
+		} catch (error) {
+			lastError = error as Error;
+			console.log(`Faucet request failed on attempt ${attempt}: ${error}`);
+
+			if (attempt < maxRetries) {
+				// Exponential backoff with jitter
+				const delayMs = baseDelayMs * Math.pow(2, attempt - 1) + Math.random() * 1000;
+				console.log(`Retrying in ${Math.round(delayMs)}ms...`);
+				await new Promise((resolve) => setTimeout(resolve, delayMs));
+			}
+		}
+	}
+
+	// If we get here, all retries failed
+	throw new Error(
+		`Faucet request failed after ${maxRetries} attempts. Last error: ${lastError?.message}`,
+	);
+}
+
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
@@ -98,7 +135,7 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 2;
+			const iterations = 30;
 			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 0;
 			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 
