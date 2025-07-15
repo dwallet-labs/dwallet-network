@@ -16,6 +16,7 @@ sui-connector-config:
   ika-dwallet-2pc-mpc-package-id: IKA_DWALLET_2PC_MPC_PACKAGE_ID
   ika-system-package-id: IKA_SYSTEM_PACKAGE_ID
   ika-system-object-id: IKA_SYSTEM_OBJECT_ID
+  ika_dwallet_coordinator_object_id: IKA_DWALLET_COORDINATOR_OBJECT_ID
 metrics-address: 0.0.0.0:9184
 admin-interface-port: 1337
 consensus-config:
