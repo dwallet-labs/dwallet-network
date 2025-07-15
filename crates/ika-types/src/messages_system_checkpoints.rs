@@ -3,25 +3,20 @@
 
 use crate::committee::{EpochId, ProtocolVersion};
 use crate::crypto::{
-    default_hash, AggregateAuthoritySignature, AuthoritySignInfo, AuthoritySignInfoTrait,
-    AuthorityStrongQuorumSignInfo,
+    AggregateAuthoritySignature, AuthoritySignInfo, AuthoritySignInfoTrait,
+    AuthorityStrongQuorumSignInfo, default_hash,
 };
 use crate::error::IkaResult;
 use crate::intent::{Intent, IntentScope};
 use crate::message_envelope::{Envelope, Message, TrustedEnvelope, VerifiedEnvelope};
 use crate::{committee::Committee, error::IkaError};
-use prometheus::Histogram;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tap::TapFallible;
-use tracing::warn;
 
 pub use crate::digests::SystemCheckpointContentsDigest;
 pub use crate::digests::SystemCheckpointMessageDigest;
 
 pub type SystemCheckpointSequenceNumber = u64;
-pub type SystemCheckpointTimestamp = u64;
 
 // The constituent parts of system checkpoints, signed and certified.
 // Note: the order of these fields, and the number must correspond to the Move code in
@@ -50,6 +45,11 @@ pub enum SystemCheckpointMessageKind {
     SetMaxValidatorChangeCount(u64),
     /// Set a new rate at which rewards are slashed in basis points (1/100th of a percent).
     SetRewardSlashingRate(u64),
+    /// Marks the final checkpoint message for an epoch.
+    /// Once the Sui smart contract processes this message, it recognizes that no further
+    /// system checkpoints will be created in the current epoch, enabling external calls
+    /// to proceed with advancing the epoch.
+    EndOfPublish,
     /// Set an approved upgrade for a package.
     SetApprovedUpgrade {
         /// The ID of the package that is approved for upgrade.
@@ -57,6 +57,13 @@ pub enum SystemCheckpointMessageKind {
         /// The version of the package that is approved for upgrade.
         /// if None, the upgrade approval will be deleted.
         digest: Option<Vec<u8>>,
+    },
+    /// Set or remove a witness approving advance epoch.
+    SetOrRemoveWitnessApprovingAdvanceEpochMessageType {
+        /// The type of the witness that is being set or removed.
+        witness_type: String,
+        /// If false, the witness is being set, if true, the witness is being removed.
+        remove: bool,
     },
 }
 
@@ -67,7 +74,6 @@ pub struct SystemCheckpointMessage {
     /// Timestamp of the system checkpoint - number of milliseconds from the Unix epoch
     /// System checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
     /// system checkpoints can have same timestamp if they originate from the same underlining consensus commit
-    pub timestamp_ms: SystemCheckpointTimestamp,
     pub messages: Vec<SystemCheckpointMessageKind>,
 }
 
@@ -85,13 +91,11 @@ impl SystemCheckpointMessage {
         epoch: EpochId,
         sequence_number: SystemCheckpointSequenceNumber,
         messages: Vec<SystemCheckpointMessageKind>,
-        timestamp_ms: SystemCheckpointTimestamp,
     ) -> SystemCheckpointMessage {
         Self {
             epoch,
             sequence_number,
             messages,
-            timestamp_ms,
         }
     }
 
@@ -108,25 +112,6 @@ impl SystemCheckpointMessage {
 
     pub fn sequence_number(&self) -> &SystemCheckpointSequenceNumber {
         &self.sequence_number
-    }
-
-    pub fn timestamp(&self) -> SystemTime {
-        UNIX_EPOCH + Duration::from_millis(self.timestamp_ms)
-    }
-
-    pub fn report_system_checkpoint_age(&self, metrics: &Histogram) {
-        SystemTime::now()
-            .duration_since(self.timestamp())
-            .map(|latency| {
-                metrics.observe(latency.as_secs_f64());
-            })
-            .tap_err(|err| {
-                warn!(
-                    system_checkpoint_seq = self.sequence_number,
-                    "unable to compute system checkpoint age: {}", err
-                )
-            })
-            .ok();
     }
 }
 

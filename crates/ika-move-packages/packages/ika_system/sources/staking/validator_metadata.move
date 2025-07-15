@@ -4,8 +4,6 @@
 /// Metadata that describes a validator. Attached to the `StakingPool`
 module ika_system::validator_metadata;
 
-// === Imports ===
-
 use std::string::String;
 use sui::vec_map::{Self, VecMap};
 
@@ -47,7 +45,10 @@ public fun set_description(metadata: &mut ValidatorMetadata, description: String
 }
 
 /// Set an extra field of the Validator.
-public fun set_extra_fields(metadata: &mut ValidatorMetadata, extra_fields: VecMap<String, String>) {
+public fun set_extra_fields(
+    metadata: &mut ValidatorMetadata,
+    extra_fields: VecMap<String, String>,
+) {
     metadata.extra_fields = extra_fields;
 }
 

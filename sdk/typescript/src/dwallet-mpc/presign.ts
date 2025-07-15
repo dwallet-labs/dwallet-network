@@ -50,10 +50,10 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
-		conf.ikaConfig.ika_system_package_id,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
 	);
 	const presignCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_presign`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_presign`,
 		arguments: [
 			dwalletStateArg,
 			tx.pure.id(dwallet_id),

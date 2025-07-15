@@ -1,12 +1,16 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_checkpoints::PendingDWalletCheckpointV1;
 use crate::dwallet_mpc::LOG_DIR;
+use crate::dwallet_mpc::mpc_session::MPCRoundToMessagesHashMap;
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput};
+use dwallet_mpc_types::dwallet_mpc::MPCPrivateInput;
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCError;
-use ika_types::messages_dwallet_mpc::SessionInfo;
+use ika_types::messages_dwallet_mpc::MPCSessionRequest;
 use mpc::WeightedThresholdAccessStructure;
 use serde_json::json;
 use std::collections::HashMap;
@@ -65,19 +69,13 @@ impl MPCSessionLogger {
         self
     }
 
-    /// Sets the malicious parties
-    pub fn with_malicious_parties(mut self, parties: Vec<PartyID>) -> Self {
-        self.malicious_parties = Some(parties);
-        self
-    }
-
     /// Writes MPC session logs to disk if logging is enabled
     pub fn write_logs_to_disk(
         &self,
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
-        access_threshold: &WeightedThresholdAccessStructure,
-        messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
+        access_structure: &WeightedThresholdAccessStructure,
+        messages: &MPCRoundToMessagesHashMap,
     ) {
         if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
             return;
@@ -102,7 +100,7 @@ impl MPCSessionLogger {
                 return;
             }
         };
-        let filename = format!("session_{}_round_{}.json", session_id, round);
+        let filename = format!("session_{session_id}_round_{round}.json");
         let path = log_dir.join(&filename);
 
         // Serialize to JSON.
@@ -110,7 +108,7 @@ impl MPCSessionLogger {
             "session_id": session_id,
             "round": round,
             "party_id": party_id,
-            "access_threshold": access_threshold,
+            "access_structure": access_structure,
             "messages": messages,
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
@@ -132,13 +130,14 @@ impl MPCSessionLogger {
     }
 
     /// Writes MPC session logs to disk if logging is enabled
+    #[allow(dead_code)]
     pub fn write_output_to_disk(
         &self,
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
         output_sender_party_id: PartyID,
         output: &[u8],
-        session_info: &SessionInfo,
+        session_request: &MPCSessionRequest,
         round: u64,
         idx: usize,
     ) {
@@ -171,7 +170,7 @@ impl MPCSessionLogger {
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
             "output": output,
-            "session_info": session_info.clone(),
+            "session_request": session_request.clone(),
         });
 
         let mut file = match File::create(&path) {
@@ -246,8 +245,7 @@ impl MPCSessionLogger {
             // Primary failed → try fallback (propagate error if that fails).
             fs::create_dir_all(FALLBACK).map_err(|e| {
                 DwalletMPCError::TwoPCMPCError(format!(
-                    "Failed to create a fallback log directory {}: {}",
-                    FALLBACK, e
+                    "Failed to create a fallback log directory {FALLBACK}: {e}"
                 ))
             })?;
             FALLBACK

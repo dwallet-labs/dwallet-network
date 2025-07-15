@@ -5,16 +5,18 @@ use ika_types::committee::{Committee, CommitteeTrait, StakeUnit};
 use ika_types::crypto::{
     AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait,
 };
-use ika_types::error::IkaError;
+use ika_types::error::{IkaError, IkaResult};
 use ika_types::intent::Intent;
 use ika_types::message_envelope::{Envelope, Message};
+use itertools::Itertools;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use tracing::warn;
+use typed_store::TypedStoreError;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.
 /// STRENGTH indicates whether we want a strong quorum (2f+1) or a weak quorum (f+1).
@@ -39,17 +41,16 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         }
     }
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    pub fn from_iter<I: Iterator<Item = (AuthorityName, S)>>(
+    pub fn from_iter<I: Iterator<Item = Result<(AuthorityName, S), TypedStoreError>>>(
         committee: Arc<Committee>,
         data: I,
-    ) -> Self {
+    ) -> IkaResult<Self> {
         let mut this = Self::new(committee);
-        for (authority, s) in data {
+        for item in data {
+            let (authority, s) = item?;
             this.insert_generic(authority, s);
         }
-        this
+        Ok(this)
     }
 
     /// A generic version of inserting arbitrary type of V (e.g. void type).
@@ -283,14 +284,13 @@ where
 
 impl<K, V, const STRENGTH: bool> MultiStakeAggregator<K, V, STRENGTH>
 where
-    K: Clone + Ord,
+    K: Clone + Ord + Hash,
+    V: Clone,
 {
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    pub fn get_all_unique_values(&self) -> BTreeMap<K, (Vec<AuthorityName>, StakeUnit)> {
+    pub fn get_all_unique_values(&self) -> HashMap<K, (V, Vec<AuthorityName>)> {
         self.stake_maps
             .iter()
-            .map(|(k, (_, s))| (k.clone(), (s.data.keys().copied().collect(), s.total_votes)))
+            .map(|(k, (v, s))| (k.clone(), (v.clone(), s.data.keys().copied().collect_vec())))
             .collect()
     }
 }
@@ -304,8 +304,6 @@ where
         self.stake_maps.get(k).map(|(_, agg)| agg.keys())
     }
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
     /// The sum of all remaining stake, i.e. all stake not yet
     /// committed by vote to a specific value
     pub fn uncommitted_stake(&self) -> StakeUnit {

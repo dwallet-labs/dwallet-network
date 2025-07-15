@@ -42,11 +42,13 @@ dynamic-peers:
   url: http://127.0.0.1:9000
   interval: 60
   hostname: localhost
-  ika-package-id: 0x99b4c2d50f48ab00eed1c73176491ccfb09dfa07c5fcbe5515025b0503756377
-  ika-system-package-id: 0x63cf904ded9a076b9bd81bf82c669fc409dbed3df5d982fab7e37b888898f271
-  ika-system-object-id: 0xd21422cc164880acf16656655c8d21f3bdd83f4e7e9c85b1e727cc9d89291085
-  certificate-file: /Users/zeevmanilovich/cert/localhost.crt
-  private-key: /Users/zeevmanilovich/cert/localhost.key
+  ika-package-id: 0xcd83e8a1938c389e37fc8e10913c1d3a3183a93428cb03b8e70e286ad6a7c9fc
+  ika-system-package-id: 0x7d2f220ce4c227dd4bcc7598851c3efb2ece079d61cd66e66985e6065a43e067
+  ika-system-object-id: 0x34d6d6c47872128a53708382092ad97e641a6482830160c80230a68330fc552d
+  certificate-file: /Users/zeevmanilovich/Dev/infra/tf-sui-validators/modules/ika-proxy/keys/proxy.crt
+#  certificate-file: /Users/zeevmanilovich/cert/localhost.crt
+  private-key: /Users/zeevmanilovich/Dev/infra/tf-sui-validators/modules/ika-proxy/keys/proxy.key
+#  private-key: /Users/zeevmanilovich/cert/localhost.key
 
 #dynamic-peers:
 #  # Sui JSON-RPC endpoint for validator discovery

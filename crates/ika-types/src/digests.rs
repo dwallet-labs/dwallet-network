@@ -9,7 +9,7 @@ use ika_protocol_config::Chain;
 use once_cell::sync::{Lazy, OnceCell};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, Bytes};
+use serde_with::{Bytes, serde_as};
 use sui_types::base_types::ObjectID;
 pub use sui_types::digests::ConsensusCommitDigest;
 use sui_types::sui_serde::Readable;
@@ -122,7 +122,7 @@ impl fmt::LowerHex for Digest {
         }
 
         for byte in self.0 {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
 
         Ok(())
@@ -136,7 +136,7 @@ impl fmt::UpperHex for Digest {
         }
 
         for byte in self.0 {
-            write!(f, "{:02X}", byte)?;
+            write!(f, "{byte:02X}")?;
         }
 
         Ok(())
@@ -185,12 +185,12 @@ impl ChainIdentifier {
     pub fn from_chain_short_id(short_id: &String) -> Option<Self> {
         if Hex::from_bytes(&Base58::decode(MAINNET_CHAIN_IDENTIFIER_BASE58).ok()?)
             .encoded_with_format()
-            .starts_with(&format!("0x{}", short_id))
+            .starts_with(&format!("0x{short_id}"))
         {
             Some(get_mainnet_chain_identifier())
         } else if Hex::from_bytes(&Base58::decode(TESTNET_CHAIN_IDENTIFIER_BASE58).ok()?)
             .encoded_with_format()
-            .starts_with(&format!("0x{}", short_id))
+            .starts_with(&format!("0x{short_id}"))
         {
             Some(get_testnet_chain_identifier())
         } else {
@@ -258,7 +258,7 @@ pub fn get_testnet_chain_identifier() -> ChainIdentifier {
 impl fmt::Display for ChainIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for byte in self.0.as_ref()[0..4].iter() {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
 
         Ok(())

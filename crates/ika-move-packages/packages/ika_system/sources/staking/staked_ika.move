@@ -7,8 +7,6 @@
 /// is performed via the `withdraw_stake` method in the `staking_pool`.
 module ika_system::staked_ika;
 
-// === Imports ===
-
 use ika::ika::IKA;
 use sui::balance::Balance;
 

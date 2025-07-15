@@ -3,24 +3,18 @@
 
 module ika_system::validator;
 
-// === Imports ===
-
-use std::string::String;
-use sui::{
-    bag::{Self, Bag},
-    balance::{Self, Balance},
-    table::{Self, Table}
-};
 use ika::ika::IKA;
-use ika_system::{
-    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
-    pending_values::{Self, PendingValues},
-    staked_ika::{Self, StakedIka},
-    token_exchange_rate::{Self, TokenExchangeRate},
-    validator_cap::{Self, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
-    validator_info::{Self, ValidatorInfo},
-    validator_metadata::ValidatorMetadata,
-};
+use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use ika_system::pending_values::{Self, PendingValues};
+use ika_system::staked_ika::{Self, StakedIka};
+use ika_system::token_exchange_rate::{Self, TokenExchangeRate};
+use ika_system::validator_cap::{Self, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
+use ika_system::validator_info::{Self, ValidatorInfo};
+use ika_system::validator_metadata::ValidatorMetadata;
+use std::string::String;
+use sui::bag::{Self, Bag};
+use sui::balance::{Self, Balance};
+use sui::table::{Self, Table};
 
 // === Constants ===
 
@@ -74,7 +68,7 @@ public enum ValidatorState has copy, drop, store {
     Active,
     /// The validator awaits the stake to be withdrawn. The value inside the
     /// variant is the epoch in which the validator will be withdrawn.
-    Withdrawing(u64)
+    Withdrawing(u64),
 }
 
 /// Represents a single validator. Even though it is never
@@ -221,12 +215,7 @@ public(package) fun new(
         commission_cap_id: object::id(&validator_commission_cap),
         extra_fields: bag::new(ctx),
     };
-    (
-        validator,
-        validator_cap,
-        validator_operation_cap,
-        validator_commission_cap
-    )
+    (validator, validator_cap, validator_operation_cap, validator_commission_cap)
 }
 
 /// Activate the validator for participation in the network.
@@ -266,10 +255,7 @@ public(package) fun set_withdrawing(
 
 /// Deactivate the validator from network participation by setting the state to `Withdrawing`.
 /// This is a function to deactivate the validator from the network participation without validator cap.
-public(package) fun deactivate(
-    validator: &mut Validator,
-    deactivation_epoch: u64,
-) {
+public(package) fun deactivate(validator: &mut Validator, deactivation_epoch: u64) {
     validator.state = ValidatorState::Withdrawing(deactivation_epoch);
 }
 
@@ -399,7 +385,11 @@ public(package) fun withdraw_stake(
         assert!(staked_ika.is_withdrawing(), ENotWithdrawing);
         assert!(staked_ika.withdraw_epoch() <= current_epoch, EWithdrawEpochNotReached);
         assert!(activation_epoch <= current_epoch, EActivationEpochNotReached);
-        validator.calculate_rewards(staked_ika.value(), activation_epoch, staked_ika.withdraw_epoch())
+        validator.calculate_rewards(
+            staked_ika.value(),
+            activation_epoch,
+            staked_ika.withdraw_epoch(),
+        )
     };
 
     let principal = staked_ika.into_balance();
@@ -453,10 +443,7 @@ public(package) fun advance_epoch(
 /// `advance_epoch` function in case the validator is in the committee and receives the
 /// rewards. And may be called in user-facing functions to update the validator state,
 /// if the validator is not in the committee.
-public(package) fun process_pending_stake(
-    validator: &mut Validator,
-    current_epoch: u64,
-) {
+public(package) fun process_pending_stake(validator: &mut Validator, current_epoch: u64) {
     // Set the exchange rate for the current epoch.
     let exchange_rate = token_exchange_rate::new(
         validator.ika_balance,
@@ -502,7 +489,6 @@ public(package) fun process_pending_stake(
     validator.num_shares = exchange_rate.convert_to_share_amount(validator.ika_balance);
 }
 
-
 public(package) fun verify_validator_cap(self: &Validator, cap: &ValidatorCap) {
     assert!(cap.validator_id() == self.id.to_inner(), EAuthorizationFailure);
     assert!(object::id(cap) == self.validator_cap_id, EAuthorizationFailure);
@@ -528,7 +514,11 @@ public(package) fun set_name(self: &mut Validator, name: String, cap: &Validator
 }
 
 /// Sets the node metadata.
-public(package) fun set_validator_metadata(self: &mut Validator, cap: &ValidatorOperationCap, metadata: ValidatorMetadata) {
+public(package) fun set_validator_metadata(
+    self: &mut Validator,
+    cap: &ValidatorOperationCap,
+    metadata: ValidatorMetadata,
+) {
     self.verify_operation_cap(cap);
 
     self.validator_info.set_validator_metadata(metadata);
@@ -586,7 +576,9 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
 ) {
     validator.verify_operation_cap(cap);
 
-    validator.validator_info.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession, ctx);
+    validator
+        .validator_info
+        .set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession, ctx);
 }
 
 public(package) fun set_next_epoch_network_pubkey_bytes(
@@ -616,7 +608,9 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
 ) {
     validator.verify_operation_cap(cap);
 
-    validator.validator_info.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes);
+    validator
+        .validator_info
+        .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes);
 }
 
 /// Destroy the validator if it is empty.
@@ -770,16 +764,24 @@ public(package) fun rewards_amount(validator: &Validator): u64 { validator.rewar
 public(package) fun ika_balance(validator: &Validator): u64 { validator.ika_balance }
 
 /// Returns the activation epoch for the validator.
-public(package) fun activation_epoch(validator: &Validator): Option<u64> { validator.activation_epoch }
+public(package) fun activation_epoch(validator: &Validator): Option<u64> {
+    validator.activation_epoch
+}
 
 /// Returns the validator info for the validator.
-public(package) fun validator_info(validator: &Validator): &ValidatorInfo { &validator.validator_info }
+public(package) fun validator_info(validator: &Validator): &ValidatorInfo {
+    &validator.validator_info
+}
 
 /// Returns `true` if the validator is preactive.
-public(package) fun is_preactive(validator: &Validator): bool { validator.state == ValidatorState::PreActive }
+public(package) fun is_preactive(validator: &Validator): bool {
+    validator.state == ValidatorState::PreActive
+}
 
 /// Returns `true` if the validator is active.
-public(package) fun is_active(validator: &Validator): bool { validator.state == ValidatorState::Active }
+public(package) fun is_active(validator: &Validator): bool {
+    validator.state == ValidatorState::Active
+}
 
 /// Returns `true` if the validator is withdrawing.
 public(package) fun is_withdrawing(validator: &Validator): bool {
@@ -844,4 +846,4 @@ fun is_preactive_at_epoch(validator: &Validator, epoch: u64): bool {
 public(package) fun num_shares(validator: &Validator): u64 { validator.num_shares }
 
 #[test_only]
-public(package) fun latest_epoch(validator: &Validator): u64 { validator.latest_epoch } 
+public(package) fun latest_epoch(validator: &Validator): u64 { validator.latest_epoch }

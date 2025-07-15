@@ -1,53 +1,53 @@
 use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
+use ika_config::Config;
 use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::Config;
-use ika_move_packages::IkaMovePackage;
+use ika_move_packages::save_contracts_to_temp_dir;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::ika_coin::IKACoin;
 use ika_types::messages_dwallet_mpc::{
-    IkaPackagesConfig, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
-    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
+    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG, IkaPackagesConfig,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
-    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, ADVANCE_EPOCH_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
-    DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
-    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_INNER_MODULE_NAME,
-    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
-    VALIDATOR_METADATA_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
+    ClassGroupsPublicKeyAndProofBuilder, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
+    DWALLET_COORDINATOR_STRUCT_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, INITIALIZE_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, System,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use move_package::BuildConfig;
 use shared_crypto::intent::Intent;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
-    SuiClientCommandResult,
+    SuiClientCommandResult, SuiClientCommands, estimate_gas_budget_from_gas_cost, execute_dry_run,
+    request_tokens_from_faucet,
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
+use sui_sdk::SuiClient;
 use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse};
 use sui_sdk::rpc_types::{
     SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
-use sui_sdk::SuiClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress};
 use sui_types::coin::TreasuryCap;
 use sui_types::crypto::{SignatureScheme, SuiKeyPair};
@@ -55,13 +55,14 @@ use sui_types::move_package::UpgradeCap;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{
-    Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI,
-    TransactionKind,
+    Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionData,
+    TransactionDataAPI, TransactionKind,
 };
 use sui_types::{
     MOVE_STDLIB_PACKAGE_ID, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION,
     SUI_FRAMEWORK_PACKAGE_ID,
 };
+use tempfile::TempDir;
 
 const STAKED_IKA_ICON_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNjk5XzIyKSI+IDxwYXRoIGQ9Ik0wIDMwLjAwMTZDMCAxMy40MzMgMTMuNDMxNCAwIDMwIDBDMzQwLjI5NCAwIDY1MC44NTYgMCA5NjkuOTk4IDBDOTg2LjU2NyAwIDEwMDAgMTMuNDMxNCAxMDAwIDMwQzEwMDAgMzQwLjI5NCAxMDAwIDY1MC44NTYgMTAwMCA5NjkuOTk4QzEwMDAgOTg2LjU2NyA5ODYuNTY5IDEwMDAgOTcwIDEwMDBDNjU5LjcwNiAxMDAwIDM0OS4xNDQgMTAwMCAzMC4wMDE2IDEwMDBDMTMuNDMzIDEwMDAgMCA5ODYuNTY5IDAgOTcwQzAgNjU5LjcwNiAwIDM0OS4xNDQgMCAzMC4wMDE2WiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDUyIDE5NEM0ODMuNjggMTk0IDUxNS4zNiAxOTQgNTQ4IDE5NEM1NDggMjA0LjU2IDU0OCAyMTUuMTIgNTQ4IDIyNkM1NjkuNDUgMjI2IDU5MC45IDIyNiA2MTMgMjI2QzYxMyAyMzYuNTYgNjEzIDI0Ny4xMiA2MTMgMjU4QzYyMy41NiAyNTggNjM0LjEyIDI1OCA2NDUgMjU4QzY0NSAyNjguNTYgNjQ1IDI3OS4xMiA2NDUgMjkwQzY1NS41NiAyOTAgNjY2LjEyIDI5MCA2NzcgMjkwQzY3NyAzMDAuODkgNjc3IDMxMS43OCA2NzcgMzIzQzY4Ny44OSAzMjMgNjk4Ljc4IDMyMyA3MTAgMzIzQzcxMCA0MjkuMjYgNzEwIDUzNS41MiA3MTAgNjQ1QzczMS4xMiA2NDUgNzUyLjI0IDY0NSA3NzQgNjQ1Qzc3NCA2MDIuNDMgNzc0IDU1OS44NiA3NzQgNTE2Qzc5NS40NSA1MTYgODE2LjkgNTE2IDgzOSA1MTZDODM5IDU2OS4xMyA4MzkgNjIyLjI2IDgzOSA2NzdDODE3LjU1IDY3NyA3OTYuMSA2NzcgNzc0IDY3N0M3NzQgNjg3Ljg5IDc3NCA2OTguNzggNzc0IDcxMEM3NTIuODggNzEwIDczMS43NiA3MTAgNzEwIDcxMEM3MTAgNjk5LjExIDcxMCA2ODguMjIgNzEwIDY3N0M2OTkuMTEgNjc3IDY4OC4yMiA2NzcgNjc3IDY3N0M2NzcgNjY2LjQ0IDY3NyA2NTUuODggNjc3IDY0NUM2NjYuNDQgNjQ1IDY1NS44OCA2NDUgNjQ1IDY0NUM2NDUgNTM4Ljc0IDY0NSA0MzIuNDggNjQ1IDMyM0M2MzQuNDQgMzIzIDYyMy44OCAzMjMgNjEzIDMyM0M2MTMgMzEyLjExIDYxMyAzMDEuMjIgNjEzIDI5MEM1OTEuNTUgMjkwIDU3MC4xIDI5MCA1NDggMjkwQzU0OCAyNzkuNDQgNTQ4IDI2OC44OCA1NDggMjU4QzUxNi4zMiAyNTggNDg0LjY0IDI1OCA0NTIgMjU4QzQ1MiAyNjguNTYgNDUyIDI3OS4xMiA0NTIgMjkwQzQzMC41NSAyOTAgNDA5LjEgMjkwIDM4NyAyOTBDMzg3IDMwMC44OSAzODcgMzExLjc4IDM4NyAzMjNDMzc2LjQ0IDMyMyAzNjUuODggMzIzIDM1NSAzMjNDMzU1IDQyOS4yNiAzNTUgNTM1LjUyIDM1NSA2NDVDMzQ0LjQ0IDY0NSAzMzMuODggNjQ1IDMyMyA2NDVDMzIzIDY1NS41NiAzMjMgNjY2LjEyIDMyMyA2NzdDMzEyLjExIDY3NyAzMDEuMjIgNjc3IDI5MCA2NzdDMjkwIDY4Ny44OSAyOTAgNjk4Ljc4IDI5MCA3MTBDMjY4Ljg4IDcxMCAyNDcuNzYgNzEwIDIyNiA3MTBDMjI2IDY5OS4xMSAyMjYgNjg4LjIyIDIyNiA2NzdDMjA0LjU1IDY3NyAxODMuMSA2NzcgMTYxIDY3N0MxNjEgNjIzLjg3IDE2MSA1NzAuNzQgMTYxIDUxNkMxODIuNDUgNTE2IDIwMy45IDUxNiAyMjYgNTE2QzIyNiA1NTguNTcgMjI2IDYwMS4xNCAyMjYgNjQ1QzI0Ny4xMiA2NDUgMjY4LjI0IDY0NSAyOTAgNjQ1QzI5MCA1MzguNzQgMjkwIDQzMi40OCAyOTAgMzIzQzMwMC44OSAzMjMgMzExLjc4IDMyMyAzMjMgMzIzQzMyMyAzMTIuMTEgMzIzIDMwMS4yMiAzMjMgMjkwQzMzMy41NiAyOTAgMzQ0LjEyIDI5MCAzNTUgMjkwQzM1NSAyNzkuNDQgMzU1IDI2OC44OCAzNTUgMjU4QzM2NS41NiAyNTggMzc2LjEyIDI1OCAzODcgMjU4QzM4NyAyNDcuNDQgMzg3IDIzNi44OCAzODcgMjI2QzQwOC40NSAyMjYgNDI5LjkgMjI2IDQ1MiAyMjZDNDUyIDIxNS40NCA0NTIgMjA0Ljg4IDQ1MiAxOTRaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDg0IDU0OEM0OTQuNTYgNTQ4IDUwNS4xMiA1NDggNTE2IDU0OEM1MTYgNTU4Ljg5IDUxNiA1NjkuNzggNTE2IDU4MUM1MzcuNDUgNTgxIDU1OC45IDU4MSA1ODEgNTgxQzU4MSA2MDIuMTIgNTgxIDYyMy4yNCA1ODEgNjQ1QzU5MS41NiA2NDUgNjAyLjEyIDY0NSA2MTMgNjQ1QzYxMyA2ODcuNTcgNjEzIDczMC4xNCA2MTMgNzc0QzU5MS41NSA3NzQgNTcwLjEgNzc0IDU0OCA3NzRDNTQ4IDczMS40MyA1NDggNjg4Ljg2IDU0OCA2NDVDNTM3LjQ0IDY0NSA1MjYuODggNjQ1IDUxNiA2NDVDNTE2IDYzNC40NCA1MTYgNjIzLjg4IDUxNiA2MTNDNTA1LjQ0IDYxMyA0OTQuODggNjEzIDQ4NCA2MTNDNDg0IDYyMy41NiA0ODQgNjM0LjEyIDQ4NCA2NDVDNDczLjQ0IDY0NSA0NjIuODggNjQ1IDQ1MiA2NDVDNDUyIDY4Ny41NyA0NTIgNzMwLjE0IDQ1MiA3NzRDNDMwLjU1IDc3NCA0MDkuMSA3NzQgMzg3IDc3NEMzODcgNzMxLjQzIDM4NyA2ODguODYgMzg3IDY0NUMzOTcuNTYgNjQ1IDQwOC4xMiA2NDUgNDE5IDY0NUM0MTkgNjIzLjg4IDQxOSA2MDIuNzYgNDE5IDU4MUM0NDAuNDUgNTgxIDQ2MS45IDU4MSA0ODQgNTgxQzQ4NCA1NzAuMTEgNDg0IDU1OS4yMiA0ODQgNTQ4WiIgZmlsbD0id2hpdGUiLz4gPHBhdGggZD0iTTQ1MiAzODdDNDgzLjY4IDM4NyA1MTUuMzYgMzg3IDU0OCAzODdDNTQ4IDQxOS4wMSA1NDggNDUxLjAyIDU0OCA0ODRDNTM3LjQ0IDQ4NCA1MjYuODggNDg0IDUxNiA0ODRDNTE2IDQ3My40NCA1MTYgNDYyLjg4IDUxNiA0NTJDNTA1LjQ0IDQ1MiA0OTQuODggNDUyIDQ4NCA0NTJDNDg0IDQ0MS4xMSA0ODQgNDMwLjIyIDQ4NCA0MTlDNDczLjQ0IDQxOSA0NjIuODggNDE5IDQ1MiA0MTlDNDUyIDQwOC40NCA0NTIgMzk3Ljg4IDQ1MiAzODdaIiBmaWxsPSJ3aGl0ZSIvPiA8L2c+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9ImNsaXAwXzY5OV8yMiI+IDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IndoaXRlIi8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+";
 const DWALLET_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzAzXzMwKSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNMjQxIDM0MUM0MTIuMjcgMzQxIDU4My41NCAzNDEgNzYwIDM0MUM3NjAgNDc5LjI3IDc2MCA2MTcuNTQgNzYwIDc2MEM1ODguNzMgNzYwIDQxNy40NiA3NjAgMjQxIDc2MEMyNDEgNjIxLjczIDI0MSA0ODMuNDYgMjQxIDM0MVoiIGZpbGw9IiNFRTJCNUIiLz4gPHBhdGggZD0iTTIwMCAyMDBDMjEzLjUzIDIwMCAyMjcuMDYgMjAwIDI0MSAyMDBDMjQxIDIzMyAyNDEgMjY2IDI0MSAzMDBDNDEyLjI3IDMwMCA1ODMuNTQgMzAwIDc2MCAzMDBDNzYwIDI2NyA3NjAgMjM0IDc2MCAyMDBDNzczLjUzIDIwMCA3ODcuMDYgMjAwIDgwMSAyMDBDODAxIDM4NC44IDgwMSA1NjkuNiA4MDEgNzYwQzc4Ny40NyA3NjAgNzczLjk0IDc2MCA3NjAgNzYwQzc2MCA2MjEuNzMgNzYwIDQ4My40NiA3NjAgMzQxQzU4OC43MyAzNDEgNDE3LjQ2IDM0MSAyNDEgMzQxQzI0MSA0NzkuMjcgMjQxIDYxNy41NCAyNDEgNzYwQzIyNy40NyA3NjAgMjEzLjk0IDc2MCAyMDAgNzYwQzIwMCA1NzUuMiAyMDAgMzkwLjQgMjAwIDIwMFoiIGZpbGw9IndoaXRlIi8+IDxwYXRoIGQ9Ik0yNDEgNzYwQzQxMi4yNyA3NjAgNTgzLjU0IDc2MCA3NjAgNzYwQzc2MCA3NzMuNTMgNzYwIDc4Ny4wNiA3NjAgODAxQzU4OC43MyA4MDEgNDE3LjQ2IDgwMSAyNDEgODAxQzI0MSA3ODcuNDcgMjQxIDc3My45NCAyNDEgNzYwWiIgZmlsbD0id2hpdGUiLz4gPHBhdGggZD0iTTY1MCAyMjBDNjYzLjUzIDIyMCA2NzcuMDYgMjIwIDY5MSAyMjBDNjkxIDIzMy41MyA2OTEgMjQ3LjA2IDY5MSAyNjFDNjc3LjQ3IDI2MSA2NjMuOTQgMjYxIDY1MCAyNjFDNjUwIDI0Ny40NyA2NTAgMjMzLjk0IDY1MCAyMjBaIiBmaWxsPSJ3aGl0ZSIvPiA8L2c+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9ImNsaXAwXzcwM18zMCI+IDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IndoaXRlIi8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+";
@@ -71,14 +72,53 @@ const VERIFIED_PRESIGN_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4
 const UNVERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzA0XzQ4KSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNjgwIDY4MEM2OTMuMiA2ODAgNzA2LjQgNjgwIDcyMCA2ODBDNzIwIDY5My4yIDcyMCA3MDYuNCA3MjAgNzIwQzcwNi44IDcyMCA2OTMuNiA3MjAgNjgwIDcyMEM2ODAgNzA2LjggNjgwIDY5My42IDY4MCA2ODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMjgwIDY4MEMyOTMuMiA2ODAgMzA2LjQgNjgwIDMyMCA2ODBDMzIwIDY5My4yIDMyMCA3MDYuNCAzMjAgNzIwQzMwNi44IDcyMCAyOTMuNiA3MjAgMjgwIDcyMEMyODAgNzA2LjggMjgwIDY5My42IDI4MCA2ODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjQwIDY0MEM2NTMuMiA2NDAgNjY2LjQgNjQwIDY4MCA2NDBDNjgwIDY1My4yIDY4MCA2NjYuNCA2ODAgNjgwQzY2Ni44IDY4MCA2NTMuNiA2ODAgNjQwIDY4MEM2NDAgNjY2LjggNjQwIDY1My42IDY0MCA2NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzIwIDY0MEMzMzMuMiA2NDAgMzQ2LjQgNjQwIDM2MCA2NDBDMzYwIDY1My4yIDM2MCA2NjYuNCAzNjAgNjgwQzM0Ni44IDY4MCAzMzMuNiA2ODAgMzIwIDY4MEMzMjAgNjY2LjggMzIwIDY1My42IDMyMCA2NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjAwIDYwMEM2MTMuMiA2MDAgNjI2LjQgNjAwIDY0MCA2MDBDNjQwIDYxMy4yIDY0MCA2MjYuNCA2NDAgNjQwQzYyNi44IDY0MCA2MTMuNiA2NDAgNjAwIDY0MEM2MDAgNjI2LjggNjAwIDYxMy42IDYwMCA2MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzYwIDYwMEMzNzMuMiA2MDAgMzg2LjQgNjAwIDQwMCA2MDBDNDAwIDYxMy4yIDQwMCA2MjYuNCA0MDAgNjQwQzM4Ni44IDY0MCAzNzMuNiA2NDAgMzYwIDY0MEMzNjAgNjI2LjggMzYwIDYxMy42IDM2MCA2MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTYwIDU2MEM1NzMuMiA1NjAgNTg2LjQgNTYwIDYwMCA1NjBDNjAwIDU3My4yIDYwMCA1ODYuNCA2MDAgNjAwQzU4Ni44IDYwMCA1NzMuNiA2MDAgNTYwIDYwMEM1NjAgNTg2LjggNTYwIDU3My42IDU2MCA1NjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDAwIDU2MEM0MTMuMiA1NjAgNDI2LjQgNTYwIDQ0MCA1NjBDNDQwIDU3My4yIDQ0MCA1ODYuNCA0NDAgNjAwQzQyNi44IDYwMCA0MTMuNiA2MDAgNDAwIDYwMEM0MDAgNTg2LjggNDAwIDU3My42IDQwMCA1NjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTIwIDUyMEM1MzMuMiA1MjAgNTQ2LjQgNTIwIDU2MCA1MjBDNTYwIDUzMy4yIDU2MCA1NDYuNCA1NjAgNTYwQzU0Ni44IDU2MCA1MzMuNiA1NjAgNTIwIDU2MEM1MjAgNTQ2LjggNTIwIDUzMy42IDUyMCA1MjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDQwIDUyMEM0NTMuMiA1MjAgNDY2LjQgNTIwIDQ4MCA1MjBDNDgwIDUzMy4yIDQ4MCA1NDYuNCA0ODAgNTYwQzQ2Ni44IDU2MCA0NTMuNiA1NjAgNDQwIDU2MEM0NDAgNTQ2LjggNDQwIDUzMy42IDQ0MCA1MjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDgwIDQ4MEM0OTMuMiA0ODAgNTA2LjQgNDgwIDUyMCA0ODBDNTIwIDQ5My4yIDUyMCA1MDYuNCA1MjAgNTIwQzUwNi44IDUyMCA0OTMuNiA1MjAgNDgwIDUyMEM0ODAgNTA2LjggNDgwIDQ5My42IDQ4MCA0ODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTIwIDQ0MEM1MzMuMiA0NDAgNTQ2LjQgNDQwIDU2MCA0NDBDNTYwIDQ1My4yIDU2MCA0NjYuNCA1NjAgNDgwQzU0Ni44IDQ4MCA1MzMuNiA0ODAgNTIwIDQ4MEM1MjAgNDY2LjggNTIwIDQ1My42IDUyMCA0NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDQwIDQ0MEM0NTMuMiA0NDAgNDY2LjQgNDQwIDQ4MCA0NDBDNDgwIDQ1My4yIDQ4MCA0NjYuNCA0ODAgNDgwQzQ2Ni44IDQ4MCA0NTMuNiA0ODAgNDQwIDQ4MEM0NDAgNDY2LjggNDQwIDQ1My42IDQ0MCA0NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTYwIDQwMEM1NzMuMiA0MDAgNTg2LjQgNDAwIDYwMCA0MDBDNjAwIDQxMy4yIDYwMCA0MjYuNCA2MDAgNDQwQzU4Ni44IDQ0MCA1NzMuNiA0NDAgNTYwIDQ0MEM1NjAgNDI2LjggNTYwIDQxMy42IDU2MCA0MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDAwIDQwMEM0MTMuMiA0MDAgNDI2LjQgNDAwIDQ0MCA0MDBDNDQwIDQxMy4yIDQ0MCA0MjYuNCA0NDAgNDQwQzQyNi44IDQ0MCA0MTMuNiA0NDAgNDAwIDQ0MEM0MDAgNDI2LjggNDAwIDQxMy42IDQwMCA0MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjAwIDM2MEM2MTMuMiAzNjAgNjI2LjQgMzYwIDY0MCAzNjBDNjQwIDM3My4yIDY0MCAzODYuNCA2NDAgNDAwQzYyNi44IDQwMCA2MTMuNiA0MDAgNjAwIDQwMEM2MDAgMzg2LjggNjAwIDM3My42IDYwMCAzNjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzYwIDM2MEMzNzMuMiAzNjAgMzg2LjQgMzYwIDQwMCAzNjBDNDAwIDM3My4yIDQwMCAzODYuNCA0MDAgNDAwQzM4Ni44IDQwMCAzNzMuNiA0MDAgMzYwIDQwMEMzNjAgMzg2LjggMzYwIDM3My42IDM2MCAzNjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjQwIDMyMEM2NTMuMiAzMjAgNjY2LjQgMzIwIDY4MCAzMjBDNjgwIDMzMy4yIDY4MCAzNDYuNCA2ODAgMzYwQzY2Ni44IDM2MCA2NTMuNiAzNjAgNjQwIDM2MEM2NDAgMzQ2LjggNjQwIDMzMy42IDY0MCAzMjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzIwIDMyMEMzMzMuMiAzMjAgMzQ2LjQgMzIwIDM2MCAzMjBDMzYwIDMzMy4yIDM2MCAzNDYuNCAzNjAgMzYwQzM0Ni44IDM2MCAzMzMuNiAzNjAgMzIwIDM2MEMzMjAgMzQ2LjggMzIwIDMzMy42IDMyMCAzMjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjgwIDI4MEM2OTMuMiAyODAgNzA2LjQgMjgwIDcyMCAyODBDNzIwIDI5My4yIDcyMCAzMDYuNCA3MjAgMzIwQzcwNi44IDMyMCA2OTMuNiAzMjAgNjgwIDMyMEM2ODAgMzA2LjggNjgwIDI5My42IDY4MCAyODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMjgwIDI4MEMyOTMuMiAyODAgMzA2LjQgMjgwIDMyMCAyODBDMzIwIDI5My4yIDMyMCAzMDYuNCAzMjAgMzIwQzMwNi44IDMyMCAyOTMuNiAzMjAgMjgwIDMyMEMyODAgMzA2LjggMjgwIDI5My42IDI4MCAyODBaIiBmaWxsPSJ3aGl0ZSIvPiA8L2c+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9ImNsaXAwXzcwNF80OCI+IDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IndoaXRlIi8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+";
 const VERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzA0XzM3KSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNMTIwIDM0MEMzNzAuOCAzNDAgNjIxLjYgMzQwIDg4MCAzNDBDODgwIDM1My4yIDg4MCAzNjYuNCA4ODAgMzgwQzg2Ni44IDM4MCA4NTMuNiAzODAgODQwIDM4MEM4NDAgMzkzLjIgODQwIDQwNi40IDg0MCA0MjBDODI2LjggNDIwIDgxMy42IDQyMCA4MDAgNDIwQzgwMCA0MzMuMiA4MDAgNDQ2LjQgODAwIDQ2MEM3ODYuOCA0NjAgNzczLjYgNDYwIDc2MCA0NjBDNzYwIDQ3My4yIDc2MCA0ODYuNCA3NjAgNTAwQzc0Ni44IDUwMCA3MzMuNiA1MDAgNzIwIDUwMEM3MjAgNTEzLjIgNzIwIDUyNi40IDcyMCA1NDBDNzA2LjggNTQwIDY5My42IDU0MCA2ODAgNTQwQzY4MCA1NTMuMiA2ODAgNTY2LjQgNjgwIDU4MEM2NjYuOCA1ODAgNjUzLjYgNTgwIDY0MCA1ODBDNjQwIDU5My4yIDY0MCA2MDYuNCA2NDAgNjIwQzYyNi44IDYyMCA2MTMuNiA2MjAgNjAwIDYyMEM2MDAgNjMzLjIgNjAwIDY0Ni40IDYwMCA2NjBDNTg2LjggNjYwIDU3My42IDY2MCA1NjAgNjYwQzU2MCA2NzMuMiA1NjAgNjg2LjQgNTYwIDcwMEM1NDYuOCA3MDAgNTMzLjYgNzAwIDUyMCA3MDBDNTIwIDcxMy4yIDUyMCA3MjYuNCA1MjAgNzQwQzUwNi44IDc0MCA0OTMuNiA3NDAgNDgwIDc0MEM0ODAgNzI2LjggNDgwIDcxMy42IDQ4MCA3MDBDNDY2LjggNzAwIDQ1My42IDcwMCA0NDAgNzAwQzQ0MCA2ODYuOCA0NDAgNjczLjYgNDQwIDY2MEM0MjYuOCA2NjAgNDEzLjYgNjYwIDQwMCA2NjBDNDAwIDY0Ni44IDQwMCA2MzMuNiA0MDAgNjIwQzM4Ni44IDYyMCAzNzMuNiA2MjAgMzYwIDYyMEMzNjAgNjA2LjggMzYwIDU5My42IDM2MCA1ODBDMzQ2LjggNTgwIDMzMy42IDU4MCAzMjAgNTgwQzMyMCA1NjYuOCAzMjAgNTUzLjYgMzIwIDU0MEMzMDYuOCA1NDAgMjkzLjYgNTQwIDI4MCA1NDBDMjgwIDUyNi44IDI4MCA1MTMuNiAyODAgNTAwQzI2Ni44IDUwMCAyNTMuNiA1MDAgMjQwIDUwMEMyNDAgNDg2LjggMjQwIDQ3My42IDI0MCA0NjBDMjI2LjggNDYwIDIxMy42IDQ2MCAyMDAgNDYwQzIwMCA0NDYuOCAyMDAgNDMzLjYgMjAwIDQyMEMxODYuOCA0MjAgMTczLjYgNDIwIDE2MCA0MjBDMTYwIDQwNi44IDE2MCAzOTMuNiAxNjAgMzgwQzE0Ni44IDM4MCAxMzMuNiAzODAgMTIwIDM4MEMxMjAgMzY2LjggMTIwIDM1My42IDEyMCAzNDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDgwIDU0MEM0OTMuMiA1NDAgNTA2LjQgNTQwIDUyMCA1NDBDNTIwIDU1My4yIDUyMCA1NjYuNCA1MjAgNTgwQzUzMy4yIDU4MCA1NDYuNCA1ODAgNTYwIDU4MEM1NjAgNTkzLjIgNTYwIDYwNi40IDU2MCA2MjBDNTczLjIgNjIwIDU4Ni40IDYyMCA2MDAgNjIwQzYwMCA2MzMuMiA2MDAgNjQ2LjQgNjAwIDY2MEM1ODYuOCA2NjAgNTczLjYgNjYwIDU2MCA2NjBDNTYwIDY3My4yIDU2MCA2ODYuNCA1NjAgNzAwQzU0Ni44IDcwMCA1MzMuNiA3MDAgNTIwIDcwMEM1MjAgNzEzLjIgNTIwIDcyNi40IDUyMCA3NDBDNTA2LjggNzQwIDQ5My42IDc0MCA0ODAgNzQwQzQ4MCA3MjYuOCA0ODAgNzEzLjYgNDgwIDcwMEM0NjYuOCA3MDAgNDUzLjYgNzAwIDQ0MCA3MDBDNDQwIDY4Ni44IDQ0MCA2NzMuNiA0NDAgNjYwQzQyNi44IDY2MCA0MTMuNiA2NjAgNDAwIDY2MEM0MDAgNjQ2LjggNDAwIDYzMy42IDQwMCA2MjBDNDEzLjIgNjIwIDQyNi40IDYyMCA0NDAgNjIwQzQ0MCA2MDYuOCA0NDAgNTkzLjYgNDQwIDU4MEM0NTMuMiA1ODAgNDY2LjQgNTgwIDQ4MCA1ODBDNDgwIDU2Ni44IDQ4MCA1NTMuNiA0ODAgNTQwWiIgZmlsbD0id2hpdGUiLz4gPHBhdGggZD0iTTU2MCA1ODBDNTczLjIgNTgwIDU4Ni40IDU4MCA2MDAgNTgwQzYwMCA1OTMuMiA2MDAgNjA2LjQgNjAwIDYyMEM1ODYuOCA2MjAgNTczLjYgNjIwIDU2MCA2MjBDNTYwIDYwNi44IDU2MCA1OTMuNiA1NjAgNTgwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDAwIDU4MEM0MTMuMiA1ODAgNDI2LjQgNTgwIDQ0MCA1ODBDNDQwIDU5My4yIDQ0MCA2MDYuNCA0NDAgNjIwQzQyNi44IDYyMCA0MTMuNiA2MjAgNDAwIDYyMEM0MDAgNjA2LjggNDAwIDU5My42IDQwMCA1ODBaIiBmaWxsPSIjRUUyQjVCIi8+IDxwYXRoIGQ9Ik01MjAgNTQwQzUzMy4yIDU0MCA1NDYuNCA1NDAgNTYwIDU0MEM1NjAgNTUzLjIgNTYwIDU2Ni40IDU2MCA1ODBDNTQ2LjggNTgwIDUzMy42IDU4MCA1MjAgNTgwQzUyMCA1NjYuOCA1MjAgNTUzLjYgNTIwIDU0MFoiIGZpbGw9IiNFRTJCNUIiLz4gPHBhdGggZD0iTTQ0MCA1NDBDNDUzLjIgNTQwIDQ2Ni40IDU0MCA0ODAgNTQwQzQ4MCA1NTMuMiA0ODAgNTY2LjQgNDgwIDU4MEM0NjYuOCA1ODAgNDUzLjYgNTgwIDQ0MCA1ODBDNDQwIDU2Ni44IDQ0MCA1NTMuNiA0NDAgNTQwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDgwIDUwMEM0OTMuMiA1MDAgNTA2LjQgNTAwIDUyMCA1MDBDNTIwIDUxMy4yIDUyMCA1MjYuNCA1MjAgNTQwQzUwNi44IDU0MCA0OTMuNiA1NDAgNDgwIDU0MEM0ODAgNTI2LjggNDgwIDUxMy42IDQ4MCA1MDBaIiBmaWxsPSIjRUUyQjVCIi8+IDwvZz4gPGRlZnM+IDxjbGlwUGF0aCBpZD0iY2xpcDBfNzA0XzM3Ij4gPHJlY3Qgd2lkdGg9IjEwMDAiIGhlaWdodD0iMTAwMCIgZmlsbD0id2hpdGUiLz4gPC9jbGlwUGF0aD4gPC9kZWZzPiA8L3N2Zz4=";
 
+pub struct ContractPaths {
+    pub current_working_dir: PathBuf,
+    pub contracts_dir: TempDir,
+    pub ika_contract_path: PathBuf,
+    pub ika_common_contract_path: PathBuf,
+    pub ika_system_contract_path: PathBuf,
+    pub ika_dwallet_2pc_mpc_contract_path: PathBuf,
+}
+
+pub fn setup_contract_paths() -> Result<ContractPaths, anyhow::Error> {
+    let current_working_dir = std::env::current_dir()?;
+    let contracts_dir = save_contracts_to_temp_dir()?;
+    let contracts_path = contracts_dir.path();
+    let ika_contract_path = contracts_path.join("ika");
+    let ika_common_contract_path = contracts_path.join("ika_common");
+    let ika_system_contract_path = contracts_path.join("ika_system");
+    let ika_dwallet_2pc_mpc_contract_path = contracts_path.join("ika_dwallet_2pc_mpc");
+
+    Ok(ContractPaths {
+        current_working_dir,
+        contracts_dir,
+        ika_contract_path,
+        ika_common_contract_path,
+        ika_system_contract_path,
+        ika_dwallet_2pc_mpc_contract_path,
+    })
+}
+
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
     sui_fullnode_rpc_url: String,
     sui_faucet_url: String,
     initiation_parameters: InitiationParameters,
-) -> Result<(ObjectID, ObjectID, ObjectID, SuiKeyPair), anyhow::Error> {
+) -> Result<
+    (
+        ObjectID,
+        ObjectID,
+        ObjectID,
+        ObjectID,
+        ObjectID,
+        ObjectID,
+        SuiKeyPair,
+    ),
+    anyhow::Error,
+> {
     //let config_dir = ika_config_dir()?;
-    let config_dir = tempfile::tempdir()?.into_path();
+    let config_dir = tempfile::tempdir()?.keep();
     let config_path = config_dir.join(SUI_CLIENT_CONFIG);
     //let keystore_path = config_dir.join(SUI_KEYSTORE_FILENAME);
     //let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
@@ -155,33 +195,47 @@ pub async fn init_ika_on_sui(
                 Err(e)
             }
         })?;
-
-    let ika_package = ika_move_packages::BuiltInIkaMovePackages::get_package_by_name("ika");
-    let ika_system_package =
-        ika_move_packages::BuiltInIkaMovePackages::get_package_by_name("ika_system");
+    let contract_paths = setup_contract_paths()?;
 
     let (ika_package_id, treasury_cap_id, ika_package_upgrade_cap_id) =
-        publish_ika_package_to_sui(publisher_address, &mut context, client.clone(), ika_package)
-            .await?;
+        publish_ika_package_to_sui(&mut context, contract_paths.ika_contract_path).await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
+    println!(
+        "Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}"
+    );
+
+    let (ika_common_package_id, ika_common_package_upgrade_cap_id) =
+        publish_ika_common_package_to_sui(&mut context, contract_paths.ika_common_contract_path)
+            .await?;
+
+    println!("Package `ika_common` published: ika_common_package_id: {ika_common_package_id}");
 
     let (ika_system_package_id, init_cap_id, ika_system_package_upgrade_cap_id) =
-        publish_ika_system_package_to_sui(
-            publisher_address,
-            &mut context,
-            client.clone(),
-            ika_system_package,
-            ika_package_id,
-        )
-        .await?;
+        publish_ika_system_package_to_sui(&mut context, contract_paths.ika_system_contract_path)
+            .await?;
 
-    println!("Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}");
+    println!(
+        "Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}"
+    );
+
+    let (
+        ika_dwallet_2pc_mpc_package_id,
+        ika_dwallet_2pc_mpc_init_id,
+        ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+    ) = publish_ika_dwallet_2pc_mpc_package_to_sui(
+        &mut context,
+        contract_paths.ika_dwallet_2pc_mpc_contract_path,
+    )
+    .await?;
+
+    println!(
+        "Package `ika_dwallet_2pc_mpc` published: ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id} ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}"
+    );
 
     let ika_supply_id = minted_ika(publisher_address, client.clone(), ika_package_id).await?;
 
-    println!("Minting done: ika_supply_id: {ika_supply_id}");
+    println!("Minted: ika_supply_id: {ika_supply_id}");
 
     let (ika_system_object_id, protocol_cap_id, init_system_shared_version) = init_initialize(
         publisher_address,
@@ -196,15 +250,38 @@ pub async fn init_ika_on_sui(
     )
     .await?;
 
-    println!("Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}");
-    let ika_config = IkaPackagesConfig {
-        ika_package_id,
+    println!(
+        "Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}"
+    );
+
+    ika_system_set_witness_approving_advance_epoch(
+        publisher_address,
+        &mut context,
+        client.clone(),
         ika_system_package_id,
         ika_system_object_id,
-    };
-    let mut file = File::create("ika_config.json")?;
-    let json = serde_json::to_string_pretty(&ika_config)?;
-    file.write_all(json.as_bytes())?;
+        init_system_shared_version,
+        protocol_cap_id,
+        ika_dwallet_2pc_mpc_package_id,
+    )
+    .await?;
+
+    println!("Running `system::set_witness_approving_advance_epoch` done.");
+
+    ika_system_add_upgrade_cap_by_cap(
+        publisher_address,
+        &mut context,
+        client.clone(),
+        ika_system_package_id,
+        ika_system_object_id,
+        init_system_shared_version,
+        protocol_cap_id,
+        ika_common_package_upgrade_cap_id,
+        ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+    )
+    .await?;
+
+    println!("Running `system::ika_system_add_upgrade_cap_by_cap` done.");
 
     let mut validator_ids = Vec::new();
     let mut validator_cap_ids = Vec::new();
@@ -219,13 +296,16 @@ pub async fn init_ika_on_sui(
             client.clone(),
             &validator_initialization_metadata,
             ika_system_package_id,
+            ika_common_package_id,
             ika_system_object_id,
             init_system_shared_version,
         )
         .await?;
         validator_ids.push(validator_id);
         validator_cap_ids.push(validator_cap_id);
-        println!("Running `system::request_add_validator_candidate` done for validator {validator_address}");
+        println!(
+            "Running `system::request_add_validator_candidate` done for validator {validator_address}"
+        );
     }
 
     stake_ika(
@@ -255,7 +335,7 @@ pub async fn init_ika_on_sui(
         println!("Running `system::request_add_validator` done for validator {validator_address}");
     }
 
-    let (dwallet_2pc_mpc_coordinator_id, dwallet_2pc_mpc_coordinator_initial_shared_version) =
+    let (ika_dwallet_coordinator_object_id, dwallet_2pc_mpc_coordinator_initial_shared_version) =
         ika_system_initialize(
             publisher_address,
             &mut context,
@@ -264,6 +344,8 @@ pub async fn init_ika_on_sui(
             ika_system_object_id,
             init_system_shared_version,
             protocol_cap_id,
+            ika_dwallet_2pc_mpc_package_id,
+            ika_dwallet_2pc_mpc_init_id,
             initiation_parameters.max_validator_change_count,
         )
         .await?;
@@ -274,9 +356,10 @@ pub async fn init_ika_on_sui(
         &mut context,
         client.clone(),
         ika_system_package_id,
+        ika_dwallet_2pc_mpc_package_id,
         ika_system_object_id,
         init_system_shared_version,
-        dwallet_2pc_mpc_coordinator_id,
+        ika_dwallet_coordinator_object_id,
         dwallet_2pc_mpc_coordinator_initial_shared_version,
         protocol_cap_id,
     )
@@ -286,10 +369,26 @@ pub async fn init_ika_on_sui(
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    Ok((
+    let ika_config = IkaPackagesConfig {
         ika_package_id,
+        ika_common_package_id,
+        ika_dwallet_2pc_mpc_package_id,
         ika_system_package_id,
         ika_system_object_id,
+        ika_dwallet_coordinator_object_id,
+    };
+    std::env::set_current_dir(contract_paths.current_working_dir)?;
+    let mut file = File::create("ika_config.json")?;
+    let json = serde_json::to_string_pretty(&ika_config)?;
+    file.write_all(json.as_bytes())?;
+
+    Ok((
+        ika_package_id,
+        ika_common_package_id,
+        ika_dwallet_2pc_mpc_package_id,
+        ika_system_package_id,
+        ika_system_object_id,
+        ika_dwallet_coordinator_object_id,
         publisher_keypair,
     ))
 }
@@ -299,6 +398,7 @@ pub async fn ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
     context: &mut WalletContext,
     client: SuiClient,
     ika_system_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     dwallet_2pc_mpc_coordinator_id: ObjectID,
@@ -312,26 +412,39 @@ pub async fn ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
         .get_object_ref(protocol_cap_id)
         .await?;
 
-    ptb.move_call(
+    let system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version: init_system_shared_version,
+        mutable: true,
+    }))?;
+
+    let dwallet_2pc_mpc_coordinator_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: dwallet_2pc_mpc_coordinator_id,
+        initial_shared_version: dwallet_2pc_mpc_coordinator_initial_shared_version,
+        mutable: true,
+    }))?;
+
+    let protocol_cap_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        protocol_cap_ref,
+    )))?;
+
+    let empty_vec = ptb.input(CallArg::Pure(bcs::to_bytes::<Vec<u8>>(&vec![])?))?;
+
+    let verified_cap = ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
+        ident_str!("verify_protocol_cap").into(),
+        vec![],
+        vec![system_arg, protocol_cap_arg],
+    );
+
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME.into(),
         vec![],
-        vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: ika_system_object_id,
-                initial_shared_version: init_system_shared_version,
-                mutable: true,
-            }),
-            CallArg::Object(ObjectArg::SharedObject {
-                id: dwallet_2pc_mpc_coordinator_id,
-                initial_shared_version: dwallet_2pc_mpc_coordinator_initial_shared_version,
-                mutable: true,
-            }),
-            CallArg::Object(ObjectArg::ImmOrOwnedObject(protocol_cap_ref)),
-            CallArg::Pure(bcs::to_bytes::<Vec<u8>>(&vec![])?),
-        ],
-    )?;
+        vec![dwallet_2pc_mpc_coordinator_arg, empty_vec, verified_cap],
+    );
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
@@ -348,6 +461,8 @@ pub async fn ika_system_initialize(
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     protocol_cap_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_init_id: ObjectID,
     max_validator_change_count: u64,
 ) -> Result<(ObjectID, SequenceNumber), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -355,6 +470,11 @@ pub async fn ika_system_initialize(
     let protocol_cap_ref = client
         .transaction_builder()
         .get_object_ref(protocol_cap_id)
+        .await?;
+
+    let ika_dwallet_2pc_mpc_init_ref = client
+        .transaction_builder()
+        .get_object_ref(ika_dwallet_2pc_mpc_init_id)
         .await?;
 
     let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
@@ -394,161 +514,152 @@ pub async fn ika_system_initialize(
         mutable: true,
     }))?;
 
-    let dwallet_pricing = ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
+    let pricing = ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
         ident_str!("empty").into(),
         vec![],
         vec![],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             dkg_first_round_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             dkg_second_round_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             re_encrypt_user_share_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             make_dwallet_user_secret_key_share_public_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             imported_key_dwallet_verification_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             presign_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             sign_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             future_sign_protocol_flag,
             zero_price,
             zero_price,
             zero_price,
-            zero_price,
         ],
     );
 
     ptb.programmable_move_call(
-        ika_system_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             sign_with_partial_user_signature_protocol_flag,
-            zero_price,
             zero_price,
             zero_price,
             zero_price,
@@ -596,6 +707,10 @@ pub async fn ika_system_initialize(
         protocol_cap_ref,
     )))?;
 
+    let ika_dwallet_2pc_mpc_init_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        ika_dwallet_2pc_mpc_init_ref,
+    )))?;
+
     let clock_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
         id: SUI_CLOCK_OBJECT_ID,
         initial_shared_version: SUI_CLOCK_OBJECT_SHARED_VERSION,
@@ -605,19 +720,71 @@ pub async fn ika_system_initialize(
     let max_validator_change_count =
         ptb.input(CallArg::Pure(bcs::to_bytes(&max_validator_change_count)?))?;
 
-    ptb.programmable_move_call(
+    let dwallet_cap_image_url_arg =
+        ptb.input(CallArg::Pure(bcs::to_bytes(DWALLET_CAP_IMAGE_URL)?))?;
+    let imported_key_dwallet_cap_image_url_arg = ptb.input(CallArg::Pure(bcs::to_bytes(
+        IMPORTED_KEY_DWALLET_CAP_IMAGE_URL,
+    )?))?;
+    let unverified_presign_cap_image_url_arg = ptb.input(CallArg::Pure(bcs::to_bytes(
+        UNVERIFIED_PRESIGN_CAP_IMAGE_URL,
+    )?))?;
+    let verified_presign_cap_image_url_arg = ptb.input(CallArg::Pure(bcs::to_bytes(
+        VERIFIED_PRESIGN_CAP_IMAGE_URL,
+    )?))?;
+    let unverified_partial_user_signature_cap_image_url_arg = ptb.input(CallArg::Pure(
+        bcs::to_bytes(UNVERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL)?,
+    ))?;
+    let verified_partial_user_signature_cap_image_url_arg = ptb.input(CallArg::Pure(
+        bcs::to_bytes(VERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL)?,
+    ))?;
+
+    let advance_epoch_approver = ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
         INITIALIZE_FUNCTION_NAME.into(),
         vec![],
         vec![
             ika_system_arg,
-            dwallet_pricing,
-            supported_curves_to_signature_algorithms_to_hash_schemes,
             max_validator_change_count,
             protocol_cap_arg,
             clock_arg,
         ],
+    );
+
+    let system_current_status_info = ptb.programmable_move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        ident_str!("create_system_current_status_info").into(),
+        vec![],
+        vec![ika_system_arg, clock_arg],
+    );
+
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("ika_dwallet_2pc_mpc_init").into(),
+        ident_str!("initialize").into(),
+        vec![],
+        vec![
+            ika_dwallet_2pc_mpc_init_arg,
+            advance_epoch_approver,
+            system_current_status_info,
+            pricing,
+            supported_curves_to_signature_algorithms_to_hash_schemes,
+            dwallet_cap_image_url_arg,
+            imported_key_dwallet_cap_image_url_arg,
+            unverified_presign_cap_image_url_arg,
+            verified_presign_cap_image_url_arg,
+            unverified_partial_user_signature_cap_image_url_arg,
+            verified_partial_user_signature_cap_image_url_arg,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        ADVANCE_EPOCH_FUNCTION_NAME.into(),
+        vec![],
+        vec![ika_system_arg, advance_epoch_approver, clock_arg],
     );
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
@@ -626,9 +793,18 @@ pub async fn ika_system_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
+    if response.errors.is_empty() {
+        println!("Transaction executed successfully.");
+    } else {
+        panic!(
+            "Errors occurred during transaction execution: {:?}",
+            response.errors
+        );
+    }
+
     let dwallet_2pc_mpc_coordinator_type = StructTag {
-        address: ika_system_package_id.into(),
-        module: DWALLET_2PC_MPC_SECP256K1_MODULE_NAME.into(),
+        address: ika_dwallet_2pc_mpc_package_id.into(),
+        module: DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         name: DWALLET_COORDINATOR_STRUCT_NAME.into(),
         type_params: vec![],
     };
@@ -665,6 +841,153 @@ pub async fn ika_system_initialize(
     };
 
     Ok((dwallet_2pc_mpc_coordinator_id, initial_shared_version))
+}
+
+pub async fn ika_system_set_witness_approving_advance_epoch(
+    publisher_address: SuiAddress,
+    context: &mut WalletContext,
+    client: SuiClient,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    init_system_shared_version: SequenceNumber,
+    protocol_cap_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
+) -> Result<(), anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let protocol_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(protocol_cap_id)
+        .await?;
+
+    let witness_type = format!(
+        "{}::coordinator_inner::DWalletCoordinatorWitness",
+        ika_dwallet_2pc_mpc_package_id.to_canonical_string(false)
+    );
+
+    let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version: init_system_shared_version,
+        mutable: true,
+    }))?;
+
+    let witness_type_arg = ptb.input(CallArg::Pure(bcs::to_bytes(&witness_type)?))?;
+
+    let protocol_cap_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        protocol_cap_ref,
+    )))?;
+
+    let false_arg = ptb.input(CallArg::Pure(bcs::to_bytes(&false)?))?;
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        ident_str!("set_or_remove_witness_approving_advance_epoch_by_cap").into(),
+        vec![],
+        vec![
+            ika_system_arg,
+            protocol_cap_arg,
+            witness_type_arg,
+            false_arg,
+        ],
+    );
+
+    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
+
+    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+
+    if !response.errors.is_empty() {
+        return Err(anyhow::Error::msg(format!(
+            "Errors occurred during transaction execution: {:?}",
+            response.errors
+        )));
+    }
+
+    Ok(())
+}
+
+pub async fn ika_system_add_upgrade_cap_by_cap(
+    publisher_address: SuiAddress,
+    context: &mut WalletContext,
+    client: SuiClient,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    init_system_shared_version: SequenceNumber,
+    protocol_cap_id: ObjectID,
+    ika_common_package_upgrade_cap_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_upgrade_cap_id: ObjectID,
+) -> Result<(), anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let protocol_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(protocol_cap_id)
+        .await?;
+
+    let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version: init_system_shared_version,
+        mutable: true,
+    }))?;
+
+    let protocol_cap_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        protocol_cap_ref,
+    )))?;
+
+    let ika_common_package_upgrade_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(ika_common_package_upgrade_cap_id)
+        .await?;
+
+    let ika_common_package_upgrade_cap_arg = ptb.input(CallArg::Object(
+        ObjectArg::ImmOrOwnedObject(ika_common_package_upgrade_cap_ref),
+    ))?;
+
+    let ika_dwallet_2pc_mpc_package_upgrade_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(ika_dwallet_2pc_mpc_package_upgrade_cap_id)
+        .await?;
+
+    let ika_dwallet_2pc_mpc_package_upgrade_cap_arg = ptb.input(CallArg::Object(
+        ObjectArg::ImmOrOwnedObject(ika_dwallet_2pc_mpc_package_upgrade_cap_ref),
+    ))?;
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        ident_str!("add_upgrade_cap_by_cap").into(),
+        vec![],
+        vec![
+            ika_system_arg,
+            protocol_cap_arg,
+            ika_common_package_upgrade_cap_arg,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        ident_str!("add_upgrade_cap_by_cap").into(),
+        vec![],
+        vec![
+            ika_system_arg,
+            protocol_cap_arg,
+            ika_dwallet_2pc_mpc_package_upgrade_cap_arg,
+        ],
+    );
+
+    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
+
+    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+
+    if !response.errors.is_empty() {
+        return Err(anyhow::Error::msg(format!(
+            "Errors occurred during transaction execution: {:?}",
+            response.errors
+        )));
+    }
+
+    Ok(())
 }
 
 pub async fn init_initialize(
@@ -728,16 +1051,6 @@ pub async fn init_initialize(
             )?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.reward_slashing_rate)?),
             CallArg::Pure(bcs::to_bytes(STAKED_IKA_ICON_URL)?),
-            CallArg::Pure(bcs::to_bytes(DWALLET_CAP_IMAGE_URL)?),
-            CallArg::Pure(bcs::to_bytes(IMPORTED_KEY_DWALLET_CAP_IMAGE_URL)?),
-            CallArg::Pure(bcs::to_bytes(UNVERIFIED_PRESIGN_CAP_IMAGE_URL)?),
-            CallArg::Pure(bcs::to_bytes(VERIFIED_PRESIGN_CAP_IMAGE_URL)?),
-            CallArg::Pure(bcs::to_bytes(
-                UNVERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL,
-            )?),
-            CallArg::Pure(bcs::to_bytes(
-                VERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL,
-            )?),
         ],
     )?;
 
@@ -765,7 +1078,7 @@ pub async fn init_initialize(
 
     let protocol_cap_type = StructTag {
         address: ika_system_package_id.into(),
-        module: SYSTEM_INNER_MODULE_NAME.into(),
+        module: PROTOCOL_CAP_MODULE_NAME.into(),
         name: PROTOCOL_CAP_STRUCT_NAME.into(),
         type_params: vec![],
     };
@@ -932,6 +1245,7 @@ async fn request_add_validator_candidate(
     client: SuiClient,
     validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
+    ika_common_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
@@ -941,7 +1255,7 @@ async fn request_add_validator_candidate(
         validator_address,
         context,
         &client,
-        ika_system_package_id,
+        ika_common_package_id,
         validator_initialization_metadata
             .class_groups_public_key_and_proof
             .clone(),
@@ -1083,27 +1397,68 @@ async fn request_add_validator_candidate(
     Ok((validator_cap.validator_id, validator_cap_id))
 }
 
-pub async fn publish_ika_system_package_to_sui(
-    publisher_address: SuiAddress,
+pub async fn publish_ika_dwallet_2pc_mpc_package_to_sui(
     context: &mut WalletContext,
-    client: SuiClient,
-    ika_system_package: &IkaMovePackage,
-    ika_package_id: ObjectID,
+    contract_path: PathBuf,
 ) -> Result<(ObjectID, ObjectID, ObjectID), anyhow::Error> {
-    let mut ika_system_package_dependencies = ika_system_package.dependencies.clone();
-    ika_system_package_dependencies.push(ika_package_id);
+    let object_changes = publish_package_to_sui(context, contract_path).await?;
+    let ika_dwallet_2pc_mpc_package_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Published { package_id, .. } => Some(*package_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
 
-    let bytes =
-        ika_system_package.bytes_with_deps(HashMap::from([("ika".to_string(), ika_package_id)]))?;
+    let init_cap_type = StructTag {
+        address: ika_dwallet_2pc_mpc_package_id.into(),
+        module: ident_str!("ika_dwallet_2pc_mpc_init").into(),
+        name: INIT_CAP_STRUCT_NAME.into(),
+        type_params: vec![],
+    };
 
-    let object_changes = publish_package_to_sui(
-        publisher_address,
-        context,
-        client,
-        bytes,
-        ika_system_package_dependencies,
-    )
-    .await?;
+    let ika_dwallet_2pc_mpc_init_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if init_cap_type == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    let ika_dwallet_2pc_mpc_package_upgrade_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if UpgradeCap::type_() == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    Ok((
+        ika_dwallet_2pc_mpc_package_id,
+        ika_dwallet_2pc_mpc_init_id,
+        ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+    ))
+}
+
+pub async fn publish_ika_system_package_to_sui(
+    context: &mut WalletContext,
+    contract_path: PathBuf,
+) -> Result<(ObjectID, ObjectID, ObjectID), anyhow::Error> {
+    let object_changes = publish_package_to_sui(context, contract_path).await?;
     let ika_system_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
@@ -1156,15 +1511,47 @@ pub async fn publish_ika_system_package_to_sui(
     ))
 }
 
+pub async fn publish_ika_common_package_to_sui(
+    context: &mut WalletContext,
+    contract_path: PathBuf,
+) -> Result<(ObjectID, ObjectID), anyhow::Error> {
+    let object_changes = publish_package_to_sui(context, contract_path).await?;
+    let ika_common_package_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Published { package_id, .. } => Some(*package_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    let ika_common_package_upgrade_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if UpgradeCap::type_() == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    Ok((ika_common_package_id, ika_common_package_upgrade_cap_id))
+}
+
 async fn create_class_groups_public_key_and_proof_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_system_package_id: ObjectID,
+    ika_common_package_id: ObjectID,
 ) -> anyhow::Result<ObjectRef> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
         vec![],
@@ -1184,7 +1571,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -1207,25 +1594,25 @@ async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_system_package_id: ObjectID,
-    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    ika_common_package_id: ObjectID,
+    class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
 ) -> anyhow::Result<ObjectRef> {
     let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
         publisher_address,
         context,
         client,
-        ika_system_package_id,
+        ika_common_package_id,
     )
     .await?;
 
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
-        Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
+        Box::new(class_groups_public_key_and_proof_bytes);
 
     add_public_keys_and_proofs_with_rng(
         publisher_address,
         context,
         client,
-        ika_system_package_id,
+        ika_common_package_id,
         (0, 3),
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
@@ -1237,7 +1624,7 @@ async fn create_class_groups_public_key_and_proof_object(
         .await?;
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
@@ -1261,7 +1648,7 @@ async fn create_class_groups_public_key_and_proof_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -1315,19 +1702,11 @@ async fn add_public_keys_and_proofs_with_rng(
 }
 
 pub async fn publish_ika_package_to_sui(
-    publisher_address: SuiAddress,
     context: &mut WalletContext,
-    client: SuiClient,
-    ika_package: &IkaMovePackage,
+    contract_path: PathBuf,
 ) -> Result<(ObjectID, ObjectID, ObjectID), anyhow::Error> {
-    let object_changes = publish_package_to_sui(
-        publisher_address,
-        context,
-        client,
-        ika_package.bytes.clone(),
-        ika_package.dependencies.clone(),
-    )
-    .await?;
+    let object_changes = publish_package_to_sui(context, contract_path).await?;
+
     let ika_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
@@ -1370,45 +1749,71 @@ pub async fn publish_ika_package_to_sui(
 }
 
 async fn publish_package_to_sui(
-    publisher_address: SuiAddress,
     context: &mut WalletContext,
-    client: SuiClient,
-    ika_move_package_bytes: Vec<Vec<u8>>,
-    ika_move_package_dep_ids: Vec<ObjectID>,
+    package_path: PathBuf,
 ) -> Result<Vec<ObjectChange>, anyhow::Error> {
-    let tx_kind = client
-        .transaction_builder()
-        .publish_tx_kind(
-            publisher_address,
-            ika_move_package_bytes,
-            ika_move_package_dep_ids,
-        )
-        .await?;
-
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let result = SuiClientCommands::Publish {
+        package_path,
+        build_config: BuildConfig {
+            dev_mode: false,
+            test_mode: false,
+            generate_docs: false,
+            save_disassembly: false,
+            install_dir: None,
+            force_recompilation: false,
+            lock_file: None,
+            fetch_deps_only: false,
+            skip_fetch_latest_git_deps: false,
+            default_flavor: None,
+            default_edition: None,
+            deps_as_root: false,
+            silence_warnings: false,
+            warnings_are_errors: true,
+            json_errors: false,
+            additional_named_addresses: Default::default(),
+            lint_flag: Default::default(),
+            modes: vec![],
+            implicit_dependencies: Default::default(),
+            force_lock_file: false,
+        },
+        payment: Default::default(),
+        gas_data: Default::default(),
+        processing: Default::default(),
+        skip_dependency_verification: false,
+        verify_deps: false,
+        with_unpublished_dependencies: false,
+    }
+    .execute(context)
+    .await?;
+    let SuiClientCommandResult::TransactionBlock(response) = result else {
+        bail!("Unexpected result type after publishing the package.");
+    };
 
     let object_changes = response.object_changes.unwrap();
     Ok(object_changes)
 }
 
+const DEFAULT_GAS_BUDGET: u64 = 5_000_000_000; // 5 SUI
+
 pub(crate) async fn create_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
+    gas_payment: Vec<ObjectRef>,
 ) -> Result<Transaction, anyhow::Error> {
     let gas_price = context.get_reference_gas_price().await?;
 
-    let client = context.get_client().await?;
-
     //let gas_budget = max_gas_budget(&client).await?;
-    let gas_budget =
-        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
+    // let gas_budget =
+    //     estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, gas_payment.clone(), None).await?;
 
-    let tx_data = client
-        .transaction_builder()
-        .tx_data(signer, tx_kind, gas_budget, gas_price, gas_payment, None)
-        .await?;
+    let tx_data = TransactionData::new_with_gas_coins(
+        tx_kind,
+        signer,
+        gas_payment,
+        DEFAULT_GAS_BUDGET,
+        gas_price,
+    );
 
     let signature = context.config.keystore.sign_secure(
         &tx_data.sender(),
@@ -1426,8 +1831,17 @@ pub(crate) async fn execute_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
+    gas_payment: Vec<ObjectRef>,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let gas_payment = if gas_payment.is_empty() {
+        let Some(gas_ref) = context.get_one_gas_object_owned_by_address(signer).await? else {
+            panic!("No gas object found in the wallet context.");
+        };
+
+        vec![gas_ref]
+    } else {
+        gas_payment
+    };
     let transaction = create_sui_transaction(signer, tx_kind, context, gas_payment).await?;
 
     let response = context
@@ -1436,12 +1850,13 @@ pub(crate) async fn execute_sui_transaction(
     Ok(response)
 }
 
+#[allow(dead_code)]
 pub async fn estimate_gas_budget(
     context: &mut WalletContext,
     signer: SuiAddress,
     kind: TransactionKind,
     gas_price: u64,
-    gas_payment: Option<Vec<ObjectID>>,
+    gas_payment: Vec<ObjectRef>,
     sponsor: Option<SuiAddress>,
 ) -> Result<u64, anyhow::Error> {
     let client = context.get_client().await?;
@@ -1450,7 +1865,6 @@ pub async fn estimate_gas_budget(
     else {
         bail!("Wrong SuiClientCommandResult. Should be SuiClientCommandResult::DryRun.")
     };
-
     let rgp = client.read_api().get_reference_gas_price().await?;
 
     Ok(estimate_gas_budget_from_gas_cost(

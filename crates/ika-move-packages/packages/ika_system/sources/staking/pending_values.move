@@ -3,7 +3,6 @@
 
 module ika_system::pending_values;
 
-// === Imports ===
 use sui::vec_map::{Self, VecMap};
 
 // === Errors ===

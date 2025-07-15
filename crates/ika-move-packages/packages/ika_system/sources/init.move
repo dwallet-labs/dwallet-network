@@ -3,21 +3,16 @@
 
 module ika_system::init;
 
-// === Imports ===
-
-use std::{string::String, type_name};
 use ika::ika::IKA;
-use ika_system::{
-    display,
-    protocol_treasury,
-    system,
-    validator_set::{Self},
-};
-use sui::{
-    coin::TreasuryCap,
-    package::{Self, Publisher, UpgradeCap}
-};
-use ika_system::system_inner::ProtocolCap;
+use ika_system::display;
+use ika_system::protocol_cap::ProtocolCap;
+use ika_system::protocol_treasury;
+use ika_system::system;
+use ika_system::validator_set;
+use std::string::String;
+use std::type_name;
+use sui::coin::TreasuryCap;
+use sui::package::{Self, Publisher, UpgradeCap};
 
 // === Errors ===
 
@@ -69,12 +64,6 @@ public fun initialize(
     reward_slashing_rate: u16,
     // Display parameters
     staked_ika_image_url: String,
-    dwallet_cap_image_url: String,
-    imported_key_dwallet_cap_image_url: String,
-    unverified_presign_cap_image_url: String,
-    verified_presign_cap_image_url: String,
-    unverified_partial_user_signature_cap_image_url: String,
-    verified_partial_user_signature_cap_image_url: String,
     ctx: &mut TxContext,
 ): ProtocolCap {
     let InitCap { id, publisher } = init_cap;
@@ -126,12 +115,6 @@ public fun initialize(
     display::create(
         publisher,
         staked_ika_image_url,
-        dwallet_cap_image_url,
-        imported_key_dwallet_cap_image_url,
-        unverified_presign_cap_image_url,
-        verified_presign_cap_image_url,
-        unverified_partial_user_signature_cap_image_url,
-        verified_partial_user_signature_cap_image_url,
         ctx,
     );
 
@@ -205,12 +188,6 @@ public fun initialize_for_testing(
 
     display::create(
         publisher,
-        b"".to_string(),
-        b"".to_string(),
-        b"".to_string(),
-        b"".to_string(),
-        b"".to_string(),
-        b"".to_string(),
         b"".to_string(),
         ctx,
     );

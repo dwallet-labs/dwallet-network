@@ -1,9 +1,9 @@
 use group::secp256k1;
 use k256::ecdsa::hazmat::bits2field;
 use k256::elliptic_curve::ops::Reduce;
-use k256::{elliptic_curve, U256};
-use sha3::digest::FixedOutput;
+use k256::{U256, elliptic_curve};
 use sha3::Digest;
+use sha3::digest::FixedOutput;
 
 /// Supported hash functions for message digest.
 #[derive(Clone, Debug)]
@@ -20,8 +20,7 @@ impl TryFrom<u32> for Hash {
             0 => Ok(Hash::KECCAK256),
             1 => Ok(Hash::SHA256),
             _ => Err(anyhow::Error::msg(format!(
-                "invalid value for Hash enum: {}",
-                value
+                "invalid value for Hash enum: {value}"
             ))),
         }
     }
@@ -33,11 +32,11 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp25
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
         )
-        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {e:?}")))?,
 
         Hash::SHA256 => {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
+                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {e:?}")))?
         }
     };
     #[allow(clippy::useless_conversion)]

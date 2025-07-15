@@ -5,11 +5,8 @@
 pub mod reader;
 pub mod writer;
 
-#[cfg(test)]
-mod tests;
-
 use crate::reader::{ArchiveReader, ArchiveReaderMetrics};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::Bytes;
 use fastcrypto::hash::{HashFunction, Sha3_256};
@@ -26,13 +23,13 @@ use std::fs;
 use std::io::{BufWriter, Cursor, Read, Seek, SeekFrom, Write};
 use std::num::NonZeroUsize;
 use std::ops::Range;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use sui_storage::blob::{Blob, BlobEncoding};
 use sui_storage::object_store::util::{get, put};
 use sui_storage::object_store::{ObjectStoreGetExt, ObjectStorePutExt};
-use sui_storage::{compute_sha3_checksum, compute_sha3_checksum_for_bytes, SHA3_BYTES};
+use sui_storage::{SHA3_BYTES, compute_sha3_checksum, compute_sha3_checksum_for_bytes};
 use tracing::info;
 
 #[allow(rustdoc::invalid_html_tags)]
@@ -454,8 +451,7 @@ where
                     cloned_counter.load(Ordering::Relaxed) as f64 / instant.elapsed().as_secs_f64();
                 cloned_progress_bar.set_position(latest_checkpoint + total_checkpoints_loaded);
                 cloned_progress_bar.set_message(format!(
-                    "checkpoints/s: {}, txns/s: {}",
-                    total_checkpoints_per_sec, total_txns_per_sec
+                    "checkpoints/s: {total_checkpoints_per_sec}, txns/s: {total_txns_per_sec}"
                 ));
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }

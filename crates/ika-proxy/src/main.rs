@@ -1,5 +1,27 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+
+//! # ika-proxy
+//!
+//! This binary provides an HTTP proxy server for collecting metrics from ika nodes.
+//!
+//! ## Environment Variables
+//!
+//! - `IKA_PROXY_VERBOSE_HTTP`: Set to "true" or "1" to enable verbose HTTP request/response logging.
+//!   This will log all incoming requests with detailed information including
+//!   — Request method, URI, and headers
+//!   — Client socket address and public key
+//!   — Metrics count and processing details
+//!   — Response status and timing information.
+//!
+//!   Example: `IKA_PROXY_VERBOSE_HTTP=true ./ika-proxy --config proxy.yaml`
+//!
+//! - `NODE_CLIENT_TIMEOUT`: Timeout in seconds for node client connections (default: 20)
+//!
+//! - `MIMIR_CLIENT_TIMEOUT`: Timeout in seconds for Mimir client connections (default: 30)
+//!
+//! - `MAX_BODY_SIZE`: Maximum request body size in bytes (default: 5MB)
+
 use anyhow::Result;
 use clap::Parser;
 use ika_proxy::config::ProxyConfig;
@@ -40,7 +62,7 @@ struct Args {
     #[clap(
         long,
         short,
-        default_value = "./sui-proxy.yaml",
+        default_value = "./ika-proxy.yaml",
         help = "Specify the config file path to use"
     )]
     config: String,

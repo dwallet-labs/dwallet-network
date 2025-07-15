@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
@@ -5,37 +8,35 @@ use crate::sui_connector::sui_syncer::SuiSyncer;
 use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
-use futures::{future, StreamExt};
+use futures::{StreamExt, future};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKeyData, SESSIONS_MANAGER_MODULE_NAME,
+};
 use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::{Coin, SuiEvent};
-use sui_sdk::apis::CoinReadApi;
 use sui_sdk::SuiClient as SuiSdkClient;
+use sui_sdk::apis::CoinReadApi;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use sui_types::transaction::{ProgrammableTransaction, Transaction, TransactionData};
 use tokio::sync::watch;
+use tokio::sync::watch::Sender;
 use tokio::task::JoinHandle;
 use tracing::info;
 
+pub mod end_of_publish_sender;
 pub mod metrics;
 pub mod sui_executor;
 pub mod sui_syncer;
-
-pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
-pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_coordinator_inner");
 
 pub struct SuiNotifier {
     sui_key: SuiKeyPair,
@@ -45,6 +46,8 @@ pub struct SuiNotifier {
 pub struct SuiConnectorService {
     sui_client: Arc<SuiClient<SuiSdkClient>>,
     sui_executor: SuiExecutor<SuiSdkClient>,
+    network_keys_receiver: watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
+    // todo(zeev): this needs a refactor.
     #[allow(dead_code)]
     task_handles: Vec<JoinHandle<()>>,
     #[allow(dead_code)]
@@ -60,10 +63,16 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-        next_epoch_committee_sender: watch::Sender<Committee>,
+        is_validator: bool,
+        next_epoch_committee_sender: Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
-    ) -> anyhow::Result<Self> {
+        end_of_publish_sender: Sender<Option<u64>>,
+    ) -> anyhow::Result<(
+        Arc<Self>,
+        watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
+    )> {
+        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
+
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
             sui_client.clone(),
@@ -73,6 +82,7 @@ impl SuiConnectorService {
 
         let sui_executor = SuiExecutor::new(
             sui_connector_config.ika_system_package_id,
+            sui_connector_config.ika_dwallet_2pc_mpc_package_id,
             checkpoint_store.clone(),
             system_checkpoint_store.clone(),
             sui_notifier,
@@ -80,10 +90,7 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
         );
 
-        let sui_modules_to_watch = vec![
-            TEST_MODULE_NAME.to_owned(),
-            DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
-        ];
+        let sui_modules_to_watch = vec![SESSIONS_MANAGER_MODULE_NAME.to_owned()];
         let task_handles = SuiSyncer::new(
             sui_client.clone(),
             sui_modules_to_watch,
@@ -92,18 +99,24 @@ impl SuiConnectorService {
         .run(
             Duration::from_secs(2),
             next_epoch_committee_sender,
+            is_validator,
             network_keys_sender,
             new_events_sender,
+            end_of_publish_sender,
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
-        Ok(Self {
-            sui_client,
-            sui_executor,
-            task_handles,
-            sui_connector_config,
-            metrics: sui_connector_metrics,
-        })
+        Ok((
+            Arc::new(Self {
+                sui_client,
+                sui_executor,
+                network_keys_receiver: network_keys_receiver.clone(),
+                task_handles,
+                sui_connector_config,
+                metrics: sui_connector_metrics,
+            }),
+            network_keys_receiver,
+        ))
     }
 
     pub async fn run_epoch(
@@ -111,7 +124,9 @@ impl SuiConnectorService {
         epoch_id: EpochId,
         run_with_range: Option<RunWithRange>,
     ) -> StopReason {
-        self.sui_executor.run_epoch(epoch_id, run_with_range).await
+        self.sui_executor
+            .run_epoch(epoch_id, run_with_range, self.network_keys_receiver.clone())
+            .await
     }
 
     async fn prepare_for_sui(
@@ -125,7 +140,7 @@ impl SuiConnectorService {
 
         let sui_key = sui_key_path.keypair().copy();
 
-        // If sui chain id is  Mainent or Testnet, we expect to see chain
+        // If sui chain id is Mainnet or Testnet, we expect to see chain
         // identifier to match accordingly.
         let sui_identifier = sui_client
             .get_chain_identifier()
@@ -136,7 +151,7 @@ impl SuiConnectorService {
             && sui_identifier != get_mainnet_chain_identifier().to_string()
         {
             anyhow::bail!(
-                "Expected sui chain {}, but connected to {}",
+                "Expected the sui chain {}, but connected to {}",
                 sui_connector_config.sui_chain_identifier,
                 sui_identifier
             );
@@ -145,7 +160,7 @@ impl SuiConnectorService {
             && sui_identifier != get_testnet_chain_identifier().to_string()
         {
             anyhow::bail!(
-                "Expected sui chain {}, but connected to {}",
+                "Expected the sui chain {}, but connected to {}",
                 sui_connector_config.sui_chain_identifier,
                 sui_identifier
             );
@@ -252,8 +267,10 @@ pub async fn pick_highest_balance_coin(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ika_sui_client::retry_with_max_elapsed_time;
     use std::time::Duration;
-    use tracing::debug;
+    use tracing::error;
+
     async fn example_func_ok() -> anyhow::Result<()> {
         Ok(())
     }
@@ -266,14 +283,14 @@ mod tests {
     #[tokio::test]
     async fn test_retry_with_max_elapsed_time() {
         telemetry_subscribers::init_for_testing();
-        // no retry is needed, should return immediately. We give it a very small
+        // No retry is needed, should return immediately. We give it a very small
         // max_elapsed_time and it should still finish in time.
         let max_elapsed_time = Duration::from_millis(20);
         retry_with_max_elapsed_time!(example_func_ok(), max_elapsed_time)
             .unwrap()
             .unwrap();
 
-        // now call a function that always errors and expect it to return before max_elapsed_time runs out
+        // Now call a function that always errors and expect it to return before max_elapsed_time runs out.
         let max_elapsed_time = Duration::from_secs(10);
         let instant = std::time::Instant::now();
         retry_with_max_elapsed_time!(example_func_err(), max_elapsed_time).unwrap_err();
