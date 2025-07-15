@@ -1310,7 +1310,6 @@ impl AuthorityPerEpochStore {
                     "Received CapabilityNotificationV1 from {:?}",
                     authority.concise()
                 );
-
             self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
                 println!("Capabilities v1: {:?}", capabilities);
