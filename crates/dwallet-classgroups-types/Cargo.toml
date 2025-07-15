@@ -1,17 +1,18 @@
 [package]
 name = "dwallet-classgroups-types"
-edition = "2021"
+edition = "2024"
 version.workspace = true
 
 [dependencies]
-class_groups.workspace = true
+dwallet-rng.workspace = true
+merlin.workspace = true
+class_groups = { workspace = true, features = ["parallel"] }
 group.workspace = true
+proof.workspace = true
 crypto-bigint.workspace = true
 serde.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
-fastcrypto = { workspace = true, features = ["copy_key"] }
-rand_chacha = "0.9"
 schemars.workspace = true
 serde_json.workspace = true
 serde_derive = "1.0.217"
@@ -20,7 +21,6 @@ dwallet-mpc-types.workspace = true
 twopc_mpc.workspace = true
 flate2 = "1.0.35"
 rand.workspace = true
-base64.workspace = true
 
 [lints]
 workspace = true

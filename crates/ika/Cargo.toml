@@ -1,10 +1,10 @@
 [package]
 name = "ika"
 version.workspace = true
-authors = ["dWallet Labs Ltd. <dev@dwalletlabs.com>"]
+authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
@@ -13,6 +13,7 @@ workspace = true
 anyhow.workspace = true
 bin-version.workspace = true
 bcs.workspace = true
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 clap.workspace = true
 datatest-stable.workspace = true
@@ -50,6 +51,7 @@ sui-types.workspace = true
 ika-move-packages.workspace = true
 serde_yaml.workspace = true
 ika-sui-client.workspace = true
+hex.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true

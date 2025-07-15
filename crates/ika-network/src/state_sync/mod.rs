@@ -47,7 +47,7 @@
 //! channel will always be made in order. StateSync will also send out a notification to its peers
 //! of the newly synchronized checkpoint so that it can help other peers synchronize.
 
-use anemo::{types::PeerEvent, PeerId, Request, Response, Result};
+use anemo::{PeerId, Request, Response, Result, types::PeerEvent};
 use futures::{FutureExt, StreamExt};
 use ika_config::p2p::StateSyncConfig;
 use ika_types::{
@@ -79,8 +79,6 @@ mod generated {
 mod builder;
 mod metrics;
 mod server;
-#[cfg(test)]
-mod tests;
 
 use self::{metrics::Metrics, server::CheckpointMessageDownloadLimitLayer};
 pub use crate::state_sync::server::GetChainIdentifierResponse;
@@ -178,8 +176,10 @@ struct PeerStateSyncInfo {
     chain_identifier: ChainIdentifier,
     /// Indicates if this Peer is on the same chain as us.
     on_same_chain_as_us: bool,
-    /// Highest checkpoint sequence number we know of for this Peer.
-    height: Option<DWalletCheckpointSequenceNumber>,
+    /// Highest dwallet checkpoint sequence number we know of for this Peer.
+    dwallet_checkpoint_height: Option<DWalletCheckpointSequenceNumber>,
+    /// Highest system checkpoint sequence number we know of for this Peer.
+    system_checkpoint_height: Option<SystemCheckpointSequenceNumber>,
 }
 
 impl PeerHeights {
@@ -194,7 +194,10 @@ impl PeerHeights {
     ) -> Option<DWalletCheckpointSequenceNumber> {
         self.peers
             .values()
-            .filter_map(|info| info.on_same_chain_as_us.then_some(info.height))
+            .filter_map(|info| {
+                info.on_same_chain_as_us
+                    .then_some(info.dwallet_checkpoint_height)
+            })
             .max()?
     }
 
@@ -209,7 +212,10 @@ impl PeerHeights {
     ) -> Option<DWalletCheckpointSequenceNumber> {
         self.peers
             .values()
-            .filter_map(|info| info.on_same_chain_as_us.then_some(info.height))
+            .filter_map(|info| {
+                info.on_same_chain_as_us
+                    .then_some(info.system_checkpoint_height)
+            })
             .max()?
     }
 
@@ -236,7 +242,10 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.height = std::cmp::max(Some(*checkpoint.sequence_number()), info.height);
+        info.dwallet_checkpoint_height = std::cmp::max(
+            Some(*checkpoint.sequence_number()),
+            info.dwallet_checkpoint_height,
+        );
         self.insert_checkpoint(checkpoint);
 
         true
@@ -245,7 +254,7 @@ impl PeerHeights {
     pub fn update_peer_info_with_system_checkpoint(
         &mut self,
         peer_id: PeerId,
-        params: CertifiedSystemCheckpointMessage,
+        system_checkpoint: CertifiedSystemCheckpointMessage,
     ) -> bool {
         debug!("Update peer info with params message");
 
@@ -254,13 +263,19 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.height = std::cmp::max(Some(*params.sequence_number()), info.height);
-        self.insert_system_checkpoint(params);
+        info.system_checkpoint_height = std::cmp::max(
+            Some(*system_checkpoint.sequence_number()),
+            info.system_checkpoint_height,
+        );
+        self.insert_system_checkpoint(system_checkpoint);
 
         true
     }
 
-    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, height = ?info.height))]
+    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id,
+        dwallet_checkpoint_height = ?info.dwallet_checkpoint_height,
+        system_checkpoint_height = ?info.system_checkpoint_height))
+    ]
     pub fn insert_peer_info(&mut self, peer_id: PeerId, info: PeerStateSyncInfo) {
         use std::collections::hash_map::Entry;
         debug!("Insert peer info");
@@ -271,7 +286,14 @@ impl PeerHeights {
                 // the maximum height. Otherwise we'll use the more recent one
                 let entry = entry.get_mut();
                 if entry.chain_identifier == info.chain_identifier {
-                    entry.height = std::cmp::max(entry.height, info.height);
+                    entry.dwallet_checkpoint_height = std::cmp::max(
+                        entry.dwallet_checkpoint_height,
+                        info.dwallet_checkpoint_height,
+                    );
+                    entry.system_checkpoint_height = std::cmp::max(
+                        entry.system_checkpoint_height,
+                        info.system_checkpoint_height,
+                    );
                 } else {
                     *entry = info;
                 }
@@ -378,11 +400,6 @@ impl PeerHeights {
         self.unprocessed_system_checkpoint.get(digest)
     }
 
-    #[cfg(test)]
-    pub fn set_wait_interval_when_no_peer_to_sync_content(&mut self, duration: Duration) {
-        self.wait_interval_when_no_peer_to_sync_content = duration;
-    }
-
     #[allow(unused)]
     pub fn wait_interval_when_no_peer_to_sync_content(&self) -> Duration {
         self.wait_interval_when_no_peer_to_sync_content
@@ -445,7 +462,10 @@ impl Iterator for PeerBalancer {
                 rand::thread_rng().gen_range(0..std::cmp::min(SELECTION_WINDOW, self.peers.len()));
             let (peer, info) = self.peers.remove(idx).unwrap();
             let requested_checkpoint = self.requested_dwallet_checkpoint.unwrap_or(1);
-            if info.height >= Some(requested_checkpoint) {
+            let requested_system_checkpoint = self.requested_system_checkpoint.unwrap_or(1);
+            if info.dwallet_checkpoint_height >= Some(requested_checkpoint)
+                || info.system_checkpoint_height >= Some(requested_system_checkpoint)
+            {
                 return Some(StateSyncClient::new(peer));
             }
         }
@@ -471,6 +491,7 @@ enum StateSyncMessage {
 }
 
 struct StateSyncEventLoop<S> {
+    is_notifier: bool,
     config: StateSyncConfig,
 
     mailbox: mpsc::Receiver<StateSyncMessage>,
@@ -605,8 +626,10 @@ where
                 },
             }
 
-            self.maybe_start_checkpoint_summary_sync_task();
-            self.maybe_start_system_checkpoint_summary_sync_task();
+            if self.is_notifier {
+                self.maybe_start_system_checkpoint_summary_sync_task();
+                self.maybe_start_checkpoint_summary_sync_task();
+            }
         }
 
         info!("State-Synchronizer ended");
@@ -616,8 +639,10 @@ where
         debug!("Received message: {:?}", message);
         match message {
             StateSyncMessage::StartSyncJob => {
-                self.maybe_start_checkpoint_summary_sync_task();
-                self.maybe_start_system_checkpoint_summary_sync_task();
+                if self.is_notifier {
+                    self.maybe_start_checkpoint_summary_sync_task();
+                    self.maybe_start_system_checkpoint_summary_sync_task();
+                }
             }
             StateSyncMessage::VerifiedDWalletCheckpointMessage(checkpoint) => {
                 self.handle_dwallet_checkpoint_from_consensus(checkpoint)
@@ -641,16 +666,6 @@ where
         &mut self,
         checkpoint: Box<VerifiedDWalletCheckpointMessage>,
     ) {
-        // // Always check previous_digest matches in case there is a gap between
-        // // state sync and consensus.
-        // let prev_digest = *self.store.get_dwallet_checkpoint_by_sequence_number(checkpoint.sequence_number().checked_sub(1).expect("exhausted u64"))
-        //     .expect("store operation should not fail")
-        //     .unwrap_or_else(|| panic!("Got checkpoint {} from consensus but cannot find checkpoint {} in certified_checkpoints", checkpoint.sequence_number(), checkpoint.sequence_number() - 1))
-        //     .digest();
-        // if checkpoint.previous_digest != Some(prev_digest) {
-        //     panic!("Checkpoint {} from consensus has mismatched previous_digest, expected: {:?}, actual: {:?}", checkpoint.sequence_number(), Some(prev_digest), checkpoint.previous_digest);
-        // }
-
         let latest_checkpoint_sequence_number = self
             .store
             .get_highest_verified_dwallet_checkpoint()
@@ -735,7 +750,9 @@ where
 
         match peer_event {
             Ok(PeerEvent::NewPeer(peer_id)) => {
-                self.spawn_get_latest_from_peer(peer_id);
+                if self.is_notifier {
+                    self.spawn_get_latest_from_peer(peer_id);
+                }
             }
             Ok(PeerEvent::LostPeer(peer_id, _)) => {
                 self.peer_heights.write().unwrap().peers.remove(&peer_id);
@@ -984,7 +1001,8 @@ async fn get_latest_from_peer(
                 Ok(GetChainIdentifierResponse { chain_identifier }) => PeerStateSyncInfo {
                     chain_identifier,
                     on_same_chain_as_us: our_chain_identifier == chain_identifier,
-                    height: None,
+                    dwallet_checkpoint_height: None,
+                    system_checkpoint_height: None,
                 },
                 Err(status) => {
                     trace!("get_chain_identifier request failed: {status:?}");
@@ -1001,7 +1019,7 @@ async fn get_latest_from_peer(
 
     // Bail early if this node isn't on the same chain as us
     if !info.on_same_chain_as_us {
-        trace!(?info, "Peer {peer_id} not on same chain as us");
+        info!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
     let Some(highest_checkpoint) = query_peer_for_latest_info(&mut client, timeout).await else {
@@ -1208,11 +1226,6 @@ where
             .ok_or_else(|| anyhow::anyhow!("no peers were able to help sync checkpoint {next}"))?;
 
         debug!(checkpoint_seq = ?checkpoint.sequence_number(), "verified checkpoint summary");
-        if let Some(checkpoint_summary_age_metric) =
-            metrics.dwallet_checkpoint_summary_age_metrics()
-        {
-            checkpoint.report_dwallet_checkpoint_age(checkpoint_summary_age_metric);
-        }
 
         current = Some(checkpoint.clone());
         // Insert the newly verified checkpoint into our store, which will bump our highest
@@ -1262,7 +1275,11 @@ where
             {
                 warn!("State sync from archive failed with error: {:?}", err);
             } else {
-                info!("State sync from archive is complete. Checkpoints downloaded = {:?}, Txns downloaded = {:?}", checkpoint_counter.load(Ordering::Relaxed), action_counter.load(Ordering::Relaxed));
+                info!(
+                    "State sync from archive is complete. Checkpoints downloaded = {:?}, Txns downloaded = {:?}",
+                    checkpoint_counter.load(Ordering::Relaxed),
+                    action_counter.load(Ordering::Relaxed)
+                );
             }
         } else {
             debug!("Failed to find an archive reader to complete the state sync request");
@@ -1326,7 +1343,8 @@ async fn get_latest_from_peer_system_checkpoint(
                 Ok(GetChainIdentifierResponse { chain_identifier }) => PeerStateSyncInfo {
                     chain_identifier,
                     on_same_chain_as_us: our_chain_identifier == chain_identifier,
-                    height: None,
+                    dwallet_checkpoint_height: None,
+                    system_checkpoint_height: None,
                 },
                 Err(status) => {
                     trace!("get_chain_identifier request failed: {status:?}");
@@ -1343,7 +1361,7 @@ async fn get_latest_from_peer_system_checkpoint(
 
     // Bail early if this node isn't on the same chain as us
     if !info.on_same_chain_as_us {
-        trace!(?info, "Peer {peer_id} not on same chain as us");
+        info!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
     let Some(highest_system_checkpoint) =
@@ -1563,11 +1581,6 @@ where
             })?;
 
         debug!(system_checkpoint_seq = ?system_checkpoint.sequence_number(), "verified system_checkpoint summary");
-        if let Some(system_checkpoint_summary_age_metric) =
-            metrics.system_checkpoint_summary_age_metrics()
-        {
-            system_checkpoint.report_system_checkpoint_age(system_checkpoint_summary_age_metric);
-        }
 
         current = Some(system_checkpoint.clone());
         // Insert the newly verified system_checkpoint into our store, which will bump our highest

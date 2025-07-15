@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{SystemCheckpointMetrics, SystemCheckpointStore};
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use async_trait::async_trait;
 use ika_types::crypto::AuthorityName;
@@ -67,15 +67,7 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
             .system_checkpoint_created(system_checkpoint, epoch_store, system_checkpoint_store)
             .await?;
 
-        let system_checkpoint_timestamp = system_checkpoint.timestamp_ms;
         let system_checkpoint_seq = system_checkpoint.sequence_number;
-        self.metrics.system_checkpoint_creation_latency.observe(
-            system_checkpoint
-                .timestamp()
-                .elapsed()
-                .unwrap_or_default()
-                .as_secs_f64(),
-        );
 
         let highest_verified_system_checkpoint = system_checkpoint_store
             .get_highest_verified_system_checkpoint()?
@@ -83,7 +75,8 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
 
         if Some(system_checkpoint_seq) > highest_verified_system_checkpoint {
             debug!(
-                "Sending system_checkpoint signature at sequence {system_checkpoint_seq} to consensus, timestamp {system_checkpoint_timestamp}."
+                ?system_checkpoint,
+                "Sending system checkpoint signature to consensus."
             );
 
             let summary = SignedSystemCheckpointMessage::new(
@@ -127,8 +120,7 @@ impl SystemCheckpointOutput for LogSystemCheckpointOutput {
     ) -> IkaResult {
         trace!(
             "Including following transactions in system_checkpoint {}: {:#?}",
-            system_checkpoint.sequence_number,
-            system_checkpoint.messages,
+            system_checkpoint.sequence_number, system_checkpoint.messages,
         );
         info!(
             "Creating system_checkpoint {:?} at epoch {}, sequence {}, messages count {}",

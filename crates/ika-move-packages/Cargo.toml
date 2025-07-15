@@ -1,8 +1,8 @@
 [package]
 name = "ika-move-packages"
 version = "0.1.0"
-edition = "2021"
-authors = ["dWallet Labs Ltd. <dev@dwalletlabs.com>"]
+edition = "2024"
+authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
 description = "Sui Move packages"
 license = "BSD-3-Clause-Clear"
 publish = false
@@ -18,6 +18,8 @@ sui-protocol-config.workspace = true
 
 move-binary-format.workspace = true
 anyhow.workspace = true
+tempfile.workspace = true
+include_directory = "0.1.1"
 
 [dev-dependencies]
 anyhow.workspace = true
@@ -29,3 +31,4 @@ move-binary-format.workspace = true
 move-compiler.workspace = true
 move-package.workspace = true
 sui-move-build.workspace = true
+sui-package-management.workspace = true

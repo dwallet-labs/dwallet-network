@@ -7,8 +7,8 @@ use typed_store::rocks::{DBBatch, DBMap, MetricConf};
 use typed_store::traits::Map;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
-use typed_store::rocksdb::Options;
 use typed_store::DBMapUtils;
+use typed_store::rocksdb::Options;
 
 /// AuthorityPerpetualTables contains data that must be preserved from one epoch to the next.
 #[derive(DBMapUtils)]

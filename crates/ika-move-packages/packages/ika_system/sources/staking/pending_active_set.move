@@ -1,12 +1,10 @@
 // Copyright (c) dWallet Labs, Ltd.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Contains an active set of validators. The active set is a smart collection
 /// that only stores up to a max size of validators. The active set tracks the total amount of staked
 /// IKA to make the calculation of the rewards and voting power distribution easier.
 module ika_system::pending_active_set;
-
-// === Imports ===
 
 use sui::vec_set::{Self, VecSet};
 
@@ -56,17 +54,17 @@ public struct PendingActiveSet has copy, drop, store {
 // === Package Functions ===
 
 /// Creates a new pending active set with the specified configuration parameters.
-/// 
+///
 /// The `min_validator_joining_stake` is used to filter out validators that do not have enough staked
 /// IKA to be included in the active set initially. The `max_validator_change_count` limits the number
 /// of validator additions/removals per epoch.
-/// 
+///
 /// # Arguments
 /// * `min_validator_count` - The minimum number of validators required in the active set
-/// * `max_validator_count` - The maximum number of validators allowed in the active set  
+/// * `max_validator_count` - The maximum number of validators allowed in the active set
 /// * `min_validator_joining_stake` - The minimum stake required for a validator to join
 /// * `max_validator_change_count` - The maximum number of validator changes allowed per epoch
-/// 
+///
 /// # Aborts
 /// * `EZeroMaxSize` - If `max_validator_count` is zero
 /// * `EBelowMinValidatorCount` - If `min_validator_count` > `max_validator_count`
@@ -74,11 +72,11 @@ public(package) fun new(
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
-    max_validator_change_count: u64
+    max_validator_change_count: u64,
 ): PendingActiveSet {
     assert!(max_validator_count > 0, EZeroMaxSize);
     assert!(min_validator_count <= max_validator_count, EBelowMinValidatorCount);
-    
+
     PendingActiveSet {
         min_validator_count,
         max_validator_count,
@@ -91,21 +89,25 @@ public(package) fun new(
 }
 
 /// Inserts, updates, or removes a validator based on their stake amount.
-/// 
+///
 /// This function handles the complete lifecycle of a validator in the active set:
-/// - If stake is below threshold: attempts to remove the validator 
+/// - If stake is below threshold: attempts to remove the validator
 /// - If validator exists: updates their stake
 /// - If validator doesn't exist and has sufficient stake: inserts them
-/// 
+///
 /// # Arguments
 /// * `set` - The pending active set to modify
 /// * `validator_id` - The ID of the validator to process
 /// * `staked_amount` - The new stake amount for the validator
-/// 
+///
 /// # Returns
 /// * `bool` - Whether the validator is in the set after the operation
 /// * `Option<ID>` - The ID of any validator that was removed, or None
-public(package) fun insert_or_update_or_remove(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (bool, Option<ID>) {
+public(package) fun insert_or_update_or_remove(
+    set: &mut PendingActiveSet,
+    validator_id: ID,
+    staked_amount: u64,
+): (bool, Option<ID>) {
     // Currently, the `min_validator_joining_stake` is set to `0`, so we need to account for that.
     if (staked_amount == 0 || staked_amount < set.min_validator_joining_stake) {
         if (set.remove(validator_id)) {
@@ -121,16 +123,20 @@ public(package) fun insert_or_update_or_remove(set: &mut PendingActiveSet, valid
 }
 
 /// Updates an existing validator's stake or removes them if stake is insufficient.
-/// 
+///
 /// # Arguments
 /// * `set` - The pending active set to modify
 /// * `validator_id` - The ID of the validator to update
 /// * `staked_amount` - The new stake amount for the validator
-/// 
+///
 /// # Returns
 /// * `bool` - Whether the validator remains in the set after the operation
 /// * `Option<ID>` - The ID of the validator if it was removed, or None
-public(package) fun update_or_remove(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (bool, Option<ID>) {
+public(package) fun update_or_remove(
+    set: &mut PendingActiveSet,
+    validator_id: ID,
+    staked_amount: u64,
+): (bool, Option<ID>) {
     if (staked_amount == 0 || staked_amount < set.min_validator_joining_stake) {
         if (set.remove(validator_id)) {
             (false, option::some(validator_id))
@@ -143,12 +149,12 @@ public(package) fun update_or_remove(set: &mut PendingActiveSet, validator_id: I
 }
 
 /// Updates the stake amount of an existing validator in the active set.
-/// 
+///
 /// # Arguments
 /// * `set` - The pending active set to modify
 /// * `validator_id` - The ID of the validator to update
 /// * `staked_amount` - The new stake amount for the validator
-/// 
+///
 /// # Returns
 /// * `bool` - Whether the validator was found and updated
 public(package) fun update(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): bool {
@@ -166,14 +172,14 @@ public(package) fun update(set: &mut PendingActiveSet, validator_id: ID, staked_
 }
 
 /// Removes a validator from the active set.
-/// 
+///
 /// # Arguments
 /// * `set` - The pending active set to modify
 /// * `validator_id` - The ID of the validator to remove
-/// 
+///
 /// # Returns
 /// * `bool` - Whether the validator was found and removed
-/// 
+///
 /// # Aborts
 /// * `EBelowMinValidatorCount` - If removal would violate the minimum validator count
 public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID): bool {
@@ -186,14 +192,20 @@ public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID): bool {
     });
 
     // Abort if removal would violate the minimum validator count
-    assert!(is_under_min_validator_count || set.validators.length() >= set.min_validator_count, EBelowMinValidatorCount);
+    assert!(
+        is_under_min_validator_count || set.validators.length() >= set.min_validator_count,
+        EBelowMinValidatorCount,
+    );
 
     // Only track the change if the validator was actually removed
     if (removed) {
         if (!set.validator_changes.contains(&validator_id)) {
             set.validator_changes.insert(validator_id);
         };
-        assert!(set.validator_changes.size() <= set.max_validator_change_count, EMaxValidatorChangeReached);
+        assert!(
+            set.validator_changes.size() <= set.max_validator_change_count,
+            EMaxValidatorChangeReached,
+        );
     };
     removed
 }
@@ -201,11 +213,11 @@ public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID): bool {
 // === View Functions ===
 
 /// Finds the index of a validator in the active set using linear search.
-/// 
+///
 /// # Arguments
 /// * `set` - The pending active set to search
 /// * `validator_id` - The ID of the validator to find
-/// 
+///
 /// # Returns
 /// * `Option<u64>` - The index of the validator, or None if not found
 public(package) fun find_validator_index(set: &PendingActiveSet, validator_id: ID): Option<u64> {
@@ -220,7 +232,6 @@ public(package) fun find_validator_index(set: &PendingActiveSet, validator_id: I
     option::none()
 }
 
-
 // === Admin Functions ===
 
 /// Sets the maximum size of the active set.
@@ -234,7 +245,10 @@ public(package) fun set_min_validator_count(set: &mut PendingActiveSet, min_vali
 }
 
 /// Sets the maximum number of validator changes allowed per epoch.
-public(package) fun set_max_validator_change_count(set: &mut PendingActiveSet, max_validator_change_count: u64) {
+public(package) fun set_max_validator_change_count(
+    set: &mut PendingActiveSet,
+    max_validator_change_count: u64,
+) {
     set.max_validator_change_count = max_validator_change_count;
 }
 
@@ -244,40 +258,43 @@ public(package) fun reset_validator_changes(set: &mut PendingActiveSet) {
 }
 
 /// Sets the minimum amount of staked IKA required to join the active set.
-public(package) fun set_min_validator_joining_stake(set: &mut PendingActiveSet, min_validator_joining_stake: u64) {
+public(package) fun set_min_validator_joining_stake(
+    set: &mut PendingActiveSet,
+    min_validator_joining_stake: u64,
+) {
     set.min_validator_joining_stake = min_validator_joining_stake;
 }
 
 // === Getter Functions ===
 
 /// Returns the maximum size of the active set.
-public(package) fun max_validator_count(set: &PendingActiveSet): u64 { 
-    set.max_validator_count 
+public(package) fun max_validator_count(set: &PendingActiveSet): u64 {
+    set.max_validator_count
 }
 
 /// Returns the minimum number of validators required in the active set.
-public(package) fun min_validator_count(set: &PendingActiveSet): u64 { 
-    set.min_validator_count 
+public(package) fun min_validator_count(set: &PendingActiveSet): u64 {
+    set.min_validator_count
 }
 
 /// Returns the maximum number of validator changes allowed per epoch.
-public(package) fun max_validator_change_count(set: &PendingActiveSet): u64 { 
-    set.max_validator_change_count 
+public(package) fun max_validator_change_count(set: &PendingActiveSet): u64 {
+    set.max_validator_change_count
 }
 
 /// Returns the current size of the active set.
-public(package) fun size(set: &PendingActiveSet): u64 { 
-    set.validators.length() 
+public(package) fun size(set: &PendingActiveSet): u64 {
+    set.validators.length()
 }
 
 /// Returns the minimum amount of staked IKA required to join the active set.
-public(package) fun min_validator_joining_stake(set: &PendingActiveSet): u64 { 
-    set.min_validator_joining_stake 
+public(package) fun min_validator_joining_stake(set: &PendingActiveSet): u64 {
+    set.min_validator_joining_stake
 }
 
 /// Returns the total amount of staked IKA in the active set.
-public(package) fun total_stake(set: &PendingActiveSet): u64 { 
-    set.total_stake 
+public(package) fun total_stake(set: &PendingActiveSet): u64 {
+    set.total_stake
 }
 
 /// Returns the IDs of all validators in the active set.
@@ -296,23 +313,22 @@ public(package) fun active_ids_and_stake(set: &PendingActiveSet): (vector<ID>, v
     (active_ids, stake)
 }
 
-
 // === Private Functions ===
 
 /// Inserts a validator into the active set with smart capacity management.
-/// 
+///
 /// If the set is full, the validator with the smallest stake is removed to make space
 /// for the new validator (if the new validator has higher stake).
-/// 
+///
 /// # Arguments
 /// * `set` - The pending active set to modify
 /// * `validator_id` - The ID of the validator to insert
 /// * `staked_amount` - The stake amount for the validator
-/// 
+///
 /// # Returns
 /// * `bool` - Whether the validator was successfully inserted
 /// * `Option<ID>` - The ID of any validator that was removed, or None
-/// 
+///
 /// # Aborts
 /// * `EDuplicateInsertion` - If the validator is already in the set
 /// * `EMaxValidatorChangeReached` - If the change would exceed the epoch limit
@@ -327,7 +343,10 @@ fun insert(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (b
         if (!set.validator_changes.contains(&validator_id)) {
             set.validator_changes.insert(validator_id);
         };
-        assert!(set.validator_changes.size() <= set.max_validator_change_count, EMaxValidatorChangeReached);
+        assert!(
+            set.validator_changes.size() <= set.max_validator_change_count,
+            EMaxValidatorChangeReached,
+        );
 
         return (true, option::none())
     };
@@ -347,7 +366,10 @@ fun insert(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (b
     if (!set.validator_changes.contains(&validator_id)) {
         set.validator_changes.insert(validator_id);
     };
-    assert!(set.validator_changes.size() <= set.max_validator_change_count, EMaxValidatorChangeReached);
+    assert!(
+        set.validator_changes.size() <= set.max_validator_change_count,
+        EMaxValidatorChangeReached,
+    );
     (true, option::some(removed_validator_id))
 }
 
@@ -386,12 +408,12 @@ fun reposition_validator(set: &mut PendingActiveSet, index: u64) {
 // === Test Functions ===
 
 /// Returns the current minimum stake needed to be in the active set.
-/// 
+///
 /// If the active set is full, returns the stake of the validator with the smallest stake.
 /// Otherwise, returns the threshold stake.
-/// 
-/// Note: Test only to discourage using this since it iterates over all validators. 
-/// When `min_validator_joining_stake` is needed within `PendingActiveSet`, 
+///
+/// Note: Test only to discourage using this since it iterates over all validators.
+/// When `min_validator_joining_stake` is needed within `PendingActiveSet`,
 /// prefer inlining/integrating it in other loops.
 #[test_only]
 public(package) fun current_min_validator_joining_stake(set: &PendingActiveSet): u64 {

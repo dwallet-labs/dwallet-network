@@ -4,7 +4,7 @@ version.workspace = true
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
@@ -59,3 +59,10 @@ sui-metrics-push-client.workspace = true
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true
+
+
+[features]
+default = ["enforce-minimum-cpu"]
+
+# Set this feature to enforce a minimum of 16 CPU cores for cryptographic computations.
+enforce-minimum-cpu = ["ika-core/enforce-minimum-cpu"]

@@ -2,10 +2,12 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use fastcrypto::traits::EncodeDecodeBase64;
 use ika_config::initiation::InitiationParameters;
-use ika_move_packages::BuiltInIkaMovePackages;
 use ika_swarm_config::sui_client::{
-    ika_system_initialize, ika_system_request_dwallet_network_encryption_key_dkg_by_cap,
-    init_initialize, minted_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
+    ika_system_add_upgrade_cap_by_cap, ika_system_initialize,
+    ika_system_request_dwallet_network_encryption_key_dkg_by_cap,
+    ika_system_set_witness_approving_advance_epoch, init_initialize, minted_ika,
+    publish_ika_common_package_to_sui, publish_ika_dwallet_2pc_mpc_package_to_sui,
+    publish_ika_package_to_sui, publish_ika_system_package_to_sui, setup_contract_paths,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -14,14 +16,14 @@ use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::request_tokens_from_faucet;
 use sui_config::SUI_KEYSTORE_FILENAME;
-use sui_config::{sui_config_dir, Config, SUI_CLIENT_CONFIG};
+use sui_config::{Config, SUI_CLIENT_CONFIG, sui_config_dir};
 use sui_keys::keystore::Keystore;
 use sui_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::base_types::{ObjectID, SuiAddress};
+use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
 use sui_types::crypto::SignatureScheme;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 /// CLI for IKA operations on Sui.
 #[derive(Parser)]
@@ -106,13 +108,19 @@ struct PublishIkaConfig {
     pub ika_package_id: ObjectID,
     pub treasury_cap_id: ObjectID,
     pub ika_package_upgrade_cap_id: ObjectID,
+    pub ika_common_package_id: Option<ObjectID>,
+    pub ika_common_package_upgrade_cap_id: Option<ObjectID>,
     pub ika_system_package_id: ObjectID,
     pub init_cap_id: ObjectID,
     pub ika_system_package_upgrade_cap_id: ObjectID,
+    pub ika_dwallet_2pc_mpc_package_id: Option<ObjectID>,
+    pub ika_dwallet_2pc_mpc_init_id: Option<ObjectID>,
+    pub ika_dwallet_2pc_mpc_package_upgrade_cap_id: Option<ObjectID>,
     pub ika_supply_id: Option<ObjectID>,
     pub ika_system_object_id: Option<ObjectID>,
     pub protocol_cap_id: Option<ObjectID>,
     pub init_system_shared_version: Option<u64>,
+    pub ika_dwallet_coordinator_object_id: Option<ObjectID>,
 }
 
 #[tokio::main]
@@ -125,28 +133,20 @@ async fn main() -> Result<()> {
             sui_faucet_addr,
             sui_conf_dir,
         } => {
-            println!("Publishing IKA modules on network: {}", sui_rpc_addr);
+            println!("Publishing IKA modules on network: {sui_rpc_addr}");
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
             let mut context = WalletContext::new(&sui_config_path)?;
-            let client = context.get_client().await?;
 
-            // Load the IKA Move packages.
-            let ika_package = BuiltInIkaMovePackages::get_package_by_name("ika");
-            let ika_system_package = BuiltInIkaMovePackages::get_package_by_name("ika_system");
+            // Setup contract paths.
+            let contract_paths = setup_contract_paths()?;
 
             // Publish the "ika" package.
             let (ika_package_id, treasury_cap_id, ika_package_upgrade_cap_id) =
-                publish_ika_package_to_sui(
-                    publisher_address,
-                    &mut context,
-                    client.clone(),
-                    ika_package,
-                )
-                .await?;
+                publish_ika_package_to_sui(&mut context, contract_paths.ika_contract_path).await?;
             println!("Published IKA package:");
             println!("  ika_package_id: {ika_package_id}");
             println!("  treasury_cap_id: {treasury_cap_id}");
@@ -155,20 +155,49 @@ async fn main() -> Result<()> {
             // Allow a short delay between publishing calls.
             sleep(Duration::from_secs(2)).await;
 
-            // Publish the "ika_system" package (which depends on the IKA package).
+            // Publish the "ika_common" package.
+            let (ika_common_package_id, ika_common_package_upgrade_cap_id) =
+                publish_ika_common_package_to_sui(
+                    &mut context,
+                    contract_paths.ika_common_contract_path,
+                )
+                .await?;
+            println!("Published IKA common package:");
+            println!("  ika_common_package_id: {ika_common_package_id}");
+            println!("  ika_common_package_upgrade_cap_id: {ika_common_package_upgrade_cap_id}");
+
+            sleep(Duration::from_secs(2)).await;
+
+            // Publish the "ika_system" package.
             let (ika_system_package_id, init_cap_id, ika_system_package_upgrade_cap_id) =
                 publish_ika_system_package_to_sui(
-                    publisher_address,
                     &mut context,
-                    client.clone(),
-                    ika_system_package,
-                    ika_package_id,
+                    contract_paths.ika_system_contract_path,
                 )
                 .await?;
             println!("Published IKA system package:");
-            println!("  ika_system_package_id: {ika_system_package_id}",);
-            println!("  init_cap_id: {init_cap_id}",);
-            println!("  ika_system_package_upgrade_cap_id: {ika_system_package_upgrade_cap_id}",);
+            println!("  ika_system_package_id: {ika_system_package_id}");
+            println!("  init_cap_id: {init_cap_id}");
+            println!("  ika_system_package_upgrade_cap_id: {ika_system_package_upgrade_cap_id}");
+
+            sleep(Duration::from_secs(2)).await;
+
+            // Publish the "ika_dwallet_2pc_mpc" package.
+            let (
+                ika_dwallet_2pc_mpc_package_id,
+                ika_dwallet_2pc_mpc_init_id,
+                ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+            ) = publish_ika_dwallet_2pc_mpc_package_to_sui(
+                &mut context,
+                contract_paths.ika_dwallet_2pc_mpc_contract_path,
+            )
+            .await?;
+            println!("Published IKA dwallet 2pc mpc package:");
+            println!("  ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id}");
+            println!("  ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}");
+            println!(
+                "  ika_dwallet_2pc_mpc_package_upgrade_cap_id: {ika_dwallet_2pc_mpc_package_upgrade_cap_id}"
+            );
 
             // Save the published package IDs into a configuration file.
             let publish_config = PublishIkaConfig {
@@ -176,22 +205,31 @@ async fn main() -> Result<()> {
                 ika_package_id,
                 treasury_cap_id,
                 ika_package_upgrade_cap_id,
+                ika_common_package_id: Some(ika_common_package_id),
+                ika_common_package_upgrade_cap_id: Some(ika_common_package_upgrade_cap_id),
                 ika_system_package_id,
                 init_cap_id,
                 ika_system_package_upgrade_cap_id,
+                ika_dwallet_2pc_mpc_package_id: Some(ika_dwallet_2pc_mpc_package_id),
+                ika_dwallet_2pc_mpc_init_id: Some(ika_dwallet_2pc_mpc_init_id),
+                ika_dwallet_2pc_mpc_package_upgrade_cap_id: Some(
+                    ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+                ),
                 ika_supply_id: None,
                 ika_system_object_id: None,
                 protocol_cap_id: None,
                 init_system_shared_version: None,
+                ika_dwallet_coordinator_object_id: None,
             };
 
-            let config_file_path = PathBuf::from("ika_publish_config.json");
+            let config_file_path = contract_paths
+                .current_working_dir
+                .join("ika_publish_config.json");
             let mut file = File::create(&config_file_path)?;
             let json = serde_json::to_string_pretty(&publish_config)?;
             file.write_all(json.as_bytes())?;
             println!(
-                "Published IKA modules configuration saved to {:?}",
-                config_file_path
+                "Published IKA modules configuration saved to {config_file_path:?}:\n {json:?}"
             );
         }
 
@@ -201,22 +239,25 @@ async fn main() -> Result<()> {
             sui_faucet_addr,
             sui_rpc_addr,
         } => {
-            println!(
-                "Minting IKA tokens using configuration from: {:?}",
-                ika_config_path
-            );
+            println!("Minting IKA tokens using configuration from: {ika_config_path:?}");
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
+            println!("Using SUI configuration from: {sui_config_path:?}");
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            println!("Using SUI faucet address: {sui_faucet_addr}");
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
             // Load the published IKA configuration from the file.
-            let ika_config = std::fs::read_to_string(&ika_config_path)?;
+            let ika_config = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
+
+            println!("Using publisher address: {publisher_address}");
 
             // Create a WalletContext using the persisted SuiClientConfig.
             let context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
+
+            println!("Using SUI client configuration from: {sui_config_path:?}");
 
             // Call `mint_ika` with the publisher address, context,
             // client, IKA package ID, and treasury cap ID.
@@ -226,7 +267,7 @@ async fn main() -> Result<()> {
                 publish_config.ika_package_id,
             )
             .await?;
-            println!("Minting done: ika_supply_id: {}", ika_supply_id);
+            println!("Minting done: ika_supply_id: {ika_supply_id}");
 
             // Update the configuration with the new ika_supply_id
             publish_config.ika_supply_id = Some(ika_supply_id);
@@ -235,10 +276,7 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&publish_config)?;
             let mut file = File::create(&ika_config_path)?;
             file.write_all(json.as_bytes())?;
-            println!(
-                "Updated IKA modules configuration saved to {:?}",
-                ika_config_path
-            );
+            println!("Updated IKA modules configuration saved to {ika_config_path:?}");
         }
 
         Commands::InitEnv {
@@ -248,17 +286,14 @@ async fn main() -> Result<()> {
             epoch_duration_ms,
             protocol_version,
         } => {
-            println!(
-                "Initializing environment using configuration at {:?}",
-                ika_config_path
-            );
+            println!("Initializing environment using configuration at {ika_config_path:?}");
 
             let config_content = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
-            println!("Using SUI configuration from: {:?}", sui_config_path);
+            println!("Using SUI configuration from: {sui_config_path:?}");
 
             // Create a WalletContext and obtain a Sui client.
             let mut context = WalletContext::new(&sui_config_path)?;
@@ -292,6 +327,52 @@ async fn main() -> Result<()> {
                   init_system_shared_version: {init_system_shared_version}",
             );
 
+            // Call the witness-related functions that were missing from the CLI
+            let ika_dwallet_2pc_mpc_package_id = publish_config.ika_dwallet_2pc_mpc_package_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_dwallet_2pc_mpc_package_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+
+            ika_system_set_witness_approving_advance_epoch(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                publish_config.ika_system_package_id,
+                ika_system_object_id,
+                init_system_shared_version,
+                protocol_cap_id,
+                ika_dwallet_2pc_mpc_package_id,
+            )
+            .await?;
+            println!("Running `system::set_witness_approving_advance_epoch` done.");
+
+            let ika_common_package_upgrade_cap_id = publish_config.ika_common_package_upgrade_cap_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_common_package_upgrade_cap_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+
+            let ika_dwallet_2pc_mpc_package_upgrade_cap_id = publish_config.ika_dwallet_2pc_mpc_package_upgrade_cap_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_dwallet_2pc_mpc_package_upgrade_cap_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+
+            ika_system_add_upgrade_cap_by_cap(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                publish_config.ika_system_package_id,
+                ika_system_object_id,
+                init_system_shared_version,
+                protocol_cap_id,
+                ika_common_package_upgrade_cap_id,
+                ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+            )
+            .await?;
+            println!("Running `system::add_upgrade_cap_by_cap` done.");
+
             // Update the configuration with the new fields
             publish_config.ika_system_object_id = Some(ika_system_object_id);
             publish_config.protocol_cap_id = Some(protocol_cap_id);
@@ -301,10 +382,7 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&publish_config)?;
             let mut file = File::create(&ika_config_path)?;
             file.write_all(json.as_bytes())?;
-            println!(
-                "Updated IKA modules configuration saved to {:?}",
-                ika_config_path
-            );
+            println!("Updated IKA modules configuration saved to {ika_config_path:?}");
         }
 
         Commands::IkaSystemInitialize {
@@ -313,13 +391,12 @@ async fn main() -> Result<()> {
             sui_rpc_addr,
         } => {
             println!(
-                "Starting IKA system initialization using configuration at {:?}",
-                ika_config_path
+                "Starting IKA system initialization using configuration at {ika_config_path:?}"
             );
 
             // Load the published config.
             let config_content = fs::read_to_string(&ika_config_path)?;
-            let publish_config: PublishIkaConfig =
+            let mut publish_config: PublishIkaConfig =
                 serde_json::from_str(&config_content).expect("Failed to parse IKA configuration");
 
             // Check that the required fields are present.
@@ -337,11 +414,21 @@ async fn main() -> Result<()> {
                 )
             })?;
             let ika_system_package_id = publish_config.ika_system_package_id;
+            let ika_dwallet_2pc_mpc_package_id = publish_config.ika_dwallet_2pc_mpc_package_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_dwallet_2pc_mpc_package_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+            let ika_dwallet_2pc_mpc_init_id = publish_config.ika_dwallet_2pc_mpc_init_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_dwallet_2pc_mpc_init_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
 
             // Initialize the SUI configuration.
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
-            println!("Using SUI configuration from: {:?}", sui_config_path);
+            println!("Using SUI configuration from: {sui_config_path:?}");
 
             // Create a WalletContext and Sui client.
             let mut context = WalletContext::new(&sui_config_path)?;
@@ -350,20 +437,22 @@ async fn main() -> Result<()> {
             let initiation_parameters = InitiationParameters::new();
 
             // Call ika_system_initialize.
-            let (dwallet_id, dwallet_initial_shared_version) = ika_system_initialize(
-                publisher_address,
-                &mut context,
-                client.clone(),
-                ika_system_package_id,
-                ika_system_object_id,
-                init_system_shared_version.into(),
-                protocol_cap_id,
-                initiation_parameters.max_validator_change_count,
-            )
-            .await?;
+            let (dwallet_coordinator_object_id, dwallet_initial_shared_version) =
+                ika_system_initialize(
+                    publisher_address,
+                    &mut context,
+                    client.clone(),
+                    ika_system_package_id,
+                    ika_system_object_id,
+                    SequenceNumber::from(init_system_shared_version),
+                    protocol_cap_id,
+                    ika_dwallet_2pc_mpc_package_id,
+                    ika_dwallet_2pc_mpc_init_id,
+                    initiation_parameters.max_validator_change_count,
+                )
+                .await?;
             println!(
-                "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
-                dwallet_id, dwallet_initial_shared_version
+                "system::initialize done. `dwallet_id`: {dwallet_coordinator_object_id}, `initial_shared_version`: {dwallet_initial_shared_version}"
             );
 
             // object_id = 0xacdb9188b62bea2201a836361f5f20374d8402cd5f200d6f92e06a604d4fb2a8
@@ -375,14 +464,24 @@ async fn main() -> Result<()> {
                 &mut context,
                 client.clone(),
                 ika_system_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_object_id,
-                init_system_shared_version.into(),
-                dwallet_id,
+                SequenceNumber::from(init_system_shared_version),
+                dwallet_coordinator_object_id,
                 dwallet_initial_shared_version,
                 protocol_cap_id,
             )
             .await?;
             println!("system::request_dwallet_network_decryption_key_dkg_by_cap done.");
+
+            // Update the configuration with the dwallet_coordinator_object_id
+            publish_config.ika_dwallet_coordinator_object_id = Some(dwallet_coordinator_object_id);
+
+            // Write the updated configuration back to the file
+            let json = serde_json::to_string_pretty(&publish_config)?;
+            let mut file = File::create(&ika_config_path)?;
+            file.write_all(json.as_bytes())?;
+            println!("Updated IKA modules configuration saved to {ika_config_path:?}");
 
             // Optionally, update the configuration file if needed.
             // For example, you might want to store dwallet_id or other values.
@@ -428,16 +527,13 @@ fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddr
 
     let mut keystore = Keystore::File(FileBasedKeystore::new(&keystore_path)?);
     let sui_client_config_path = sui_conf_dir.join(SUI_CLIENT_CONFIG);
-    println!(
-        "Using SUI client configuration at: {:?}",
-        sui_client_config_path
-    );
-    println!("Using keystore at: {:?}", keystore_path);
+    println!("Using SUI client configuration at: {sui_client_config_path:?}");
+    println!("Using keystore at: {keystore_path:?}");
 
     let publisher_address = match &mut keystore {
         Keystore::File(file_ks) => {
             if !file_ks.alias_exists(ALIAS_PUBLISHER) {
-                println!("Creating publisher alias: {}", ALIAS_PUBLISHER);
+                println!("Creating publisher alias: {ALIAS_PUBLISHER}");
                 file_ks.create_alias(Option::from(ALIAS_PUBLISHER.to_string()))?;
             }
 
@@ -452,21 +548,21 @@ fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddr
                         Some("word24".to_string()),
                     )?;
 
-                    println!("Generated a new publisher key with address: {}", address);
-                    println!("Secret Recovery Phrase: {}", phrase);
+                    println!("Generated a new publisher key with address: {address}");
+                    println!("Secret Recovery Phrase: {phrase}");
 
                     let publisher_keypair = file_ks.get_key(&address)?.copy();
                     let encoded = publisher_keypair.encode_base64();
                     let publisher_key_path = sui_conf_dir.join("publisher.key");
                     let mut file = File::create(&publisher_key_path)?;
-                    writeln!(file, "{}", encoded)?;
-                    println!("Saved key to {:?}", publisher_key_path);
+                    writeln!(file, "{encoded}")?;
+                    println!("Saved key to {publisher_key_path:?}");
 
                     // Write the phrase to publisher.seed
                     let seed_path = sui_conf_dir.join("publisher.seed");
                     let mut file = File::create(&seed_path)?;
-                    writeln!(file, "{}", phrase)?;
-                    println!("Saved recovery phrase to {:?}", seed_path);
+                    writeln!(file, "{phrase}")?;
+                    println!("Saved recovery phrase to {seed_path:?}");
                     address
                 }
             }

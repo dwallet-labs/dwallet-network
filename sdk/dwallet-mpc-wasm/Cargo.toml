@@ -3,7 +3,7 @@ name = "dwallet-mpc-wasm"
 authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
 description = "Ika wasm bindings for dwallet MPC centralized party"
 version = "0.1.6"
-edition = "2021"
+edition = "2024"
 license = "BSD-3-Clause-Clear"
 publish = false
 
@@ -54,7 +54,7 @@ publish = false
 dwallet-mpc-centralized-party = { path = "../../crates/dwallet-mpc-centralized-party", features = ["wasm_js"] }
 anyhow = "1.0.95"
 getrandom = { version = "0.2.16", features = ["js"] } # TODO: idk why, but we need this, also this is old version
-group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["wasm_js"], rev = "7dd2b76"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["wasm_js"], rev = "ed85dfa"}
 
 wasm-bindgen = "0.2.100"
 serde-wasm-bindgen = "0.6.5"
@@ -68,4 +68,4 @@ sha3 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha3-v0.11.0-r
 digest = { git = 'https://github.com/RustCrypto/traits.git', tag = "digest-v0.11.0-rc.0" }
 signature = { git = 'https://github.com/RustCrypto/traits.git', tag = "signature-v3.0.0-rc.1" }
 curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "d0929d4" }

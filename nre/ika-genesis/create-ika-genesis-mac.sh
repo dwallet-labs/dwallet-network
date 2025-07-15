@@ -26,12 +26,12 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=115
+export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
 #export SUBDOMAIN="localhost"
-export SUBDOMAIN="beta.devnet2.ika-network.net"
+export SUBDOMAIN="beta.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -220,8 +220,8 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # If we already have a class-groups.key, copy it into current dir before make-validator-info
     if [ "$CLASS_GROUPS_KEY_CREATED" -eq 1 ]; then
-        echo "Copying existing class-groups.key for validator '$VALIDATOR_NAME'"
-        cp ../class-groups.key .
+        echo "Copying existing class-groups.seed for validator '$VALIDATOR_NAME'"
+        cp ../class-groups.seed .
     fi
 
     # Now run make-validator-info
@@ -229,13 +229,13 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # After the first validator generates class-groups.key, save it globally
     if [ "$CLASS_GROUPS_KEY_CREATED" -eq 0 ]; then
-        echo "Saving initial class-groups.key after first validator"
-        cp class-groups.key ../class-groups.key
+        echo "Saving initial class-groups.seed after first validator"
+        cp class-groups.seed ../class-groups.seed
         CLASS_GROUPS_KEY_CREATED=1
     fi
 
     mkdir -p "$KEY_PAIRS_DIR"
-    mv ./*.key "$KEY_PAIRS_DIR"/
+    mv ./*.key ./*.seed "$KEY_PAIRS_DIR"/
 
     popd > /dev/null
 
@@ -270,22 +270,16 @@ PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_publish_config.json"
 IKA_PACKAGE_ID=$(jq -r '.ika_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_OBJECT_ID=$(jq -r '.ika_system_object_id' "$PUBLISHER_CONFIG_FILE")
+IKA_COMMON_PACKAGE_ID=$(jq -r '.ika_common_package_id' "$PUBLISHER_CONFIG_FILE")
+IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_2pc_mpc_package_id' "$PUBLISHER_CONFIG_FILE")
+
 
 # Print the values for verification.
-echo "IKA Package ID: $IKA_PACKAGE_ID"
-echo "IKA System Package ID: $IKA_SYSTEM_PACKAGE_ID"
-echo "System ID: $IKA_SYSTEM_OBJECT_ID"
-
-cat > locals.tf <<EOF
-locals {
-  ika_chain_config = {
-    sui_chain_identifier  = "${SUI_CHAIN_IDENTIFIER}"
-    ika_package_id        = "${IKA_PACKAGE_ID}"
-    ika_system_package_id = "${IKA_SYSTEM_PACKAGE_ID}"
-    ika_system_object_id  = "${IKA_SYSTEM_OBJECT_ID}"
-  }
-}
-EOF
+echo "Ika Package ID: $IKA_PACKAGE_ID"
+echo "Ika System Package ID: $IKA_SYSTEM_PACKAGE_ID"
+echo "Ika System Object ID: $IKA_SYSTEM_OBJECT_ID"
+echo "Ika Common Package ID: $IKA_COMMON_PACKAGE_ID"
+echo "Ika dWallet 2PC MPC Package ID: $IKA_DWALLET_2PC_MPC_PACKAGE_ID"
 
 ############################
 # Request Tokens and Create Validator.yaml (Max 5 Parallel + Retry)
@@ -370,7 +364,9 @@ wait
 $BINARY_NAME validator config-env \
     --ika-package-id "$IKA_PACKAGE_ID" \
     --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
-    --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
+    --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID" \
+    --ika-common-package-id "$IKA_COMMON_PACKAGE_ID" \
+    --ika-dwallet-2pc-mpc-package-id "$IKA_DWALLET_2PC_MPC_PACKAGE_ID" \
 
 ############################
 # Become Validator Candidate (Max 5 Parallel Jobs)
@@ -410,11 +406,14 @@ process_validator() {
     $BINARY_NAME validator config-env \
         --ika-package-id "$IKA_PACKAGE_ID" \
         --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
-        --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
+        --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID" \
+        --ika-common-package-id "$IKA_COMMON_PACKAGE_ID" \
+        --ika-dwallet-2pc-mpc-package-id "$IKA_DWALLET_2PC_MPC_PACKAGE_ID" \
 
     SUI_CONFIG_DIR="$LOCAL_SUI_CONFIG_DIR" \
     IKA_CONFIG_DIR="$LOCAL_IKA_CONFIG_DIR" \
     $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$OUTPUT_FILE"
+#    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json 2>&1 | tee "$OUTPUT_FILE"
 
     # Validate and extract IDs
     if jq empty "$OUTPUT_FILE" 2>/dev/null; then
@@ -531,6 +530,32 @@ cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 # This if the file name that the SDK is looking for.
 mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 
+################################
+# Generate locals.tf
+################################
+
+PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_config.json"
+
+
+IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_coordinator_object_id' "$PUBLISHER_CONFIG_FILE")
+
+echo "Ika dWallet Coordinator Object ID: placeholder"
+
+cat > locals.tf <<EOF
+locals {
+  ika_chain_config = {
+    sui_chain_identifier              = "${SUI_CHAIN_IDENTIFIER}"
+    ika_common_package_id             = "${IKA_COMMON_PACKAGE_ID}"
+    ika_dwallet_2pc_mpc_package_id    = "${IKA_DWALLET_2PC_MPC_PACKAGE_ID}"
+    ika_package_id                    = "${IKA_PACKAGE_ID}"
+    ika_system_package_id             = "${IKA_SYSTEM_PACKAGE_ID}"
+    ika_system_object_id              = "${IKA_SYSTEM_OBJECT_ID}"
+    ika_dwallet_coordinator_object_id = "${IKA_DWALLET_2PC_MPC_PACKAGE_ID}"
+  }
+}
+EOF
+
+
 ############################
 # Generate Seed Peers
 ############################
@@ -544,16 +569,16 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
   VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
 
   INFO_FILE="$VALIDATOR_DIR/validator.info"
-  ACCOUNT_FILE="$VALIDATOR_DIR/sui_backup/sui_config/${VALIDATOR_DIR}.account.json"
+  NETWORK_KEY_FILE="$VALIDATOR_DIR/key-pairs/network.key"
 
-  if [[ -f "$INFO_FILE" && -f "$ACCOUNT_FILE" ]]; then
+  if [[ -f "$INFO_FILE" && -f "$NETWORK_KEY_FILE" ]]; then
     P2P_ADDR=$(yq e '.p2p_address' "$INFO_FILE")
-    PEER_ID=$(jq -r '.peerId' "$ACCOUNT_FILE")
+    PEER_ID=$(sui keytool show "$NETWORK_KEY_FILE" --json | jq -r '.peerId')
 
     echo "- address: $P2P_ADDR" >> "$SEED_PEERS_FILE"
     echo "  peer-id: $PEER_ID" >> "$SEED_PEERS_FILE"
   else
-    echo "Missing $INFO_FILE or $ACCOUNT_FILE"
+    echo "Missing $INFO_FILE or $NETWORK_KEY_FILE"
     exit 1
   fi
 done

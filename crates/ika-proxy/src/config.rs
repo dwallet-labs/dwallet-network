@@ -8,6 +8,8 @@ use std::net::SocketAddr;
 use sui_types::base_types::ObjectID;
 use tracing::debug;
 
+// todo(zeev): change defaults here.
+
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
