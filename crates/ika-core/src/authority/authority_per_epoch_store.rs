@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use tracing::{debug, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{DBBatch, DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
 
@@ -99,8 +99,6 @@ pub enum ConsensusCertificateResult {
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
     IkaTransaction(DWalletCheckpointMessageKind),
-    /// An executable transaction used for large output (e.g., network DKG).
-    IkaBulkTransaction(Vec<DWalletCheckpointMessageKind>),
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
@@ -1052,28 +1050,6 @@ impl AuthorityPerEpochStore {
                 });
             self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
         }
-        verified_system_checkpoint_messages.iter().for_each(
-            |system_checkpoint_kind| match system_checkpoint_kind {
-                SystemCheckpointMessageKind::SetNextConfigVersion(_) => {}
-                SystemCheckpointMessageKind::EndOfPublish => {}
-                // For now, we only handle NextConfigVersion. Other variants are ignored.
-                SystemCheckpointMessageKind::SetEpochDurationMs(_)
-                | SystemCheckpointMessageKind::SetStakeSubsidyStartEpoch(_)
-                | SystemCheckpointMessageKind::SetStakeSubsidyRate(_)
-                | SystemCheckpointMessageKind::SetStakeSubsidyPeriodLength(_)
-                | SystemCheckpointMessageKind::SetMinValidatorCount(_)
-                | SystemCheckpointMessageKind::SetMaxValidatorCount(_)
-                | SystemCheckpointMessageKind::SetMinValidatorJoiningStake(_)
-                | SystemCheckpointMessageKind::SetMaxValidatorChangeCount(_)
-                | SystemCheckpointMessageKind::SetRewardSlashingRate(_)
-                | SystemCheckpointMessageKind::SetApprovedUpgrade { .. }
-                | SystemCheckpointMessageKind::SetOrRemoveWitnessApprovingAdvanceEpochMessageType { .. } => {
-                    todo!(
-                        "Handle other SystemCheckpointKind variants in process_consensus_transactions_and_commit_boundary"
-                    );
-                }
-            },
-        );
 
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
@@ -1152,17 +1128,7 @@ impl AuthorityPerEpochStore {
                 }
                 ConsensusCertificateResult::SystemTransaction(certs) => {
                     notifications.push(key.clone());
-                    certs
-                        .into_iter()
-                        .for_each(|cert| verified_system_checkpoint_certificates.push_back(cert));
-                }
-                // This is a special transaction needed for NetworkDKG to bypass TX
-                // size limits.
-                ConsensusCertificateResult::IkaBulkTransaction(certs) => {
-                    notifications.push(key.clone());
-                    certs
-                        .into_iter()
-                        .for_each(|cert| verified_certificates.push_back(cert));
+                    verified_system_checkpoint_certificates.extend(certs);
                 }
                 // ConsensusCertificateResult::Cancelled((cert, reason)) => {
                 //     notifications.push(key.clone());
@@ -1318,6 +1284,12 @@ impl AuthorityPerEpochStore {
                     );
 
                 let mut system_transactions: Vec<SystemCheckpointMessageKind> = Vec::new();
+
+                error!(curr_protocol_version=?self.protocol_version(),
+                new_version=?new_version,
+                    move_contracts_to_upgrade=?move_contracts_to_upgrade,
+                    "find me"
+                );
                 if self.protocol_version() != new_version {
                     info!(
                         validator=?self.name,

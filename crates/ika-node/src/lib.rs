@@ -14,6 +14,7 @@ use prometheus::Registry;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
@@ -1134,6 +1135,13 @@ impl IkaNode {
                         cur_epoch_store.get_chain_identifier().chain(),
                         supported_versions,
                         vec![],
+                        // vec![
+                        //     (
+                        //         ObjectID::from_str(
+                        //             "0x123e4567e89bfbde1234567890abcdef12345678")?,
+                        //         [0; 32].into(),
+                        //     ),
+                        // ],
                         // Note: this is a temp fix, we will handle package upgrades later.
                         // sui_client
                         // .get_available_move_packages()
