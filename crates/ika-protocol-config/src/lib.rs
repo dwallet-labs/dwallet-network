@@ -16,8 +16,7 @@ use tracing::{info, warn};
 
 /// The minimum and maximum protocol versions supported by this build.
 const MIN_PROTOCOL_VERSION: u64 = 1;
-///
-const MAX_PROTOCOL_VERSION: u64 = 2;
+const MAX_PROTOCOL_VERSION: u64 = 1;
 
 // Record history of protocol version allocations here:
 //
@@ -475,14 +474,7 @@ impl ProtocolConfig {
         #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
             match cur {
-                1 => {
-                    // Version 1: Original version.
-                    println!("V1!!!!!!!!!!!!");
-                },
-                2 => {
-                    // Version 2: Add support for consensus round prober.
-                    println!("V2!!!!!!!!!!!!");
-                }
+                1 => unreachable!(),
                 // Use this template when making changes:
                 //
                 //     // modify an existing constant.
