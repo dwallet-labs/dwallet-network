@@ -18,7 +18,7 @@ use tracing::error;
 use twopc_mpc::sign::Protocol;
 
 /// The DWallet MPC session data that is based on the event that initiated the session.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
     pub request_input: MPCRequestInput,
@@ -112,5 +112,30 @@ impl Ord for MPCEventData {
                 .cmp(&other.session_sequence_number),
             (SessionType::User, SessionType::System) => Ordering::Less,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mock_mpc_event_data() -> MPCEventData {
+        MPCEventData {
+            private_input: MPCPrivateInput
+        }
+    }
+
+    #[test]
+    fn orders() {
+        let first = mock_mpc_event_data();
+        let second = mock_mpc_event_data();
+
+        let mut ordered = vec![first, second];
+        ordered.sort();
+
+        assert_eq!(
+            ordered,
+            vec![first, second]
+        );
     }
 }

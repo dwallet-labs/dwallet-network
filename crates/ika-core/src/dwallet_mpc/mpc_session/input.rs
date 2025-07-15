@@ -23,7 +23,7 @@ use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
 use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicInput {
     DWalletImportedKeyVerificationRequest(
         <DWalletImportedKeyVerificationParty as mpc::Party>::PublicInput,
