@@ -261,9 +261,7 @@ describe('Test dWallet MPC', () => {
 						console.time(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
 						const signRes = await executeSignTransaction(signTx, cfg);
 						console.timeEnd(`Sign: ${conf.suiClientKeypair.toSuiAddress()}`);
-						console.log(
-							`Sign: ${cfg.suiClientKeypair.toSuiAddress()} - ${signRes.event_data.sign_id}`,
-						);
+						console.log(`Sign: ${cfg.suiClientKeypair.toSuiAddress()} - ${signRes.id.id}`);
 						return signRes;
 					})(),
 				);
