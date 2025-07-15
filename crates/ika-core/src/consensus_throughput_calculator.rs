@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::authority::AuthorityMetrics;
 use arc_swap::ArcSwap;
-use ika_protocol_config::Chain;
 use ika_types::digests::ChainIdentifier;
 use parking_lot::Mutex;
 use std::collections::{BTreeMap, VecDeque};
@@ -59,7 +58,7 @@ pub struct ThroughputProfileRanges {
 }
 
 impl ThroughputProfileRanges {
-    pub fn from_chain(chain_id: ChainIdentifier) -> ThroughputProfileRanges {
+    pub fn from_chain(_chain_id: ChainIdentifier) -> ThroughputProfileRanges {
         let to_profiles = |medium: u64, high: u64| -> Vec<ThroughputProfile> {
             vec![
                 ThroughputProfile {
@@ -135,7 +134,10 @@ impl ThroughputProfileRanges {
             }
         }
 
-        warn!("Could not resolve throughput profile for throughput {} - we shouldn't end up here. Fallback to lowest profile as default.", current_throughput);
+        warn!(
+            "Could not resolve throughput profile for throughput {} - we shouldn't end up here. Fallback to lowest profile as default.",
+            current_throughput
+        );
 
         // If not found, then we should return the lowest possible profile as default to stay on safe side.
         self.highest_profile()
@@ -359,7 +361,10 @@ impl ConsensusThroughputCalculator {
             // First check that the timestamp is monotonically incremented - ignore any observation that is not
             // later from previous one (it shouldn't really happen).
             if timestamp_secs < *front_ts {
-                warn!("Ignoring observation of transactions:{} as has earlier timestamp than last observation {}s < {}s", num_of_transactions, timestamp_secs, front_ts);
+                warn!(
+                    "Ignoring observation of transactions:{} as has earlier timestamp than last observation {}s < {}s",
+                    num_of_transactions, timestamp_secs, front_ts
+                );
                 return;
             }
 
@@ -388,7 +393,9 @@ impl ConsensusThroughputCalculator {
                 if let Some(ts) = inner.last_oldest_timestamp {
                     ts
                 } else {
-                    warn!("Skip calculation - we still don't have enough elements to pop the last observation");
+                    warn!(
+                        "Skip calculation - we still don't have enough elements to pop the last observation"
+                    );
                     return;
                 }
             } else {
@@ -418,7 +425,10 @@ impl ConsensusThroughputCalculator {
                 self.current_throughput
                     .store(Arc::new((current_throughput, timestamp_secs)));
             } else {
-                warn!("Skip calculating throughput as time period is {}. This is very unlikely to happen, should investigate.", period);
+                warn!(
+                    "Skip calculating throughput as time period is {}. This is very unlikely to happen, should investigate.",
+                    period
+                );
             }
         }
     }

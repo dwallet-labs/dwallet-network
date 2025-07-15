@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
@@ -60,7 +60,6 @@ anemo.workspace = true
 fastcrypto.workspace = true
 fastcrypto-tbls.workspace = true
 fastcrypto-zkp.workspace = true
-move-binary-format.workspace = true
 move-bytecode-utils.workspace = true
 move-core-types.workspace = true
 move-package.workspace = true
@@ -116,5 +115,5 @@ num-bigint = "0.4.4"
 move-symbol-pool.workspace = true
 
 sui-test-transaction-builder.workspace = true
-ika-types = { workspace = true, features = ["test-utils"] }
+ika-types = { workspace = true }
 sui-move.workspace = true

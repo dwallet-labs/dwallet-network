@@ -1,6 +1,6 @@
 import path from 'path';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
@@ -15,7 +15,7 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	getNetworkDecryptionKeyPublicOutput,
+	getNetworkPublicParameters,
 } from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -31,7 +31,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypt a secret share for a given Sui address, decrypt it, verify it & publish signed dWallet output on chain ', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(sourceConf);
+		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(sourceConf);
 		const sourceDwallet = await createDWallet(sourceConf, networkDecryptionKeyPublicOutput);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);
@@ -60,6 +60,7 @@ describe('Test dWallet MPC', () => {
 			destConf,
 			encryptedDWalletData,
 			sourceConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
+			networkDecryptionKeyPublicOutput,
 		);
 		console.log(`decryptedSecretShare: ${decryptedSecretShare}`);
 		await acceptEncryptedUserShare(destConf, encryptedDWalletData);
@@ -74,7 +75,7 @@ async function generateConfig(dWalletSeed: Uint8Array, suiSeed: string): Promise
 	);
 	const source = sourceKeypair.getPublicKey().toSuiAddress();
 	const sourceSuiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-	await requestSuiFromFaucetV1({
+	await requestSuiFromFaucetV2({
 		host: getFaucetHost('localnet'),
 		recipient: source,
 	});

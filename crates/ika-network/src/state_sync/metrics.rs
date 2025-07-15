@@ -1,11 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
-use prometheus::{
-    register_histogram_with_registry, register_int_gauge_with_registry, Histogram, IntGauge,
-    Registry,
-};
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
+use ika_types::messages_system_checkpoints::SystemCheckpointSequenceNumber;
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 use std::sync::Arc;
 use tap::Pipe;
 
@@ -27,70 +25,123 @@ impl Metrics {
         Metrics(None)
     }
 
-    pub fn set_highest_known_checkpoint(&self, sequence_number: CheckpointSequenceNumber) {
-        if let Some(inner) = &self.0 {
-            inner.highest_known_checkpoint.set(sequence_number as i64);
-        }
-    }
-
-    pub fn set_highest_verified_checkpoint(&self, sequence_number: CheckpointSequenceNumber) {
+    pub fn set_highest_known_dwallet_checkpoint(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_verified_checkpoint
+                .highest_known_dwallet_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn set_highest_synced_checkpoint(&self, sequence_number: CheckpointSequenceNumber) {
+    pub fn set_highest_verified_dwallet_checkpoint(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) {
         if let Some(inner) = &self.0 {
-            inner.highest_synced_checkpoint.set(sequence_number as i64);
+            inner
+                .highest_verified_dwallet_checkpoint
+                .set(sequence_number as i64);
         }
     }
 
-    pub fn checkpoint_summary_age_metrics(&self) -> Option<&Histogram> {
+    pub fn set_highest_synced_dwallet_checkpoint(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) {
         if let Some(inner) = &self.0 {
-            return Some(&inner.checkpoint_summary_age);
+            inner
+                .highest_synced_dwallet_checkpoint
+                .set(sequence_number as i64);
         }
-        None
+    }
+
+    pub fn set_highest_known_system_checkpoint(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) {
+        if let Some(inner) = &self.0 {
+            inner
+                .highest_known_system_checkpoint
+                .set(sequence_number as i64);
+        }
+    }
+
+    pub fn set_highest_verified_system_checkpoint(
+        &self,
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) {
+        if let Some(inner) = &self.0 {
+            inner
+                .highest_verified_system_checkpoint
+                .set(sequence_number as i64);
+        }
+    }
+
+    pub fn set_highest_synced_system_checkpoint(
+        &self,
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) {
+        if let Some(inner) = &self.0 {
+            inner
+                .highest_synced_system_checkpoint
+                .set(sequence_number as i64);
+        }
     }
 }
 
 struct Inner {
-    highest_known_checkpoint: IntGauge,
-    highest_verified_checkpoint: IntGauge,
-    highest_synced_checkpoint: IntGauge,
-    checkpoint_summary_age: Histogram,
+    highest_known_dwallet_checkpoint: IntGauge,
+    highest_verified_dwallet_checkpoint: IntGauge,
+    highest_synced_dwallet_checkpoint: IntGauge,
+
+    highest_known_system_checkpoint: IntGauge,
+    highest_verified_system_checkpoint: IntGauge,
+    highest_synced_system_checkpoint: IntGauge,
 }
 
 impl Inner {
     pub fn new(registry: &Registry) -> Arc<Self> {
         Self {
-            highest_known_checkpoint: register_int_gauge_with_registry!(
-                "highest_known_checkpoint",
-                "Highest known checkpoint",
+            highest_known_dwallet_checkpoint: register_int_gauge_with_registry!(
+                "highest_known_dwallet_checkpoint",
+                "Highest known dwallet checkpoint",
                 registry
             )
             .unwrap(),
 
-            highest_verified_checkpoint: register_int_gauge_with_registry!(
-                "highest_verified_checkpoint",
-                "Highest verified checkpoint",
+            highest_verified_dwallet_checkpoint: register_int_gauge_with_registry!(
+                "highest_verified_dwallet_checkpoint",
+                "Highest verified dwallet checkpoint",
                 registry
             )
             .unwrap(),
 
-            highest_synced_checkpoint: register_int_gauge_with_registry!(
-                "highest_synced_checkpoint",
-                "Highest synced checkpoint",
+            highest_synced_dwallet_checkpoint: register_int_gauge_with_registry!(
+                "highest_synced_dwallet_checkpoint",
+                "Highest synced dwallet checkpoint",
                 registry
             )
             .unwrap(),
 
-            checkpoint_summary_age: register_histogram_with_registry!(
-                "checkpoint_summary_age",
-                "Age of checkpoints summaries when they arrive and are verified.",
-                mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
-                registry,
+            highest_known_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_known_system_checkpoint",
+                "Highest known system message",
+                registry
+            )
+            .unwrap(),
+            highest_verified_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_verified_system_checkpoint",
+                "Highest verified system message",
+                registry
+            )
+            .unwrap(),
+            highest_synced_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_synced_system_checkpoint",
+                "Highest synced system message",
+                registry
             )
             .unwrap(),
         }

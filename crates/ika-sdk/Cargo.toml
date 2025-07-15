@@ -4,7 +4,7 @@ version.workspace = true
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
@@ -32,7 +32,6 @@ sui-keys.workspace = true
 ika-config.workspace = true
 shared-crypto.workspace = true
 tracing.workspace = true
-move-core-types.workspace = true
 fastcrypto.workspace = true
 
 # NOTE: It's important to keep the above dependency list short.

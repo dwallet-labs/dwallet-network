@@ -1,10 +1,10 @@
 [package]
 name = "ika"
 version.workspace = true
-authors = ["dWallet Labs Ltd. <dev@dwalletlabs.com>"]
+authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
@@ -13,6 +13,7 @@ workspace = true
 anyhow.workspace = true
 bin-version.workspace = true
 bcs.workspace = true
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 clap.workspace = true
 datatest-stable.workspace = true
@@ -31,7 +32,6 @@ ika-swarm-config.workspace = true
 ika-types.workspace = true
 ika-swarm.workspace = true
 shared-crypto.workspace = true
-move-binary-format.workspace = true
 
 fastcrypto.workspace = true
 
@@ -40,8 +40,6 @@ colored.workspace = true
 tempfile.workspace = true
 telemetry-subscribers.workspace = true
 
-move-analyzer.workspace = true
-move-core-types.workspace = true
 move-package.workspace = true
 
 sui.workspace = true
@@ -70,8 +68,3 @@ msim.workspace = true
 
 [package.metadata.cargo-udeps.ignore]
 normal = ["jemalloc-ctl"]
-
-[features]
-tracing = [
-    "ika-types/tracing",
-]

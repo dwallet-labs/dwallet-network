@@ -5,16 +5,18 @@ use std::{path::PathBuf, sync::Arc};
 use arc_swap::ArcSwapOption;
 use async_trait::async_trait;
 use consensus_config::{Committee, NetworkKeyPair, Parameters, ProtocolKeyPair};
-use consensus_core::{CommitConsumer, CommitConsumerMonitor, CommitIndex, ConsensusAuthority};
+use consensus_core::{
+    Clock, CommitConsumer, CommitConsumerMonitor, CommitIndex, ConsensusAuthority,
+};
 use fastcrypto::ed25519;
 use ika_config::NodeConfig;
 use ika_types::{committee::EpochId, sui::epoch_start_system::EpochStartSystemTrait};
 use mysten_metrics::{RegistryID, RegistryService};
 use prometheus::Registry;
-use sui_protocol_config::ConsensusNetwork;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, broadcast};
 use tracing::info;
 
+use crate::consensus_manager::ReplayWaiter;
 use crate::{
     authority::authority_per_epoch_store::AuthorityPerEpochStore,
     consensus_handler::{ConsensusHandlerInitializer, MysticetiConsensusHandler},
@@ -41,6 +43,7 @@ pub struct MysticetiManager {
     // TODO: switch to parking_lot::Mutex.
     consensus_handler: Mutex<Option<MysticetiConsensusHandler>>,
     consumer_monitor: ArcSwapOption<CommitConsumerMonitor>,
+    consumer_monitor_sender: broadcast::Sender<Arc<CommitConsumerMonitor>>,
 }
 
 impl MysticetiManager {
@@ -54,6 +57,7 @@ impl MysticetiManager {
         metrics: Arc<ConsensusManagerMetrics>,
         client: Arc<LazyMysticetiClient>,
     ) -> Self {
+        let (consumer_monitor_sender, _) = broadcast::channel(1);
         Self {
             protocol_keypair: ProtocolKeyPair::new(protocol_keypair),
             network_keypair: NetworkKeyPair::new(network_keypair),
@@ -66,12 +70,13 @@ impl MysticetiManager {
             consensus_handler: Mutex::new(None),
             boot_counter: Mutex::new(0),
             consumer_monitor: ArcSwapOption::empty(),
+            consumer_monitor_sender,
         }
     }
 
     fn get_store_path(&self, epoch: EpochId) -> PathBuf {
         let mut store_path = self.storage_base_path.clone();
-        store_path.push(format!("{}", epoch));
+        store_path.push(format!("{epoch}"));
         store_path
     }
 }
@@ -88,13 +93,13 @@ impl ConsensusManagerTrait for MysticetiManager {
         let system_state = epoch_store.epoch_start_state();
         let committee: Committee = system_state.get_consensus_committee();
         let epoch = epoch_store.epoch();
-        let protocol_config = epoch_store.protocol_config();
+        let ika_protocol_config = epoch_store.protocol_config();
 
         let Some(_guard) = RunningLockGuard::acquire_start(
             &self.metrics,
             &self.running,
             epoch,
-            protocol_config.version,
+            ika_protocol_config.version,
         )
         .await
         else {
@@ -119,9 +124,16 @@ impl ConsensusManagerTrait for MysticetiManager {
         let registry = Registry::new_custom(Some("consensus".to_string()), None).unwrap();
 
         let consensus_handler = consensus_handler_initializer.new_consensus_handler();
+
         let (commit_consumer, commit_receiver, _) =
             CommitConsumer::new(consensus_handler.last_processed_subdag_index() as CommitIndex);
         let monitor = commit_consumer.monitor();
+
+        let handler =
+            MysticetiConsensusHandler::new(consensus_handler, commit_receiver, monitor.clone());
+
+        let mut consensus_handler = self.consensus_handler.lock().await;
+        *consensus_handler = Some(handler);
 
         // If there is a previous consumer monitor, it indicates that the consensus engine has been restarted, due to an epoch change. However, that on its
         // own doesn't tell us much whether it participated on an active epoch or an old one. We need to check if it has handled any commits to determine this.
@@ -142,46 +154,68 @@ impl ConsensusManagerTrait for MysticetiManager {
             *boot_counter += 1;
         } else {
             info!(
-                "Node has not participated in previous run. Boot counter will not increment {}",
+                "Node has not participated in previous epoch consensus. Boot counter ({}) will not increment.",
                 *boot_counter
             );
         }
 
         // This can only be changed for all validators together at the same epoch
-        let mut protocol_config = if epoch >= 0 {
-            sui_protocol_config::ProtocolConfig::get_for_version(
-                sui_protocol_config::ProtocolVersion::new(70),
-                sui_protocol_config::Chain::Mainnet,
-            )
-        } else {
-            sui_protocol_config::ProtocolConfig::get_for_version(
-                sui_protocol_config::ProtocolVersion::new(70),
-                sui_protocol_config::Chain::Mainnet,
-            )
-        };
+        // IMPORTANT: DONT CHANGE THIS VALUE UNLESS YOU KNOW WHAT YOU ARE DOING
+        // MAKE SURE TO CHECK WE MANUALLY SET EVERY CONSENSUS CONFIG FROM OUR PROTOCOL CONFIG
+        // AND THAT WE OVERRIDE THE SUI PROTOCOL CONFIG VALUES
+        let mut protocol_config = sui_protocol_config::ProtocolConfig::get_for_version(
+            // Version 84 was taken from Sui, DO NOT CHANGE IT.
+            sui_protocol_config::ProtocolVersion::new(87),
+            sui_protocol_config::Chain::Mainnet,
+        );
 
-        // TODO (#873): Implement a production grade configuration upgrade mechanism
-        // We use the `_for_testing` functions because they are currently the only way
-        // to modify Sui's protocol configuration from external crates.
-        // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
-        // in the Sui repository to address this limitation.
-        // This value has been derived from monitoring the largest message
-        // size in real world scenarios.
-        let max_dwallet_mpc_message_size_bytes = 315218930;
         protocol_config.set_consensus_max_transaction_size_bytes_for_testing(
-            max_dwallet_mpc_message_size_bytes,
+            ika_protocol_config.consensus_max_transaction_size_bytes(),
         );
         protocol_config.set_consensus_max_transactions_in_block_bytes_for_testing(
-            max_dwallet_mpc_message_size_bytes,
+            ika_protocol_config.consensus_max_transactions_in_block_bytes(),
         );
+
+        protocol_config.set_consensus_max_num_transactions_in_block_for_testing(
+            ika_protocol_config.consensus_max_num_transactions_in_block(),
+        );
+
+        protocol_config.set_consensus_gc_depth_for_testing(ika_protocol_config.gc_depth());
+
+        protocol_config
+            .set_consensus_round_prober_for_testing(ika_protocol_config.consensus_round_prober());
+
+        protocol_config
+            .set_mysticeti_fastpath_for_testing(ika_protocol_config.mysticeti_fastpath());
+
+        protocol_config.set_mysticeti_num_leaders_per_round_for_testing(
+            ika_protocol_config.mysticeti_num_leaders_per_round(),
+        );
+
+        // TODO: Do not remove this, this will be set once there is a "set" function for it.
+        // protocol_config.set_consensus_zstd_compression_for_testing(
+        //     ika_protocol_config.consensus_zstd_compression(),
+        // );
+
+        protocol_config.set_consensus_batched_block_sync_for_testing(
+            ika_protocol_config.consensus_batched_block_sync(),
+        );
+
+        // TODO: Do not remove this, this will be set once there is a "set" function for it.
+        // protocol_config.set_enforce_checkpoint_timestamp_monotonicity_for_testing(
+        //     ika_protocol_config.enforce_checkpoint_timestamp_monotonicity(),
+        // );
+
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
+            epoch_store.epoch_start_config().epoch_start_timestamp_ms(),
             own_index,
             committee.clone(),
             parameters.clone(),
-            protocol_config,
+            protocol_config.clone(),
             self.protocol_keypair.clone(),
             self.network_keypair.clone(),
+            Arc::new(Clock::default()),
             Arc::new(tx_validator.clone()),
             commit_consumer,
             registry.clone(),
@@ -198,13 +232,8 @@ impl ConsensusManagerTrait for MysticetiManager {
         // Initialize the client to send transactions to this Mysticeti instance.
         self.client.set(client);
 
-        let handler = MysticetiConsensusHandler::new(consensus_handler, commit_receiver, monitor);
-
-        let mut consensus_handler = self.consensus_handler.lock().await;
-        *consensus_handler = Some(handler);
-
-        // Wait until all locally available commits have been processed
-        registered_authority.0.replay_complete().await;
+        // Send the consumer monitor to the replay waiter.
+        let _ = self.consumer_monitor_sender.send(monitor);
     }
 
     async fn shutdown(&self) {
@@ -237,5 +266,10 @@ impl ConsensusManagerTrait for MysticetiManager {
 
     async fn is_running(&self) -> bool {
         Running::False != *self.running.lock().await
+    }
+
+    fn replay_waiter(&self) -> ReplayWaiter {
+        let consumer_monitor_receiver = self.consumer_monitor_sender.subscribe();
+        ReplayWaiter::new(consumer_monitor_receiver)
     }
 }

@@ -4,17 +4,14 @@
 use consensus_config::Epoch;
 use mysten_metrics::spawn_logged_monitored_task;
 use prometheus::{
-    register_int_counter_vec_with_registry, register_int_counter_with_registry,
-    register_int_gauge_with_registry, IntCounter, IntCounterVec, IntGauge, Registry,
+    IntCounter, IntCounterVec, IntGauge, Registry, register_int_counter_vec_with_registry,
+    register_int_counter_with_registry, register_int_gauge_with_registry,
 };
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::{
-    sync::mpsc,
-    time::{sleep, Instant},
-};
-use tracing::{error, info};
+use tokio::{sync::mpsc, time::Instant};
+use tracing::{error, info, warn};
 use typed_store::rocks::safe_drop_db;
 
 struct Metrics {
@@ -65,7 +62,9 @@ impl ConsensusStorePruner {
         let metrics = Metrics::new(registry);
 
         let _handle = spawn_logged_monitored_task!(async {
-            info!("Starting consensus store pruner with epoch retention {epoch_retention} and prune period {epoch_prune_period:?}");
+            info!(
+                "Starting consensus store pruner with epoch retention {epoch_retention} and prune period {epoch_prune_period:?}"
+            );
 
             let mut timeout = tokio::time::interval_at(
                 Instant::now() + Duration::from_secs(60), // allow some time for the node to boot etc before attempting to prune
@@ -161,20 +160,17 @@ impl ConsensusStorePruner {
             };
 
             if file_epoch < drop_boundary {
-                if let Err(e) = safe_drop_db(f.path()) {
-                    error!(
+                const WAIT_BEFORE_FORCE_DELETE: Duration = Duration::from_secs(5);
+                if let Err(e) = safe_drop_db(f.path(), WAIT_BEFORE_FORCE_DELETE).await {
+                    warn!(
                         "Could not prune old consensus storage \"{:?}\" directory with safe approach. Will fallback to force delete: {:?}",
                         f.path(),
                         e
                     );
-
                     metrics
                         .error_pruning_consensus_dbs
                         .with_label_values(&["safe"])
                         .inc();
-
-                    const WAIT_BEFORE_FORCE_DELETE: Duration = Duration::from_secs(5);
-                    sleep(WAIT_BEFORE_FORCE_DELETE).await;
 
                     if let Err(err) = fs::remove_dir_all(f.path()) {
                         error!(
@@ -235,7 +231,7 @@ mod tests {
             let epoch_retention = 0;
             let current_epoch = 0;
 
-            let base_directory = tempfile::tempdir().unwrap().into_path();
+            let base_directory = tempfile::tempdir().unwrap().keep();
 
             create_epoch_directories(&base_directory, vec!["0", "other"]);
 
@@ -258,7 +254,7 @@ mod tests {
             let epoch_retention = 1;
             let current_epoch = 100;
 
-            let base_directory = tempfile::tempdir().unwrap().into_path();
+            let base_directory = tempfile::tempdir().unwrap().keep();
 
             create_epoch_directories(&base_directory, vec!["97", "98", "99", "100", "other"]);
 
@@ -283,7 +279,7 @@ mod tests {
             let epoch_retention = 0;
             let current_epoch = 100;
 
-            let base_directory = tempfile::tempdir().unwrap().into_path();
+            let base_directory = tempfile::tempdir().unwrap().keep();
 
             create_epoch_directories(&base_directory, vec!["97", "98", "99", "100", "other"]);
 
@@ -307,7 +303,7 @@ mod tests {
         let epoch_retention = 1;
         let epoch_prune_period = std::time::Duration::from_millis(500);
 
-        let base_directory = tempfile::tempdir().unwrap().into_path();
+        let base_directory = tempfile::tempdir().unwrap().keep();
 
         // We create some directories up to epoch 100
         create_epoch_directories(&base_directory, vec!["97", "98", "99", "100", "other"]);

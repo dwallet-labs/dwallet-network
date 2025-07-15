@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 use crate::committee::StakeUnit;
 use crate::error::IkaError;
+use crate::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use serde::{Deserialize, Serialize};
 use strum::AsRefStr;
 use sui_types::base_types::{AuthorityName, EpochId, ObjectRef, TransactionDigest};
@@ -14,7 +15,6 @@ use sui_types::effects::{
     CertifiedTransactionEffects, TransactionEffects, TransactionEvents,
     VerifiedCertifiedTransactionEffects,
 };
-use sui_types::messages_checkpoint::CheckpointSequenceNumber;
 use sui_types::object::Object;
 use sui_types::transaction::{Transaction, VerifiedTransaction};
 use thiserror::Error;
@@ -47,18 +47,24 @@ pub enum QuorumDriverError {
     },
     #[error("Transaction timed out before reaching finality")]
     TimeoutBeforeFinality,
-    #[error("Transaction failed to reach finality with transient error after {total_attempts} attempts.")]
+    #[error(
+        "Transaction failed to reach finality with transient error after {total_attempts} attempts."
+    )]
     FailedWithTransientErrorAfterMaximumAttempts { total_attempts: u32 },
     #[error("{NON_RECOVERABLE_ERROR_MSG}: {errors:?}.")]
     NonRecoverableTransactionError { errors: GroupedErrors },
-    #[error("Transaction is not processed because {overloaded_stake} of validators by stake are overloaded with certificates pending execution.")]
+    #[error(
+        "Transaction is not processed because {overloaded_stake} of validators by stake are overloaded with certificates pending execution."
+    )]
     SystemOverload {
         overloaded_stake: StakeUnit,
         errors: GroupedErrors,
     },
     #[error("Transaction is already finalized but with different user signatures")]
     TxAlreadyFinalizedWithDifferentUserSignatures,
-    #[error("Transaction is not processed because {overload_stake} of validators are overloaded and asked client to retry after {retry_after_secs}.")]
+    #[error(
+        "Transaction is not processed because {overload_stake} of validators are overloaded and asked client to retry after {retry_after_secs}."
+    )]
     SystemOverloadRetryAfter {
         overload_stake: StakeUnit,
         errors: GroupedErrors,
@@ -86,8 +92,8 @@ pub enum EffectsFinalityInfo {
     /// Effects are certified by a quorum of validators.
     Certified(AuthorityStrongQuorumSignInfo),
 
-    /// Effects are included in a checkpoint.
-    Checkpointed(EpochId, CheckpointSequenceNumber),
+    /// Effects are included in a dwallet checkpoint.
+    Checkpointed(EpochId, DWalletCheckpointSequenceNumber),
 
     /// A quorum of validators have acknowledged effects.
     QuorumExecuted(EpochId),

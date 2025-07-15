@@ -5,20 +5,22 @@ use ika_types::committee::{Committee, CommitteeTrait, StakeUnit};
 use ika_types::crypto::{
     AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait,
 };
-use ika_types::error::IkaError;
+use ika_types::error::{IkaError, IkaResult};
 use ika_types::intent::Intent;
 use ika_types::message_envelope::{Envelope, Message};
+use itertools::Itertools;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use tracing::warn;
+use typed_store::TypedStoreError;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.
 /// STRENGTH indicates whether we want a strong quorum (2f+1) or a weak quorum (f+1).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StakeAggregator<S, const STRENGTH: bool> {
     data: HashMap<AuthorityName, S>,
     total_votes: StakeUnit,
@@ -39,15 +41,16 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         }
     }
 
-    pub fn from_iter<I: Iterator<Item = (AuthorityName, S)>>(
+    pub fn from_iter<I: Iterator<Item = Result<(AuthorityName, S), TypedStoreError>>>(
         committee: Arc<Committee>,
         data: I,
-    ) -> Self {
+    ) -> IkaResult<Self> {
         let mut this = Self::new(committee);
-        for (authority, s) in data {
+        for item in data {
+            let (authority, s) = item?;
             this.insert_generic(authority, s);
         }
-        this
+        Ok(this)
     }
 
     /// A generic version of inserting arbitrary type of V (e.g. void type).
@@ -91,6 +94,8 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn contains_key(&self, authority: &AuthorityName) -> bool {
         self.data.contains_key(authority)
     }
@@ -111,6 +116,8 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         self.total_votes >= self.committee.threshold::<STRENGTH>()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn validator_sig_count(&self) -> usize {
         self.data.len()
     }
@@ -183,9 +190,7 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                             }
                         }
                     }
-                    Err(error) => InsertResult::Failed {
-                        error: error.into(),
-                    },
+                    Err(error) => InsertResult::Failed { error },
                 }
             }
             // The following is necessary to change the template type of InsertResult.
@@ -236,10 +241,14 @@ impl<K, V, const STRENGTH: bool> MultiStakeAggregator<K, V, STRENGTH> {
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn unique_key_count(&self) -> usize {
         self.stake_maps.len()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn total_votes(&self) -> StakeUnit {
         self.stake_maps
             .values()
@@ -275,12 +284,13 @@ where
 
 impl<K, V, const STRENGTH: bool> MultiStakeAggregator<K, V, STRENGTH>
 where
-    K: Clone + Ord,
+    K: Clone + Ord + Hash,
+    V: Clone,
 {
-    pub fn get_all_unique_values(&self) -> BTreeMap<K, (Vec<AuthorityName>, StakeUnit)> {
+    pub fn get_all_unique_values(&self) -> HashMap<K, (V, Vec<AuthorityName>)> {
         self.stake_maps
             .iter()
-            .map(|(k, (_, s))| (k.clone(), (s.data.keys().copied().collect(), s.total_votes)))
+            .map(|(k, (v, s))| (k.clone(), (v.clone(), s.data.keys().copied().collect_vec())))
             .collect()
     }
 }
@@ -300,6 +310,8 @@ where
         self.committee.total_votes() - self.total_votes()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Total stake of the largest faction
     pub fn plurality_stake(&self) -> StakeUnit {
         self.stake_maps
@@ -309,12 +321,16 @@ where
             .unwrap_or_default()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// If true, there isn't enough uncommitted stake to reach quorum for any value
     pub fn quorum_unreachable(&self) -> bool {
         self.uncommitted_stake() + self.plurality_stake() < self.committee.threshold::<STRENGTH>()
     }
 }
 
+// todo(zeev): why is it not used?
+#[allow(dead_code)]
 /// Like MultiStakeAggregator, but for counting votes for a generic value instead of an envelope, in
 /// scenarios where byzantine validators may submit multiple votes for different values.
 pub struct GenericMultiStakeAggregator<K, const STRENGTH: bool> {
@@ -327,6 +343,8 @@ impl<K, const STRENGTH: bool> GenericMultiStakeAggregator<K, STRENGTH>
 where
     K: Hash + Eq,
 {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn new(committee: Arc<Committee>) -> Self {
         Self {
             committee,
@@ -335,6 +353,8 @@ where
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn insert(
         &mut self,
         authority: AuthorityName,
@@ -352,6 +372,8 @@ where
         agg.insert_generic(authority, ())
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn has_quorum_for_key(&self, k: &K) -> bool {
         if let Some(entry) = self.stake_maps.get(k) {
             entry.has_quorum()
@@ -360,6 +382,8 @@ where
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn votes_for_authority(&self, authority: AuthorityName) -> u64 {
         self.votes_per_authority
             .get(&authority)

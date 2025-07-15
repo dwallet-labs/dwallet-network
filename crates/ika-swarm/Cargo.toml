@@ -4,14 +4,14 @@ version = "0.0.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
 
 [dependencies]
 anyhow.workspace = true
-rand.workspace = true
+rand = "0.8" # use old version for compatability with fastcrypto
 tracing.workspace = true
 tokio = { workspace = true, features = ["full"] }
 futures.workspace = true
@@ -19,12 +19,17 @@ tempfile.workspace = true
 tonic-health.workspace = true
 tap.workspace = true
 prometheus.workspace = true
-
+rayon.workspace = true
 ika-config.workspace = true
 ika-swarm-config.workspace = true
 sui-macros.workspace = true
 sui-types.workspace = true
-ika-node.workspace = true
+# This one is imported not from the workspace, since we want to disable the `default-features` of `ika-node`
+# ONLY for this crate.
+# If you import it from the workspace, you will get the following error:
+# `default-features` is ignored for ika-node, since `default-features` was not specified
+# for `workspace.dependencies.ika-node`, this could become a hard error in the future.
+ika-node = { path = "../ika-node", default-features = false }
 ika-protocol-config.workspace = true
 sui-tls.workspace = true
 ika-types.workspace = true

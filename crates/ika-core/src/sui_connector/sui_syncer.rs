@@ -1,34 +1,24 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
-use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::dwallet_mpc::generate_access_structure_from_committee;
-use crate::dwallet_mpc::network_dkg::{
-    instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output, DwalletMPCNetworkKeys,
-};
 use crate::sui_connector::metrics::SuiConnectorMetrics;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
-use group::PartyID;
-use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
+use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::{Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
-use ika_types::sui::{SystemInner, SystemInnerInit, SystemInnerTrait};
-use im::HashSet;
-use itertools::Itertools;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKey, DWalletNetworkEncryptionKeyData, DWalletNetworkEncryptionKeyState,
+};
+use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerTrait};
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
-use sui_types::BRIDGE_PACKAGE_ID;
-use sui_types::{event::EventID, Identifier};
+use sui_types::{Identifier, event::EventID};
 use tokio::sync::watch::Sender;
-use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
     task::JoinHandle,
@@ -36,16 +26,12 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
-/// Map from contract address to their start cursor (exclusive)
-pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
-
 pub struct SuiSyncer<C> {
     sui_client: Arc<SuiClient<C>>,
     // The last transaction that the syncer has fully processed.
     // Syncer will resume posting this transaction (i.e., exclusive) when it starts.
-    cursors: SuiTargetModules,
+    modules: Vec<Identifier>,
     metrics: Arc<SuiConnectorMetrics>,
-    perpetual_tables: Arc<AuthorityPerpetualTables>,
 }
 
 impl<C> SuiSyncer<C>
@@ -54,48 +40,58 @@ where
 {
     pub fn new(
         sui_client: Arc<SuiClient<C>>,
-        cursors: SuiTargetModules,
+        modules: Vec<Identifier>,
         metrics: Arc<SuiConnectorMetrics>,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> Self {
         Self {
             sui_client,
-            cursors,
+            modules,
             metrics,
-            perpetual_tables,
         }
     }
 
     pub async fn run(
         self,
         query_interval: Duration,
-        next_epoch_committee_sender: watch::Sender<Committee>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_sender: Sender<Committee>,
+        is_validator: bool,
+        network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
+        new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
+        end_of_publish_sender: Sender<Option<u64>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
-        tokio::spawn(Self::sync_next_committee(
-            sui_client_clone.clone(),
-            next_epoch_committee_sender,
-        ));
-        // Todo (#810): Check the usage adding the task handle to the task_handles vector.
+        // The notifier needs the network keys, not only on the validator nodes.
+        info!("Starting network keys sync task");
         tokio::spawn(Self::sync_dwallet_network_keys(
-            sui_client_clone,
+            sui_client_clone.clone(),
             network_keys_sender,
         ));
-        for (module, cursor) in self.cursors {
+        if is_validator {
+            info!("Starting next epoch committee sync task");
+            tokio::spawn(Self::sync_next_committee(
+                sui_client_clone.clone(),
+                next_epoch_committee_sender,
+            ));
+            info!("Starting end of publish sync task");
+            tokio::spawn(Self::sync_dwallet_end_of_publish(
+                sui_client_clone,
+                end_of_publish_sender,
+            ));
+        }
+
+        for module in self.modules {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
-            let perpetual_tables_clone = self.perpetual_tables.clone();
+            let new_events_sender_clone = new_events_sender.clone();
             task_handles.push(spawn_logged_monitored_task!(
                 Self::run_event_listening_task(
                     module,
-                    cursor,
                     sui_client_clone,
                     query_interval,
                     metrics,
-                    perpetual_tables_clone
+                    new_events_sender_clone,
                 )
             ));
         }
@@ -107,21 +103,22 @@ where
         next_epoch_committee_sender: Sender<Committee>,
     ) {
         loop {
-            time::sleep(Duration::from_secs(2)).await;
+            time::sleep(Duration::from_secs(10)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
+            let SystemInner::V1(system_inner) = system_inner;
+            let Some(new_next_bls_committee) = system_inner.get_ika_next_epoch_committee() else {
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
             };
 
+            let new_next_committee = system_inner.read_bls_committee(&new_next_bls_committee);
+
             let committee = match Self::new_committee(
                 sui_client.clone(),
-                &system_inner,
                 new_next_committee.clone(),
                 system_inner.epoch() + 1,
+                new_next_bls_committee.quorum_threshold,
+                new_next_bls_committee.validity_threshold,
             )
             .await
             {
@@ -142,33 +139,38 @@ where
 
     async fn new_committee(
         sui_client: Arc<SuiClient<C>>,
-        system_inner: &SystemInnerInit,
         committee: Vec<(ObjectID, (AuthorityName, StakeUnit))>,
         epoch: u64,
+        quorum_threshold: u64,
+        validity_threshold: u64,
     ) -> DwalletMPCResult<Committee> {
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
         let validators = sui_client
-            .get_validators_info_by_ids(&system_inner, validator_ids)
+            .get_validators_info_by_ids(validator_ids)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = sui_client
             .get_class_groups_public_keys_and_proofs(&validators)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = committee
             .iter()
-            .map(|(id, (name, _))| {
-                let class_groups = class_group_encryption_keys_and_proofs
-                    .get(id)
-                    .ok_or(DwalletMPCError::ValidatorIDNotFound(*id))?;
+            .filter_map(|(id, (name, _))| {
+                let validator_class_groups_public_key_and_proof =
+                    class_group_encryption_keys_and_proofs.get(id);
 
-                let class_groups_bytes = bcs::to_bytes(&class_groups)?;
-                Ok((*name, class_groups_bytes))
+                let validator_class_groups_public_key_and_proof =
+                    validator_class_groups_public_key_and_proof.cloned();
+                validator_class_groups_public_key_and_proof.map(
+                    |validator_class_groups_public_key_and_proof| {
+                        (*name, validator_class_groups_public_key_and_proof)
+                    },
+                )
             })
-            .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+            .collect::<HashMap<_, _>>();
 
         Ok(Committee::new(
             epoch,
@@ -177,78 +179,68 @@ where
                 .map(|(_, (name, stake))| (*name, *stake))
                 .collect(),
             class_group_encryption_keys_and_proofs,
+            quorum_threshold,
+            validity_threshold,
         ))
     }
 
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
     ) {
-        // (Key Obj ID, Epoch)
-        let mut network_keys_cache: HashSet<(ObjectID, u64)> = HashSet::new();
+        // Last fetched network keys (id to epoch) to avoid fetching the same keys repeatedly.
+        let mut last_fetched_network_keys: HashMap<ObjectID, u64> = HashMap::new();
         'sync_network_keys: loop {
             time::sleep(Duration::from_secs(5)).await;
 
-            let network_decryption_keys = sui_client
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let current_epoch = system_inner.epoch();
+
+            let network_encryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
                     warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
-            let active_committee = sui_client.get_epoch_active_committee().await;
-            let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
-            let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
-            let should_fetch_keys = current_keys.iter().any(|key| {
-                !network_keys_cache
-                    .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
-            });
-            if !should_fetch_keys {
+
+            let keys_to_fetch: HashMap<ObjectID, DWalletNetworkEncryptionKey> =
+                network_encryption_keys
+                    .into_iter()
+                    .filter(|(id, key)| {
+                        if let Some(last_fetched_epoch) = last_fetched_network_keys.get(id) {
+                            // If the key is cached, check if it is in the awaiting state.
+                            current_epoch > *last_fetched_epoch
+                        } else {
+                            // If the key is not cached, we need to fetch it.
+                            key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
+                        }
+                    })
+                    .collect();
+
+            if keys_to_fetch.is_empty() {
                 info!("No new network keys to fetch");
                 continue;
             }
-            let active_committee = match Self::new_committee(
-                sui_client.clone(),
-                &system_inner,
-                active_committee,
-                system_inner.epoch(),
-            )
-            .await
-            {
-                Ok(committee) => committee,
-                Err(e) => {
-                    error!("failed to initiate committee: {e}");
-                    continue;
-                }
-            };
-            let weighted_threshold_access_structure =
-                match generate_access_structure_from_committee(&active_committee) {
-                    Ok(access_structure) => access_structure,
-                    Err(e) => {
-                        error!("failed to generate access structure: {e}");
-                        continue;
-                    }
-                };
-            let mut all_network_keys_data = HashMap::new();
-            for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
-                match Self::fetch_and_init_network_key(
-                    &sui_client,
-                    &network_dec_key_shares,
-                    &weighted_threshold_access_structure,
-                )
-                .await
+
+            let mut all_fetched_network_keys_data = HashMap::new();
+            for (key_id, network_dec_key_shares) in keys_to_fetch.into_iter() {
+                match sui_client
+                    .get_network_encryption_key_with_full_data_by_epoch(
+                        &network_dec_key_shares,
+                        current_epoch,
+                    )
+                    .await
                 {
-                    Ok(key) => {
-                        all_network_keys_data.insert(key_id.clone(), key);
-                        network_keys_cache.insert((key_id, system_inner.epoch()));
+                    Ok(key_full_data) => {
+                        all_fetched_network_keys_data.insert(key_id, key_full_data.clone());
+                        last_fetched_network_keys.insert(key_id, current_epoch);
                     }
                     Err(err) => {
                         error!(
                             key=?key_id,
+                            current_epoch=?current_epoch,
                             err=?err,
                             "failed to get network decryption key data, retrying...",
                         );
@@ -256,41 +248,73 @@ where
                     }
                 }
             }
-            if let Err(err) = network_keys_sender.send(Arc::new(all_network_keys_data)) {
+            if let Err(err) = network_keys_sender.send(Arc::new(all_fetched_network_keys_data)) {
                 error!(?err, "failed to send network keys data to the channel",);
             }
         }
     }
 
-    async fn fetch_and_init_network_key(
-        sui_client: &SuiClient<C>,
-        network_dec_key_shares: &DWalletNetworkDecryptionKey,
-        access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-        let output = sui_client
-            .get_network_decryption_key_with_full_data(network_dec_key_shares)
-            .await
-            .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+    async fn sync_dwallet_end_of_publish(
+        sui_client: Arc<SuiClient<C>>,
+        end_of_publish_sender: Sender<Option<u64>>,
+    ) {
+        loop {
+            time::sleep(Duration::from_secs(10)).await;
 
-        instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
-            output.current_epoch,
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            access_structure,
-            output,
-        )
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let SystemInner::V1(system_inner_v1) = system_inner;
+            let coordinator_inner = sui_client.must_get_dwallet_coordinator_inner().await;
+            let DWalletCoordinatorInner::V1(coordinator) = coordinator_inner;
+            // Check if we can advance the epoch.
+            let all_epoch_sessions_finished = coordinator
+                .sessions_manager
+                .user_sessions_keeper
+                .completed_sessions_count
+                == coordinator
+                    .sessions_manager
+                    .last_user_initiated_session_to_complete_in_current_epoch;
+            let all_immediate_sessions_completed = coordinator
+                .sessions_manager
+                .system_sessions_keeper
+                .started_sessions_count
+                == coordinator
+                    .sessions_manager
+                    .system_sessions_keeper
+                    .completed_sessions_count;
+            let next_epoch_committee_exists =
+                system_inner_v1.validator_set.next_epoch_committee.is_some();
+            let all_network_encryption_keys_reconfiguration_completed =
+                coordinator.dwallet_network_encryption_keys.size
+                    == coordinator.epoch_dwallet_network_encryption_keys_reconfiguration_completed;
+            if coordinator
+                .sessions_manager
+                .locked_last_user_initiated_session_to_complete_in_current_epoch
+                && all_epoch_sessions_finished
+                && all_immediate_sessions_completed
+                && next_epoch_committee_exists
+                && all_network_encryption_keys_reconfiguration_completed
+                && coordinator
+                    .pricing_and_fee_management
+                    .calculation_votes
+                    .is_none()
+            {
+                if let Err(err) = end_of_publish_sender.send(Some(system_inner_v1.epoch)) {
+                    error!(?err, "failed to send end of publish epoch to the channel");
+                }
+            }
+        }
     }
 
     async fn run_event_listening_task(
         // The module where interested events are defined.
         // Module is always of ika system package.
         module: Identifier,
-        mut cursor: Option<EventID>,
         sui_client: Arc<SuiClient<C>>,
         query_interval: Duration,
         metrics: Arc<SuiConnectorMetrics>,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
+        new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) {
-        info!(?module, ?cursor, "Starting sui events listening task");
+        info!(?module, "Starting sui events listening task");
         let mut interval = time::interval(query_interval);
         interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
@@ -308,20 +332,44 @@ where
                     sui_client_clone.get_latest_checkpoint_sequence_number(),
                     Duration::from_secs(120)
                 ) else {
-                    error!("failed to query the latest checkpoint sequence number from the sui client after retry");
+                    error!(
+                        "failed to query the latest checkpoint sequence number from the sui client after retry"
+                    );
                     continue;
                 };
                 last_synced_sui_checkpoints_metric.set(latest_checkpoint_sequence_number as i64);
             }
         });
-
+        let mut cursor: Option<EventID> = None;
+        let mut start_epoch_cursor: Option<EventID> = None;
+        let mut loop_index: usize = 0;
         loop {
+            // Fetching the epoch start TX digest less frequently
+            // as it is unexpected to change often.
+            if loop_index % 10 == 0 {
+                debug!("Querying epoch start cursor from Sui");
+                let SystemInner::V1(system_inner) = sui_client.must_get_system_inner_object().await;
+                let Ok(epoch_start_tx_digest) = system_inner.epoch_start_tx_digest.try_into()
+                else {
+                    // This should not happen, but if it does, we need to know about it.
+                    error!("cloud not parse `epoch_start_tx_digest` - wrong length");
+                    continue;
+                };
+                let start_epoch_event = EventID::from((epoch_start_tx_digest, 0));
+                if start_epoch_cursor != Some(start_epoch_event) {
+                    start_epoch_cursor = Some(start_epoch_event);
+                    cursor = start_epoch_cursor;
+                }
+            }
+            loop_index += 1;
+
             interval.tick().await;
             let Ok(Ok(events)) = retry_with_max_elapsed_time!(
                 sui_client.query_events_by_module(module.clone(), cursor),
                 Duration::from_secs(120)
             ) else {
-                error!("failed to query events from the sui client — retrying");
+                // todo(zeev): alert.
+                warn!("sui client failed to query events from the sui network — retrying");
                 continue;
             };
 
@@ -333,10 +381,10 @@ where
                     // We can then update the latest checkpoint metric.
                     notify.notify_one();
                 }
-                perpetual_tables
-                    .insert_pending_events(module.clone(), &events.data)
-                    // todo(zeev): this code can panic, check it.
-                    .expect("failed to insert pending events");
+                if let Err(e) = new_events_sender.send(events.data) {
+                    error!(error=?e, ?module, "failed to send new events to the channel");
+                }
+
                 if let Some(next) = events.next_cursor {
                     cursor = Some(next);
                 }

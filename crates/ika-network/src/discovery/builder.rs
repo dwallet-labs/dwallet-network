@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{
-    metrics::Metrics, server::Server, Discovery, DiscoveryEventLoop, DiscoveryServer, State,
+    Discovery, DiscoveryEventLoop, DiscoveryServer, State, metrics::Metrics, server::Server,
 };
 use crate::discovery::TrustedPeerChangeEvent;
 use anemo::codegen::InboundRequestLayer;
@@ -155,7 +155,7 @@ impl UnstartedDiscovery {
                 keypair,
                 tasks: JoinSet::new(),
                 pending_dials: Default::default(),
-                dial_seed_peers_task: None,
+                dial_seed_or_fixed_peers_task: None,
                 shutdown_handle,
                 state,
                 trusted_peer_change_rx,

@@ -3,26 +3,16 @@
 
 use crate::IkaNode;
 use axum::{
+    Router,
     extract::{Query, State},
     http::StatusCode,
     routing::{get, post},
-    Router,
 };
-use base64::Engine;
 use humantime::parse_duration;
-use ika_types::error::IkaError;
 use serde::Deserialize;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    str::FromStr,
-};
-use sui_types::{
-    base_types::AuthorityName,
-    crypto::{RandomnessPartialSignature, RandomnessRound, RandomnessSignature},
-};
 use telemetry_subscribers::TracingHandle;
-use tokio::sync::oneshot;
 use tracing::info;
 
 // Example commands:
@@ -63,7 +53,9 @@ const TRACING_ROUTE: &str = "/enable-tracing";
 const TRACING_RESET_ROUTE: &str = "/reset-tracing";
 const SET_BUFFER_STAKE_ROUTE: &str = "/set-override-buffer-stake";
 const CLEAR_BUFFER_STAKE_ROUTE: &str = "/clear-override-buffer-stake";
+#[allow(dead_code)]
 const FORCE_CLOSE_EPOCH: &str = "/force-close-epoch";
+#[allow(dead_code)]
 const CAPABILITIES: &str = "/capabilities";
 const NODE_CONFIG: &str = "/node-config";
 
@@ -143,15 +135,15 @@ async fn enable_tracing(
 
     if let Some(sample_rate) = sample_rate {
         state.tracing_handle.update_sampling_rate(sample_rate);
-        response.push(format!("sample rate set to {:?}", sample_rate));
+        response.push(format!("sample rate set to {sample_rate:?}"));
     }
 
     if let Some(trace_file) = trace_file {
         if let Err(err) = state.tracing_handle.update_trace_file(&trace_file) {
-            response.push(format!("can't update trace file: {:?}", err));
+            response.push(format!("can't update trace file: {err:?}"));
             return (StatusCode::BAD_REQUEST, response.join("\n"));
         } else {
-            response.push(format!("trace file set to {:?}", trace_file));
+            response.push(format!("trace file set to {trace_file:?}"));
         }
     }
 
@@ -172,12 +164,12 @@ async fn enable_tracing(
 
     match state.tracing_handle.update_trace_filter(&filter, duration) {
         Ok(()) => {
-            response.push(format!("filter set to {:?}", filter));
-            response.push(format!("filter will be reset after {:?}", duration));
+            response.push(format!("filter set to {filter:?}"));
+            response.push(format!("filter will be reset after {duration:?}"));
             (StatusCode::OK, response.join("\n"))
         }
         Err(err) => {
-            response.push(format!("can't update filter: {:?}", err));
+            response.push(format!("can't update filter: {err:?}"));
             (StatusCode::BAD_REQUEST, response.join("\n"))
         }
     }
@@ -218,12 +210,7 @@ async fn capabilities(State(state): State<Arc<AppState>>) -> (StatusCode, String
     let capabilities = epoch_store.get_capabilities_v1();
     let mut output = String::new();
     for capability in capabilities.unwrap_or_default() {
-        output.push_str(&format!("{:?}\n", capability));
-    }
-
-    let capabilities = epoch_store.get_capabilities_v1();
-    for capability in capabilities.unwrap_or_default() {
-        output.push_str(&format!("{:?}\n", capability));
+        output.push_str(&format!("{capability:?}\n"));
     }
 
     (StatusCode::OK, output)
@@ -233,7 +220,7 @@ async fn node_config(State(state): State<Arc<AppState>>) -> (StatusCode, String)
     let node_config = &state.node.config;
 
     // Note private keys will be masked
-    (StatusCode::OK, format!("{:#?}\n", node_config))
+    (StatusCode::OK, format!("{node_config:#?}\n"))
 }
 
 #[derive(Deserialize)]
@@ -277,7 +264,7 @@ async fn set_override_protocol_upgrade_buffer_stake(
     {
         Ok(()) => (
             StatusCode::OK,
-            format!("protocol upgrade buffer stake set to '{}'\n", buffer_bps),
+            format!("protocol upgrade buffer stake set to '{buffer_bps}'\n"),
         ),
         Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
     }

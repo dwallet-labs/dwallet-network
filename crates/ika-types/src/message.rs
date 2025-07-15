@@ -4,53 +4,48 @@
 
 use crate::crypto::default_hash;
 use crate::digests::MessageDigest;
-use fastcrypto::hash::HashFunction;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use strum::IntoStaticStr;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct DKGFirstRoundOutput {
     pub dwallet_id: Vec<u8>,
     pub output: Vec<u8>,
-    pub session_sequence_number: u64,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct DKGSecondRoundOutput {
-    pub dwallet_id: Vec<u8>,
-    pub session_id: Vec<u8>,
-    pub output: Vec<u8>,
-    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    pub encryption_key_address: Vec<u8>,
     pub rejected: bool,
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct PresignOutput {
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct DKGSecondRoundOutput {
     pub dwallet_id: Vec<u8>,
+    pub encrypted_secret_share_id: Vec<u8>,
+    pub output: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct PresignOutput {
+    pub dwallet_id: Option<Vec<u8>>,
     pub presign_id: Vec<u8>,
-    pub session_id: Vec<u8>,
     pub presign: Vec<u8>,
     pub rejected: bool,
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct SignOutput {
     pub dwallet_id: Vec<u8>,
     pub sign_id: Vec<u8>,
-    pub session_id: Vec<u8>,
     pub signature: Vec<u8>,
     pub is_future_sign: bool,
     pub rejected: bool,
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct EncryptedUserShareOutput {
     pub dwallet_id: Vec<u8>,
     pub encrypted_user_secret_key_share_id: Vec<u8>,
@@ -58,49 +53,106 @@ pub struct EncryptedUserShareOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
-    pub session_id: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub partial_centralized_signed_message_id: Vec<u8>,
     pub rejected: bool,
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct Secp256K1NetworkKeyPublicOutputSlice {
-    pub dwallet_network_decryption_key_id: Vec<u8>,
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct MPCNetworkDKGOutput {
+    pub dwallet_network_encryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
+    pub supported_curves: Vec<u32>,
     pub is_last: bool,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct MPCNetworkReconfigurationOutput {
+    pub dwallet_network_encryption_key_id: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub supported_curves: Vec<u32>,
+    pub is_last: bool,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct MakeDWalletUserSecretKeySharesPublicOutput {
+    pub dwallet_id: Vec<u8>,
+    pub public_user_secret_key_shares: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct DWalletImportedKeyVerificationOutput {
+    pub dwallet_id: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub encrypted_user_secret_key_share_id: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 // Note: the order of these fields, and the number must correspond to the Move code in
-// `dwallet_2pc_mpc_secp256k1_inner.move`.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
-pub enum MessageKind {
-    DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
-    DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
-    DwalletEncryptedUserShare(EncryptedUserShareOutput),
-    DwalletSign(SignOutput),
-    DwalletPresign(PresignOutput),
-    DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
-    DwalletMPCNetworkDKGOutput(Secp256K1NetworkKeyPublicOutputSlice),
-    DwalletMPCNetworkReshareOutput(Secp256K1NetworkKeyPublicOutputSlice),
+// `dwallet_2pc_mpc_coordinator_inner.move`.
+#[derive(PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum DWalletCheckpointMessageKind {
+    RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput),
+    RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput),
+    RespondDWalletEncryptedUserShare(EncryptedUserShareOutput),
+    RespondMakeDWalletUserSecretKeySharesPublic(MakeDWalletUserSecretKeySharesPublicOutput),
+    RespondDWalletImportedKeyVerificationOutput(DWalletImportedKeyVerificationOutput),
+    RespondDWalletPresign(PresignOutput),
+    RespondDWalletSign(SignOutput),
+    RespondDWalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
+    RespondDWalletMPCNetworkDKGOutput(MPCNetworkDKGOutput),
+    RespondDWalletMPCNetworkReconfigurationOutput(MPCNetworkReconfigurationOutput),
+    SetMaxActiveSessionsBuffer(u64),
+    SetGasFeeReimbursementSuiSystemCallValue(u64),
+    EndOfPublish,
 }
 
-impl MessageKind {
+impl DWalletCheckpointMessageKind {
     pub fn name(&self) -> &'static str {
         match self {
-            MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
-            MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
-            MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
-            MessageKind::DwalletPresign(_) => "DwalletPresign",
-            MessageKind::DwalletSign(_) => "DwalletSign",
-            MessageKind::DwalletEncryptedUserShare(_) => "DwalletEncryptedUserShare",
-            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
-                "DwalletPartialSignatureVerificationOutput"
+            DWalletCheckpointMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+                "RespondDWalletDKGFirstRoundOutput"
             }
-            MessageKind::DwalletMPCNetworkReshareOutput(_) => "DwalletMPCNetworkReshareOutput",
+            DWalletCheckpointMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+                "RespondDWalletDKGSecondRoundOutput"
+            }
+            DWalletCheckpointMessageKind::RespondDWalletEncryptedUserShare(_) => {
+                "RespondDWalletEncryptedUserShare"
+            }
+            DWalletCheckpointMessageKind::RespondDWalletPresign(_) => "RespondDWalletPresign",
+            DWalletCheckpointMessageKind::RespondDWalletSign(_) => "RespondDWalletSign",
+            DWalletCheckpointMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
+                "RespondDWalletPartialSignatureVerificationOutput"
+            }
+            DWalletCheckpointMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+                "RespondDWalletMPCNetworkDKGOutput"
+            }
+            DWalletCheckpointMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+                "RespondDWalletMPCNetworkReconfigurationOutput"
+            }
+            DWalletCheckpointMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+                "RespondMakeDWalletUserSecretKeySharesPublic"
+            }
+            DWalletCheckpointMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+                "RespondDWalletImportedKeyVerificationOutput"
+            }
+            DWalletCheckpointMessageKind::SetMaxActiveSessionsBuffer(_) => {
+                "SetMaxActiveSessionsBuffer"
+            }
+            DWalletCheckpointMessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => {
+                "SetGasFeeReimbursementSuiSystemCallValue"
+            }
+            DWalletCheckpointMessageKind::EndOfPublish => "EndOfPublish",
         }
     }
 
@@ -109,43 +161,163 @@ impl MessageKind {
     }
 }
 
-impl Display for MessageKind {
+impl Display for DWalletCheckpointMessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {
-            MessageKind::DwalletMPCNetworkDKGOutput(output) => {
+            DWalletCheckpointMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletMPCNetworkDKGOutput")?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletDKGFirstRoundOutput")?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletDKGSecondRoundOutput")?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletPresign(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletPresign")?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletSign(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletSign")?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletEncryptedUserShare(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletEncryptedUserShare")?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
                 writeln!(
                     writer,
-                    "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
-                    output
+                    "MessageKind : RespondDwalletPartialSignatureVerificationOutput"
                 )?;
             }
-            MessageKind::DwalletDKGFirstRoundOutput(_) => {
-                writeln!(writer, "MessageKind : DwalletDKGFirstRoundOutput")?;
-            }
-            MessageKind::DwalletDKGSecondRoundOutput(_) => {
-                writeln!(writer, "MessageKind : DwalletDKGSecondRoundOutput")?;
-            }
-            MessageKind::DwalletPresign(_) => {
-                writeln!(writer, "MessageKind : DwalletPresign")?;
-            }
-            MessageKind::DwalletSign(_) => {
-                writeln!(writer, "MessageKind : DwalletSign")?;
-            }
-            MessageKind::DwalletEncryptedUserShare(_) => {
-                writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
-            }
-            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
+            DWalletCheckpointMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
                 writeln!(
                     writer,
-                    "MessageKind : DwalletPartialSignatureVerificationOutput"
+                    "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput"
                 )?;
             }
-            MessageKind::DwalletMPCNetworkReshareOutput(_) => {
-                writeln!(writer, "MessageKind : DwalletMPCNetworkReshareOutput")?;
+            DWalletCheckpointMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic"
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletImportedKeyVerificationOutput"
+                )?;
+            }
+            DWalletCheckpointMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetMaxActiveSessionsBuffer({buffer_size})"
+                )?;
+            }
+            DWalletCheckpointMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({value})"
+                )?;
+            }
+            DWalletCheckpointMessageKind::EndOfPublish => {
+                writeln!(writer, "MessageKind : EndOfPublish")?;
             }
         }
-        write!(f, "{}", writer)
+        write!(f, "{writer}")
+    }
+}
+
+impl Debug for DWalletCheckpointMessageKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+        match &self {
+            DWalletCheckpointMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletMPCNetworkDKGOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletDKGFirstRoundOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletDKGSecondRoundOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletPresign(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletPresign {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletSign(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletSign {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletEncryptedUserShare(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletEncryptedUserShare {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletPartialSignatureVerificationOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletImportedKeyVerificationOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletCheckpointMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetMaxActiveSessionsBuffer({buffer_size})"
+                )?;
+            }
+            DWalletCheckpointMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({value})"
+                )?;
+            }
+            DWalletCheckpointMessageKind::EndOfPublish => {
+                writeln!(writer, "MessageKind : EndOfPublish")?;
+            }
+        }
+        write!(f, "{writer}")
     }
 }
 

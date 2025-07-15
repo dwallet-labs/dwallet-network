@@ -1,17 +1,17 @@
 use anyhow::bail;
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
+    ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
@@ -20,25 +20,25 @@ use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
 use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions};
 use sui_keys::keystore::AccountKeystore;
-use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
+use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
-use sui_types::transaction::{TransactionData, TransactionDataAPI};
+use sui_types::transaction::TransactionData;
+use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
 
 /// Create a ClassGroupsPublicKeyAndProofBuilder object
 async fn create_class_groups_public_key_and_proof_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_system_package_id: ObjectID,
+    ika_common_package_id: ObjectID,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
         vec![],
@@ -51,14 +51,14 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     let object_changes = response
         .object_changes
         .ok_or(anyhow::Error::msg("failed to get object changes"))?;
-    let builder_id = object_changes
+    let builder_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -67,8 +67,9 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .ok_or(anyhow::Error::msg("failed to get builder object id"))?
-        .clone();
+        .ok_or(anyhow::Error::msg(
+            "failed to get the class groups builder object id",
+        ))?;
 
     let builder_ref = client
         .transaction_builder()
@@ -82,8 +83,8 @@ async fn create_class_groups_public_key_and_proof_builder_object(
 pub async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
-    ika_system_package_id: ObjectID,
-    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    ika_common_package_id: ObjectID,
+    class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let client = context.get_client().await?;
@@ -91,19 +92,19 @@ pub async fn create_class_groups_public_key_and_proof_object(
         publisher_address,
         context,
         &client,
-        ika_system_package_id,
+        ika_common_package_id,
         gas_budget,
     )
     .await?;
 
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
-        Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
+        Box::new(class_groups_public_key_and_proof_bytes);
     for pubkey_and_proof in class_groups_public_key_and_proof.iter() {
         let mut ptb = ProgrammableTransactionBuilder::new();
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
 
         ptb.move_call(
-            ika_system_package_id,
+            ika_common_package_id,
             CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
             ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
             vec![],
@@ -121,14 +122,14 @@ pub async fn create_class_groups_public_key_and_proof_object(
             .object_changes
             .clone()
             .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-        let builder_id = object_changes
+        let builder_id = *object_changes
             .iter()
             .filter_map(|o| match o {
                 ObjectChange::Mutated {
                     object_id,
                     object_type,
                     ..
-                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                     == *object_type =>
                 {
                     Some(*object_id)
@@ -139,8 +140,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
             .first()
             .ok_or(anyhow::Error::msg(
                 "failed to get ClassGroupsPublicKeyAndProofBuilder object id",
-            ))?
-            .clone();
+            ))?;
 
         builder_object_ref = client
             .transaction_builder()
@@ -150,7 +150,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
 
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
@@ -166,14 +166,14 @@ pub async fn create_class_groups_public_key_and_proof_object(
         .object_changes
         .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
 
-    let obj_id = object_changes
+    let obj_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -184,8 +184,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
         .first()
         .ok_or(anyhow::Error::msg(
             "failed to get ClassGroupsPublicKeyAndProof object id",
-        ))?
-        .clone();
+        ))?;
 
     let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
 
@@ -202,80 +201,136 @@ pub async fn request_add_validator_candidate(
     gas_budget: u64,
 ) -> Result<(SuiTransactionBlockResponse, ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
+    let name = ptb.input(CallArg::Pure(bcs::to_bytes(
+        validator_initialization_metadata.name.as_str(),
+    )?))?;
+    let empty_str = ptb.input(CallArg::Pure(bcs::to_bytes(String::new().as_str())?))?;
 
-    let call_args = vec![
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata
-                .protocol_public_key
-                .as_bytes()
-                .to_vec(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata
-                .network_public_key
-                .as_bytes()
-                .to_vec(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata
-                .consensus_public_key
-                .as_bytes()
-                .to_vec(),
-        )?),
-        CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            class_groups_pubkey_and_proof_obj_ref,
-        )),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata
-                .proof_of_possession
-                .as_ref()
-                .to_vec(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            validator_initialization_metadata.name.as_bytes(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            validator_initialization_metadata.name.as_bytes(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(String::new().as_bytes())?),
-        CallArg::Pure(bcs::to_bytes(String::new().as_bytes())?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.network_address.clone(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.p2p_address.clone(),
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.consensus_address,
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.computation_price,
-        )?),
-        CallArg::Pure(bcs::to_bytes(
-            &validator_initialization_metadata.commission_rate,
-        )?),
-    ];
+    let Some(Owner::Shared {
+        initial_shared_version,
+    }) = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            ika_system_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
+        .await?
+        .data
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
+        .owner
+    else {
+        bail!("Failed to get owner of object")
+    };
 
-    let args = call_args
-        .iter()
-        .map(|arg| ptb.input(arg.clone()))
-        .collect::<Result<Vec<_>, _>>()?;
+    let system_ref = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version,
+        mutable: true,
+    }))?;
 
-    let response = call_ika_system(
-        context,
-        REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-        args,
-        gas_budget,
-        ika_system_object_id,
+    let protocol_public_key = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata
+            .protocol_public_key
+            .as_bytes()
+            .to_vec(),
+    )?))?;
+
+    let network_public_key = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata
+            .network_public_key
+            .as_bytes()
+            .to_vec(),
+    )?))?;
+
+    let consensus_public_key = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata
+            .consensus_public_key
+            .as_bytes()
+            .to_vec(),
+    )?))?;
+
+    let class_groups_pubkey_and_proof_obj_ref = ptb.input(CallArg::Object(
+        ObjectArg::ImmOrOwnedObject(class_groups_pubkey_and_proof_obj_ref),
+    ))?;
+
+    let proof_of_possession = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata
+            .proof_of_possession
+            .as_ref()
+            .to_vec(),
+    )?))?;
+
+    let network_address = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata.network_address.clone(),
+    )?))?;
+
+    let p2p_address = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata.p2p_address.clone(),
+    )?))?;
+
+    let consensus_address = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata.consensus_address.clone(),
+    )?))?;
+
+    let commission_rate = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &validator_initialization_metadata.commission_rate,
+    )?))?;
+
+    let metadata = ptb.command(Command::move_call(
         ika_system_package_id,
-        ptb,
-    )
-    .await?;
+        VALIDATOR_METADATA_MODULE_NAME.into(),
+        NEW_VALIDATOR_METADATA_FUNCTION_NAME.into(),
+        vec![],
+        vec![name, empty_str, empty_str],
+    ));
+
+    ptb.command(Command::move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME.into(),
+        vec![],
+        vec![
+            system_ref,
+            name,
+            protocol_public_key,
+            network_public_key,
+            consensus_public_key,
+            class_groups_pubkey_and_proof_obj_ref,
+            proof_of_possession,
+            network_address,
+            p2p_address,
+            consensus_address,
+            commission_rate,
+            metadata,
+        ],
+    ));
+
+    let sender = context.active_address()?;
+
+    ptb.transfer_args(
+        sender,
+        vec![
+            Argument::NestedResult(1, 0),
+            Argument::NestedResult(1, 1),
+            Argument::NestedResult(1, 2),
+        ],
+    );
+
+    let tx = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    let response = execute_transaction(context, tx).await?;
 
     let object_changes = response
         .object_changes
         .clone()
         .ok_or(anyhow::Error::msg("failed to get object changes"))?;
+
+    if !response.errors.is_empty() {
+        println!("{:?}", response.errors);
+        panic!("Become-candidate failed")
+    }
 
     let validator_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -284,7 +339,7 @@ pub async fn request_add_validator_candidate(
         type_params: vec![],
     };
 
-    let validator_cap_id = object_changes
+    let validator_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -296,8 +351,7 @@ pub async fn request_add_validator_candidate(
         })
         .collect::<Vec<_>>()
         .first()
-        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?
-        .clone();
+        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?;
 
     let validator_cap = context
         .get_client()
@@ -320,7 +374,7 @@ pub async fn stake_ika(
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let mut client = context.get_client().await?;
+    let client = context.get_client().await?;
     let ika_supply_ref = client
         .transaction_builder()
         .get_object_ref(ika_supply_id)
@@ -337,16 +391,23 @@ pub async fn stake_ika(
     let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id)?))?;
     let call_args = vec![stake, validator];
 
-    Ok(call_ika_system(
+    let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
         context,
         REQUEST_ADD_STAKE_FUNCTION_NAME,
         call_args,
-        gas_budget,
         ika_system_object_id,
         ika_system_package_id,
-        ptb,
+        &mut ptb,
     )
-    .await?)
+    .await?;
+
+    ptb.transfer_args(sender, vec![Argument::NestedResult(1, 0)]);
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
 }
 
 pub async fn request_add_validator(
@@ -367,16 +428,21 @@ pub async fn request_add_validator(
         validator_cap_ref,
     )))?];
 
-    Ok(call_ika_system(
+    let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
         context,
         REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
         call_args,
-        gas_budget,
         ika_system_object_id,
         ika_system_package_id,
-        ptb,
+        &mut ptb,
     )
-    .await?)
+    .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
 }
 
 pub async fn request_remove_validator(
@@ -397,7 +463,7 @@ pub async fn request_remove_validator(
         validator_cap_ref,
     )))?];
 
-    Ok(call_ika_system(
+    call_ika_system(
         context,
         REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
         call_args,
@@ -406,7 +472,7 @@ pub async fn request_remove_validator(
         ika_system_package_id,
         ptb,
     )
-    .await?)
+    .await
 }
 
 async fn construct_unsigned_ika_system_txn(
@@ -419,6 +485,27 @@ async fn construct_unsigned_ika_system_txn(
     ika_system_package_id: ObjectID,
     mut ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
+    add_ika_system_command_to_ptb(
+        context,
+        function,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    construct_unsigned_txn(context, sender, gas_budget, ptb).await
+}
+
+async fn add_ika_system_command_to_ptb(
+    context: &mut WalletContext,
+    function: &IdentStr,
+    call_args: Vec<Argument>,
+    ika_system_object_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> anyhow::Result<()> {
     let Some(Owner::Shared {
         initial_shared_version,
     }) = context
@@ -452,25 +539,30 @@ async fn construct_unsigned_ika_system_txn(
         vec![],
         args,
     ));
-
-    construct_unsigned_txn(context, sender, gas_budget, ptb).await
+    Ok(())
 }
 
 async fn construct_unsigned_txn(
     context: &mut WalletContext,
     sender: SuiAddress,
     gas_budget: u64,
-    mut ptb: ProgrammableTransactionBuilder,
+    ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
     let sui_client = context.get_client().await?;
     let gas_price = context.get_reference_gas_price().await?;
 
     let tx = ptb.finish();
     let tx_kind = TransactionKind::ProgrammableTransaction(tx.clone());
-    let gas_budget =
-        sui::client_commands::estimate_gas_budget(context, sender, tx_kind, gas_price, None, None)
-            .await
-            .unwrap_or(gas_budget);
+    let gas_budget = sui::client_commands::estimate_gas_budget(
+        context,
+        sender,
+        tx_kind,
+        gas_price,
+        vec![],
+        None,
+    )
+    .await
+    .unwrap_or(gas_budget);
 
     let rgp = sui_client
         .governance_api()

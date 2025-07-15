@@ -9,9 +9,9 @@ use crate::validator_initialization_config::{
 use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::{
-    default_end_of_epoch_broadcast_channel_capacity, AuthorityKeyPairWithPath,
-    AuthorityOverloadConfig, ClassGroupsKeyPairWithPath, KeyPairWithPath, RunWithRange,
-    StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
+    AuthorityKeyPairWithPath, AuthorityOverloadConfig, KeyPairWithPath, RootSeedWithPath,
+    RunWithRange, StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
+    default_end_of_epoch_broadcast_channel_capacity,
 };
 use std::path::PathBuf;
 use sui_types::base_types::ObjectID;
@@ -19,8 +19,8 @@ use sui_types::base_types::ObjectID;
 use ika_config::p2p::{P2pConfig, SeedPeer, StateSyncConfig};
 
 use ika_config::{
-    local_ip_utils, ConsensusConfig, NodeConfig, AUTHORITIES_DB_NAME, CONSENSUS_DB_NAME,
-    FULL_NODE_DB_PATH,
+    AUTHORITIES_DB_NAME, CONSENSUS_DB_NAME, ConsensusConfig, FULL_NODE_DB_PATH, NodeConfig,
+    local_ip_utils,
 };
 use ika_types::crypto::{AuthorityKeyPair, AuthorityPublicKeyBytes, NetworkKeyPair};
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
@@ -83,13 +83,16 @@ impl ValidatorConfigBuilder {
         validator: &ValidatorInitializationConfig,
         sui_rpc_url: String,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
     ) -> NodeConfig {
         let key_path = get_key_path(&validator.key_pair);
         let config_directory = self
             .config_directory
-            .unwrap_or_else(|| tempfile::tempdir().unwrap().into_path());
+            .unwrap_or_else(|| tempfile::tempdir().unwrap().keep());
         let db_path = config_directory
             .join(AUTHORITIES_DB_NAME)
             .join(key_path.clone());
@@ -118,15 +121,13 @@ impl ValidatorConfigBuilder {
             // Set a shorter timeout for checkpoint content download in tests, since
             // checkpoint pruning also happens much faster, and the network is local.
             state_sync: Some(StateSyncConfig {
-                checkpoint_content_timeout_ms: Some(10_000),
+                dwallet_checkpoint_content_timeout_ms: Some(10_000),
                 ..Default::default()
             }),
             ..Default::default()
         };
         NodeConfig {
-            class_groups_key_pair_and_proof: Some(ClassGroupsKeyPairWithPath::new(
-                validator.class_groups_key_pair_and_proof.clone(),
-            )),
+            root_seed: Some(RootSeedWithPath::new(validator.root_seed.clone())),
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair.copy()),
             network_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.network_key_pair.copy(),
@@ -139,8 +140,11 @@ impl ValidatorConfigBuilder {
                 sui_rpc_url: sui_rpc_url.to_string(),
                 sui_chain_identifier: SuiChainIdentifier::Custom,
                 ika_package_id,
+                ika_common_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
                 notifier_client_key_pair: None,
                 sui_ika_system_module_last_processed_event_id_override: None,
             },
@@ -170,8 +174,11 @@ impl ValidatorConfigBuilder {
         rng: &mut R,
         sui_rpc_url: String,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
     ) -> NodeConfig {
         let validator_initialization_config =
             ValidatorInitializationConfigBuilder::new().build(rng);
@@ -179,8 +186,11 @@ impl ValidatorConfigBuilder {
             &validator_initialization_config,
             sui_rpc_url,
             ika_package_id,
+            ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id,
             ika_system_object_id,
+            ika_dwallet_coordinator_object_id,
         )
     }
 }
@@ -268,31 +278,26 @@ impl FullnodeConfigBuilder {
     pub fn build<R: rand::RngCore + rand::CryptoRng>(
         self,
         rng: &mut R,
-        validators: &Vec<ValidatorInitializationConfig>,
+        validators: &[ValidatorInitializationConfig],
         sui_rpc_url: String,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
         notifier_client_key_pair: Option<SuiKeyPair>,
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
         // even though this is a fullnode.
-        let mut validator_config_builder = ValidatorInitializationConfigBuilder::new();
-
-        #[cfg(feature = "mock-class-groups")]
-        {
-            validator_config_builder = validator_config_builder
-                .with_class_groups_key_pair_and_proof(
-                    crate::class_groups_mock_builder::create_full_class_groups_mock(),
-                );
-        }
+        let validator_config_builder = ValidatorInitializationConfigBuilder::new();
 
         let validator_config = validator_config_builder.build(rng);
 
         let key_path = get_key_path(&validator_config.key_pair);
         let config_directory = self
             .config_directory
-            .unwrap_or_else(|| tempfile::tempdir().unwrap().into_path());
+            .unwrap_or_else(|| tempfile::tempdir().unwrap().keep());
 
         let p2p_config = {
             let seed_peers = validators
@@ -320,7 +325,7 @@ impl FullnodeConfigBuilder {
                 // checkpoint pruning also happens much faster,
                 // and the network is local.
                 state_sync: Some(StateSyncConfig {
-                    checkpoint_content_timeout_ms: Some(10_000),
+                    dwallet_checkpoint_content_timeout_ms: Some(10_000),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -329,10 +334,10 @@ impl FullnodeConfigBuilder {
 
         let localhost = local_ip_utils::localhost_for_testing();
 
-        let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
+        let notifier_client_key_pair = notifier_client_key_pair.map(KeyPairWithPath::new);
 
         NodeConfig {
-            class_groups_key_pair_and_proof: None,
+            root_seed: None,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),
             consensus_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
@@ -351,8 +356,11 @@ impl FullnodeConfigBuilder {
                 sui_rpc_url: sui_rpc_url.to_string(),
                 sui_chain_identifier: SuiChainIdentifier::Custom,
                 ika_package_id,
+                ika_common_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
                 notifier_client_key_pair,
                 sui_ika_system_module_last_processed_event_id_override: None,
             },

@@ -2,16 +2,15 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use arc_swap::{ArcSwap, ArcSwapOption};
-use dashmap::try_result::TryResult;
 use dashmap::DashMap;
-use futures::future::{self, select, Either};
-use futures::stream::FuturesUnordered;
+use dashmap::try_result::TryResult;
 use futures::FutureExt;
-use futures::{pin_mut, StreamExt};
+use futures::future::{Either, select};
+use futures::stream::FuturesUnordered;
+use futures::{StreamExt, pin_mut};
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
 use itertools::Itertools;
-use parking_lot::RwLockReadGuard;
 use prometheus::Histogram;
 use prometheus::HistogramVec;
 use prometheus::IntCounterVec;
@@ -26,30 +25,30 @@ use prometheus::{
 use std::collections::HashMap;
 use std::future::Future;
 use std::ops::Deref;
+use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::time::Instant;
 use sui_types::base_types::TransactionDigest;
 
-use tokio::sync::{oneshot, Semaphore, SemaphorePermit};
+use tokio::sync::{Semaphore, SemaphorePermit, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::{self};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
-use crate::consensus_throughput_calculator::{ConsensusThroughputProfiler, Level};
+use crate::consensus_handler::{SequencedConsensusTransactionKey, classify};
+use crate::consensus_throughput_calculator::ConsensusThroughputProfiler;
 use crate::metrics::LatencyObserver;
 use consensus_core::{BlockStatus, ConnectionStatus};
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::fp_ensure;
 use ika_types::messages_consensus::ConsensusTransactionKind;
-use ika_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKey};
-use mysten_metrics::{spawn_monitored_task, GaugeGuard, GaugeGuardFutureExt};
+use ika_types::messages_consensus::{ConsensusPosition, ConsensusTransaction};
+use mysten_metrics::{GaugeGuard, GaugeGuardFutureExt, spawn_monitored_task};
 use sui_simulator::anemo::PeerId;
 use tokio::time::Duration;
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, trace, warn};
 
 const SEQUENCING_CERTIFICATE_LATENCY_SEC_BUCKETS: &[f64] = &[
     0.1, 0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.25, 2.5, 2.75, 3., 4., 5., 6., 7., 10., 15.,
@@ -211,9 +210,10 @@ pub trait ConsensusClient: Sync + Send + 'static {
         &self,
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> IkaResult<BlockStatusReceiver>;
+    ) -> IkaResult<(Vec<ConsensusPosition>, BlockStatusReceiver)>;
 }
 
+#[allow(unused)]
 /// Submit Ika certificates to the consensus.
 pub struct ConsensusAdapter {
     /// The network client connecting to the consensus node of this authority.
@@ -311,27 +311,27 @@ impl ConsensusAdapter {
         // Currently narwhal worker might lose transactions on restart, so we need to resend them
         // todo - get_all_pending_consensus_transactions is called twice when
         // initializing AuthorityPerEpochStore and here, should not be a big deal but can be optimized
-        let mut recovered = epoch_store.get_all_pending_consensus_transactions();
+        let recovered = epoch_store.get_all_pending_consensus_transactions();
 
-        #[allow(clippy::collapsible_if)] // This if can be collapsed but it will be ugly
-                                         // if epoch_store
-                                         //     .get_reconfig_state_read_lock_guard()
-                                         //     .is_reject_user_certs()
-                                         //     && epoch_store.pending_consensus_certificates_empty()
-                                         // {
-                                         //     if recovered
-                                         //         .iter()
-                                         //         .any(ConsensusTransaction::is_end_of_publish)
-                                         //     {
-                                         //         // There are two cases when this is needed
-                                         //         // (1) We send EndOfPublish message after removing pending certificates in submit_and_wait_inner
-                                         //         // It is possible that node will crash between those two steps, in which case we might need to
-                                         //         // re-introduce EndOfPublish message on restart
-                                         //         // (2) If node crashed inside ConsensusAdapter::close_epoch,
-                                         //         // after reconfig lock state was written to DB and before we persisted EndOfPublish message
-                                         //         recovered.push(ConsensusTransaction::new_end_of_publish(self.authority));
-                                         //     }
-                                         // }
+        // This if can be collapsed but it will be ugly
+        // if epoch_store
+        //     .get_reconfig_state_read_lock_guard()
+        //     .is_reject_user_certs()
+        //     && epoch_store.pending_consensus_certificates_empty()
+        // {
+        //     if recovered
+        //         .iter()
+        //         .any(ConsensusTransaction::is_end_of_publish)
+        //     {
+        //         // There are two cases when this is needed
+        //         // (1) We send EndOfPublish message after removing pending certificates in submit_and_wait_inner
+        //         // It is possible that node will crash between those two steps, in which case we might need to
+        //         // re-introduce EndOfPublish message on restart
+        //         // (2) If node crashed inside ConsensusAdapter::close_epoch,
+        //         // after reconfig lock state was written to DB and before we persisted EndOfPublish message
+        //         recovered.push(ConsensusTransaction::new_end_of_publish(self.authority));
+        //     }
+        // }
         debug!(
             "Submitting {:?} recovered pending consensus transactions to consensus",
             recovered.len()
@@ -343,8 +343,8 @@ impl ConsensusAdapter {
 
     fn await_submit_delay(
         &self,
-        committee: &Committee,
-        transactions: &[ConsensusTransaction],
+        _committee: &Committee,
+        _transactions: &[ConsensusTransaction],
     ) -> (impl Future<Output = ()>, usize, usize, usize) {
         // if transactions.iter().any(|tx| tx.is_user_transaction()) {
         //     // UserTransactions are generally sent to just one validator and should
@@ -379,6 +379,7 @@ impl ConsensusAdapter {
         (tokio::time::sleep(Duration::ZERO), 0, 0, 0)
     }
 
+    #[allow(unused)]
     /// Overrides the latency and the position if there are defined settings for `max_submit_position` and
     /// `submit_delay_step_override`. If the `max_submit_position` has defined, then that will always be used
     /// irrespective of any so far decision. Same for the `submit_delay_step_override`.
@@ -396,6 +397,7 @@ impl ConsensusAdapter {
         (delay_step, position)
     }
 
+    #[allow(unused)]
     /// Check when this authority should submit the certificate to consensus.
     /// This sorts all authorities based on pseudo-random distribution derived from transaction hash.
     ///
@@ -413,6 +415,7 @@ impl ConsensusAdapter {
         self.check_submission_wrt_connectivity_and_scores(positions)
     }
 
+    #[allow(unused)]
     /// This function runs the following algorithm to decide whether or not to submit a transaction
     /// to consensus.
     ///
@@ -658,7 +661,7 @@ impl ConsensusAdapter {
 
                 loop {
                     // Submit the transaction to consensus and return the submit result with a status waiter
-                    let status_waiter = self
+                    let (_consensus_positions, status_waiter) = self
                         .submit_inner(
                             &transactions,
                             epoch_store,
@@ -696,7 +699,8 @@ impl ConsensusAdapter {
                         }
                         Err(err) => {
                             warn!(
-                                "Error while waiting for status from consensus for transactions {transaction_keys:?}, with error {:?}. Will be retried.", err
+                                "Error while waiting for status from consensus for transactions {transaction_keys:?}, with error {:?}. Will be retried.",
+                                err
                             );
                             time::sleep(RETRY_DELAY_STEP).await;
                             continue;
@@ -774,11 +778,11 @@ impl ConsensusAdapter {
         transaction_keys: &[SequencedConsensusTransactionKey],
         tx_type: &str,
         is_soft_bundle: bool,
-    ) -> BlockStatusReceiver {
+    ) -> (Vec<ConsensusPosition>, BlockStatusReceiver) {
         let ack_start = Instant::now();
         let mut retries: u32 = 0;
 
-        let status_waiter = loop {
+        let (consensus_positions, status_waiter) = loop {
             match self
                 .consensus_client
                 .submit(transactions, epoch_store)
@@ -800,8 +804,8 @@ impl ConsensusAdapter {
 
                     time::sleep(Duration::from_secs(10)).await;
                 }
-                Ok(status_waiter) => {
-                    break status_waiter;
+                Ok((consensus_positions, status_waiter)) => {
+                    break (consensus_positions, status_waiter);
                 }
             }
         };
@@ -822,7 +826,7 @@ impl ConsensusAdapter {
             .with_label_values(&[&bucket, tx_type])
             .observe(ack_start.elapsed().as_secs_f64());
 
-        status_waiter
+        (consensus_positions, status_waiter)
     }
 
     /// Waits for transactions to appear either to consensus output or been executed via a checkpoint (state sync).
@@ -860,7 +864,7 @@ impl ConsensusAdapter {
                     processed = epoch_store.consensus_messages_processed_notify(vec![transaction_key]) => {
                         processed.expect("Storage error when waiting for consensus message processed");
                         self.metrics.sequencing_certificate_processed.with_label_values(&["consensus"]).inc();
-                        return ProcessedMethod::Consensus;
+                        ProcessedMethod::Consensus
                     },
                     // processed = epoch_store.transactions_executed_in_checkpoint_notify(transaction_digests), if !transaction_digests.is_empty() => {
                     //     processed.expect("Storage error when waiting for transaction executed in checkpoint");
@@ -871,7 +875,6 @@ impl ConsensusAdapter {
                     //     self.metrics.sequencing_certificate_processed.with_label_values(&["synced_checkpoint"]).inc();
                     // }
                 }
-                ProcessedMethod::Checkpoint
             });
         }
 
@@ -907,15 +910,14 @@ impl CheckConnection for ConnectionMonitorStatus {
             }
         };
 
-        let res = match self.connection_statuses.try_get(peer_id) {
+        match self.connection_statuses.try_get(peer_id) {
             TryResult::Present(c) => Some(c.value().clone()),
             TryResult::Absent => None,
             TryResult::Locked => {
                 // update is in progress, assume the status is still or becoming disconnected
                 Some(ConnectionStatus::Disconnected)
             }
-        };
-        res
+        }
     }
     fn update_mapping_for_epoch(
         &self,
@@ -1030,7 +1032,7 @@ impl<'a> InflightDropGuard<'a> {
     }
 }
 
-impl<'a> Drop for InflightDropGuard<'a> {
+impl Drop for InflightDropGuard<'_> {
     fn drop(&mut self) {
         self.adapter
             .num_inflight_transactions
@@ -1085,7 +1087,11 @@ impl<'a> Drop for InflightDropGuard<'a> {
             // TODO: refactor tx_type to enum.
             let sampled = matches!(
                 self.tx_type,
-                "shared_certificate" | "owned_certificate" | "checkpoint_signature" | "soft_bundle"
+                "shared_certificate"
+                    | "owned_certificate"
+                    | "dwallet_checkpoint_signature"
+                    | "system_checkpoint_signature"
+                    | "soft_bundle"
             );
             // if tx has been processed by checkpoint state sync, then exclude from the latency calculations as this can introduce to misleading results.
             if sampled && self.processed_method == ProcessedMethod::Consensus {

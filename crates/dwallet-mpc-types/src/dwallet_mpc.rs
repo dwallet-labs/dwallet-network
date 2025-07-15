@@ -1,32 +1,6 @@
-use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
-
-// TODO (#650): Rename Move structs
-pub const DWALLET_MPC_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletEvent");
-pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
-pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
-/// There's a wrapper and inner struct to support Move upgradable contracts. Read this doc for further explanations:
-/// https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.
-pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1_inner");
-pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DWalletDKGFirstRoundRequestEvent");
-// TODO (#650): Rename Move structs
-pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DWalletDKGSecondRoundRequestEvent");
-// TODO (#650): Rename Move structs
-pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("ECDSAPresignRequestEvent");
-pub const START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartPresignSecondRoundEvent");
-pub const START_SIGN_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("ECDSASignRequestEvent");
-pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("LockedNextEpochCommitteeEvent");
-pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
-    ident_str!("ValidatorDataForDWalletSecretShare");
-pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DWalletNetworkDKGDecryptionKeyRequestEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
@@ -34,25 +8,8 @@ pub type MPCMessage = Vec<u8>;
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
-/// MPC Public Output for different protocols.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
-)]
-pub enum MPCPublicOutput {
-    ClassGroups(MPCPublicOutputClassGroups),
-}
-
-/// The MPC Public Output for Class Groups based protocols.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
-)]
-pub enum MPCPublicOutputClassGroups {
-    /// Searailized Public Output.
-    V1(Vec<u8>),
-}
-
-/// Alias for an MPC private output.
-pub type MPCPrivateOutput = Vec<u8>;
+/// The MPC Public Output.
+pub type MPCPublicOutput = Vec<u8>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
@@ -82,7 +39,7 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Active,
-    Finished,
+    Completed,
     Failed,
 }
 
@@ -90,7 +47,7 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished => write!(f, "Finished"),
+            MPCSessionStatus::Completed => write!(f, "Completed"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }
@@ -99,34 +56,37 @@ impl fmt::Display for MPCSessionStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub enum NetworkDecryptionKeyPublicOutputType {
     NetworkDkg,
-    Reshare,
+    Reconfiguration,
 }
 
-/// Network decryption key shares for the MPC protocol.
-/// Created for each DKG protocol and modified for each Reshare Protocol.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+/// The public output of the DKG and/or Reconfiguration protocols, which holds the (encrypted) decryption key shares.
+/// Created for each DKG protocol and modified for each Reconfiguration Protocol.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
 
     pub state: NetworkDecryptionKeyPublicOutputType,
-    /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
-    pub latest_public_output: MPCPublicOutput,
+    /// The public output of the `latest` decryption key update (NetworkDKG/Reconfiguration).
+    pub latest_public_output: VersionedNetworkDkgOutput,
 
     /// The public parameters of the decryption key shares,
-    /// updated only after a successful network DKG or Reshare.
-    pub decryption_key_share_public_parameters: Vec<u8>,
+    /// updated only after a successful network DKG or Reconfiguration.
+    pub decryption_key_share_public_parameters:
+        class_groups::Secp256k1DecryptionKeySharePublicParameters,
+
+    pub protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
 
     /// The public output of the `NetworkDKG` process (the first and only one).
     /// On first instance it will be equal to `latest_public_output`.
-    pub network_dkg_output: MPCPublicOutput,
+    pub network_dkg_output: VersionedNetworkDkgOutput,
 }
 
-#[repr(u8)]
+#[repr(u32)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
 pub enum DWalletMPCNetworkKeyScheme {
-    Secp256k1 = 1,
-    Ristretto = 2,
+    Secp256k1 = 0,
+    Ristretto = 1,
 }
 
 // We can't import ika-types here since we import this module in there.
@@ -134,19 +94,94 @@ pub enum DWalletMPCNetworkKeyScheme {
 #[derive(Debug, Error, Clone)]
 pub enum DwalletNetworkMPCError {
     #[error("invalid DWalletMPCNetworkKey value: {0}")]
-    InvalidDWalletMPCNetworkKey(u8),
+    InvalidDWalletMPCNetworkKey(u32),
 }
 
-impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
+impl TryFrom<u32> for DWalletMPCNetworkKeyScheme {
     type Error = DwalletNetworkMPCError;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
-            2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
+            0 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
+            1 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
         }
     }
 }
 
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedDWalletImportedKeyVerificationOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedDwalletDKGFirstRoundPublicOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedDwalletDKGSecondRoundPublicOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedPresignOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedSignOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+pub enum VersionedNetworkDkgOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedDecryptionKeyReconfigurationOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedPublicKeyShareAndProof {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedCentralizedDKGPublicOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedDwalletUserSecretShare {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedUserSignedMessage {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedImportedDWalletPublicOutput {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedImportedSecretShare {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedImportedDwalletOutgoingMessage {
+    V1(MPCPublicOutput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VersionedEncryptedUserShare {
+    V1(MPCPublicOutput),
+}

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 use std::sync::Arc;
 
 pub struct EpochMetrics {
@@ -61,6 +61,8 @@ pub struct EpochMetrics {
     /// to become useful in the network after reconfiguration.
     // TODO: This needs to be reported properly.
     pub epoch_first_checkpoint_created_time_since_epoch_begin_ms: IntGauge,
+
+    pub epoch_first_system_checkpoint_created_time_since_epoch_begin_ms: IntGauge,
 
     /// Buffer stake current in effect for this epoch
     pub effective_buffer_stake: IntGauge,
@@ -146,6 +148,11 @@ impl EpochMetrics {
             epoch_first_checkpoint_created_time_since_epoch_begin_ms: register_int_gauge_with_registry!(
                 "epoch_first_checkpoint_created_time_since_epoch_begin_ms",
                 "Time interval from when the epoch opens at new epoch to the first checkpoint is created locally",
+                registry
+            ).unwrap(),
+            epoch_first_system_checkpoint_created_time_since_epoch_begin_ms: register_int_gauge_with_registry!(
+                "epoch_first_system_checkpoint_created_time_since_epoch_begin_ms",
+                "Time interval from when the epoch opens at new epoch to the first params message is created locally",
                 registry
             ).unwrap(),
             effective_buffer_stake: register_int_gauge_with_registry!(

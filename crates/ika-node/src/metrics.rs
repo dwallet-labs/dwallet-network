@@ -1,69 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-use mysten_common::metrics::{push_metrics, MetricsPushClient};
 use mysten_network::metrics::MetricsCallbackProvider;
 use prometheus::{
-    register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
-    register_int_gauge_vec_with_registry, HistogramVec, IntCounterVec, IntGaugeVec, Registry,
+    HistogramVec, IntCounterVec, IntGaugeVec, Registry, register_histogram_vec_with_registry,
+    register_int_counter_vec_with_registry, register_int_gauge_vec_with_registry,
 };
 
 use ika_network::tonic::Code;
 use std::time::Duration;
-
-use mysten_metrics::RegistryService;
-
-/// Starts a task to periodically push metrics to a configured endpoint if a metrics push endpoint
-/// is configured.
-pub fn start_metrics_push_task(config: &ika_config::NodeConfig, registry: RegistryService) {
-    use fastcrypto::traits::KeyPair;
-    use ika_config::node::MetricsConfig;
-
-    const DEFAULT_METRICS_PUSH_INTERVAL: Duration = Duration::from_secs(60);
-
-    let (interval, url) = match &config.metrics {
-        Some(MetricsConfig {
-            push_interval_seconds,
-            push_url: Some(url),
-        }) => {
-            let interval = push_interval_seconds
-                .map(Duration::from_secs)
-                .unwrap_or(DEFAULT_METRICS_PUSH_INTERVAL);
-            let url = reqwest::Url::parse(url).expect("unable to parse metrics push url");
-            (interval, url)
-        }
-        _ => return,
-    };
-
-    // make a copy so we can make a new client later when we hit errors posting metrics
-    let config_copy = config.clone();
-    let mut client = MetricsPushClient::new(config_copy.network_key_pair().copy());
-
-    tokio::spawn(async move {
-        tracing::info!(push_url =% url, interval =? interval, "Started Metrics Push Service");
-
-        let mut interval = tokio::time::interval(interval);
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-
-        let mut errors = 0;
-        loop {
-            interval.tick().await;
-
-            if let Err(error) = push_metrics(&client, &url, &registry).await {
-                errors += 1;
-                if errors >= 10 {
-                    // If we hit 10 failures in a row, start logging errors.
-                    tracing::error!("unable to push metrics: {error}; new client will be created");
-                } else {
-                    tracing::warn!("unable to push metrics: {error}; new client will be created");
-                }
-                // aggressively recreate our client connection if we hit an error
-                client = MetricsPushClient::new(config_copy.network_key_pair().copy());
-            } else {
-                errors = 0;
-            }
-        }
-    });
-}
 
 pub struct IkaNodeMetrics {
     pub jwk_requests: IntCounterVec,
@@ -247,7 +191,7 @@ ika_counter_2 1"
     async fn get_metrics(port: u16) -> String {
         let client = reqwest::Client::new();
         let response = client
-            .get(format!("http://127.0.0.1:{}/metrics", port))
+            .get(format!("http://127.0.0.1:{port}/metrics"))
             .send()
             .await
             .unwrap();

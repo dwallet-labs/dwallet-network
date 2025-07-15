@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
-use move_binary_format::file_format::AddressIdentifierIndex;
+use include_directory::{Dir, DirEntry, include_directory};
 use move_binary_format::CompiledModule;
+use move_binary_format::file_format::AddressIdentifierIndex;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Formatter;
-use sui_types::{base_types::ObjectID, MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
+use std::path::Path;
+use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID, base_types::ObjectID};
+use tempfile::TempDir;
 
 /// Represents a system package in the framework, that's built from the source code inside
 /// ika-framework.
@@ -37,7 +40,7 @@ impl IkaMovePackage {
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
 
     pub fn bytes(&self) -> &[Vec<u8>] {
@@ -74,7 +77,7 @@ impl IkaMovePackage {
                     if name.as_str() == n && !address_identifiers_map.contains_key(n) {
                         address_identifiers_map
                             .insert(n.clone(), cloned_module.address_identifiers.len() as u16);
-                        module.address_identifiers.push(id.clone().into());
+                        module.address_identifiers.push((*id).into());
                     }
                 }
             }
@@ -113,7 +116,7 @@ impl IkaMovePackage {
         ika_dependencies.extend(self.dependencies.iter());
         for name in self.ika_dependencies.iter() {
             let Some(id) = ika_dependencies_map.get(*name) else {
-                return anyhow::bail!("Missing ika dependency {}", name);
+                unreachable!("Missing ika dependency {}", name);
             };
             ika_dependencies.push(*id);
         }
@@ -133,7 +136,7 @@ impl std::fmt::Debug for IkaMovePackage {
 }
 
 macro_rules! define_system_packages {
-    ([$(($name:expr, $path:expr, $deps:expr, $ika_deps:expr)),* $(,)?]) => {{
+    ([$(($name:expr_2021, $path:expr_2021, $deps:expr_2021, $ika_deps:expr_2021)),* $(,)?]) => {{
         static PACKAGES: Lazy<Vec<IkaMovePackage>> = Lazy::new(|| {
             vec![
                 $(IkaMovePackage::new(
@@ -163,10 +166,22 @@ impl BuiltInIkaMovePackages {
                 []
             ),
             (
+                "ika_common",
+                "ika_common",
+                [MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID],
+                []
+            ),
+            (
                 "ika_system",
                 "ika_system",
                 [MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID],
-                ["ika"]
+                ["ika", "ika_common"]
+            ),
+            (
+                "ika_dwallet_2pc_mpc",
+                "ika_dwallet_2pc_mpc",
+                [MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID],
+                ["ika", "ika_common", "ika_system"]
             ),
         ])
         .iter()
@@ -186,3 +201,31 @@ impl BuiltInIkaMovePackages {
 }
 
 pub const DEFAULT_IKA_MOVE_PACKAGES_PATH: &str = env!("CARGO_MANIFEST_DIR");
+
+static CONTRACTS_DIR: Dir<'_> = include_directory!("$CARGO_MANIFEST_DIR/packages");
+
+pub fn save_contracts_to_temp_dir() -> anyhow::Result<TempDir> {
+    let temp_dir =
+        tempfile::tempdir().map_err(|e| anyhow::anyhow!("Failed to create temp dir: {}", e))?;
+    let path = temp_dir.path();
+    save_dir_entries(path, CONTRACTS_DIR.entries())?;
+    Ok(temp_dir)
+}
+
+fn save_dir_entries<'a>(path: &Path, dir_entries: &'a [DirEntry<'a>]) -> anyhow::Result<()> {
+    for dir_entry in dir_entries {
+        match dir_entry {
+            DirEntry::Dir(dir) => {
+                save_dir_entries(path, dir.entries())?;
+            }
+            DirEntry::File(file) => {
+                let file_path = path.join(file.path());
+                std::fs::create_dir_all(Path::new(&file_path).parent().unwrap())
+                    .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
+                std::fs::write(file_path, file.contents())
+                    .map_err(|e| anyhow::anyhow!("Failed to write file: {}", e))?;
+            }
+        }
+    }
+    Ok(())
+}

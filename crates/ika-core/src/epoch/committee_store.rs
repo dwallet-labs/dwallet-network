@@ -8,9 +8,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ObjectID;
-use typed_store::rocks::{default_db_options, DBMap, DBOptions, MetricConf};
+use typed_store::rocks::{DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
-use typed_store::traits::{TableSummary, TypedStoreDebug};
 
 use typed_store::DBMapUtils;
 use typed_store::Map;
@@ -35,29 +34,24 @@ fn committee_table_default_config() -> DBOptions {
 }
 
 impl CommitteeStore {
-    pub fn new(path: PathBuf, genesis_committee: &Committee, db_options: Option<Options>) -> Self {
+    pub fn new(path: PathBuf, db_options: Option<Options>) -> Self {
         let tables = CommitteeStoreTables::open_tables_read_write(
             path,
             MetricConf::new("committee"),
             db_options,
             None,
         );
-        let store = Self {
+
+        Self {
             tables,
             cache: RwLock::new(HashMap::new()),
-        };
-        if store.database_is_empty() {
-            store
-                .init_genesis_committee(genesis_committee.clone())
-                .expect("Init genesis committee data must not fail");
         }
-        store
     }
 
-    pub fn new_for_testing(genesis_committee: &Committee) -> Self {
+    pub fn new_for_testing(_genesis_committee: &Committee) -> Self {
         let dir = std::env::temp_dir();
         let path = dir.join(format!("DB_{:?}", nondeterministic!(ObjectID::random())));
-        Self::new(path, genesis_committee, None)
+        Self::new(path, None)
     }
 
     pub fn init_genesis_committee(&self, genesis_committee: Committee) -> IkaResult {
@@ -95,16 +89,17 @@ impl CommitteeStore {
     }
 
     // todo - make use of cache or remove this method
-    pub fn get_latest_committee(&self) -> Committee {
-        self.tables
+    pub fn get_latest_committee(&self) -> IkaResult<Committee> {
+        Ok(self
+            .tables
             .committee_map
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             // unwrap safe because we guarantee there is at least a genesis epoch
             // when initializing the store.
             .unwrap()
-            .1
+            .1)
     }
     /// Return the committee specified by `epoch`. If `epoch` is `None`, return the latest committee.
     // todo - make use of cache or remove this method
@@ -114,7 +109,7 @@ impl CommitteeStore {
                 .get_committee(&epoch)?
                 .ok_or(IkaError::MissingCommitteeAtEpoch(epoch))
                 .map(|c| Committee::clone(&*c))?,
-            None => self.get_latest_committee(),
+            None => self.get_latest_committee()?,
         })
     }
 
@@ -125,7 +120,9 @@ impl CommitteeStore {
             .map_err(Into::into)
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     fn database_is_empty(&self) -> bool {
-        self.tables.committee_map.unbounded_iter().next().is_none()
+        self.tables.committee_map.safe_iter().next().is_none()
     }
 }

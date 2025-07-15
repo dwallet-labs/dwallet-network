@@ -1,53 +1,132 @@
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
+import type { TransactionResult } from '@mysten/sui/dist/cjs/transactions/Transaction';
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
-	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
+	createSessionIdentifier,
+	DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	getObjectWithType,
 	isActiveDWallet,
 	isDWalletCap,
 	isPresign,
-	isStartSessionEvent,
-	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config } from './globals.ts';
 
+// noinspection JSUnusedGlobalSymbols
 export enum Hash {
 	KECCAK256 = 0,
 	SHA256 = 1,
 }
 
-interface CompletedSignEvent {
-	session_id: string;
-	sign_id: string;
-	signature: Uint8Array;
-	is_future_sign: boolean;
+interface ReadySignObject {
+	id: { id: string };
+	state: {
+		fields: {
+			signature: Uint8Array;
+		};
+	};
 }
 
-interface CompletedFutureSignEvent {
-	session_id: string;
-	dwallet_id: string;
-	partial_centralized_signed_message_id: string;
+interface StartSignEvent {
+	event_data: {
+		sign_id: string;
+	};
 }
 
-function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
-	return (
-		obj && 'session_id' in obj && 'sign_id' in obj && 'signature' in obj && 'is_future_sign' in obj
-	);
+interface StartFutureSignEvent {
+	event_data: {
+		partial_centralized_signed_message_id: string;
+	};
 }
 
-function isCompletedFutureSignEvent(obj: any): obj is CompletedFutureSignEvent {
-	return (
-		obj &&
-		'session_id' in obj &&
-		'dwallet_id' in obj &&
-		'partial_centralized_signed_message_id' in obj
-	);
+interface VerifiedPartialUserSignature {
+	state: {
+		variant: 'NetworkVerificationCompleted';
+	};
+	cap_id: string;
+}
+
+async function call_mpc_sign_tx(tx: Transaction, emptyIKACoin: TransactionResult, conf: Config) {
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	const startSessionEvent = result.events?.at(1)?.parsedJson;
+	if (!isStartSignEvent(startSessionEvent)) {
+		throw new Error('invalid start session event');
+	}
+	return await getObjectWithType(conf, startSessionEvent.event_data.sign_id, isReadySignObject);
+}
+
+function createEmptyIKACoin(tx: Transaction, conf: Config) {
+	return tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::zero`,
+		arguments: [],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+}
+
+async function approveMessageTX(
+	conf: Config,
+	dwalletCapID: string,
+	hash: Hash,
+	message: Uint8Array,
+	tx: Transaction = new Transaction(),
+) {
+	const dWalletStateData = await getDWalletSecpState(conf);
+	const messageApproval = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::approve_message`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dWalletStateData.object_id,
+				initialSharedVersion: dWalletStateData.initial_shared_version,
+				mutable: true,
+			}),
+			tx.object(dwalletCapID),
+			tx.pure.u32(0),
+			tx.pure(bcs.u32().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
+		],
+	});
+	return { dWalletStateData, tx, messageApproval };
+}
+
+async function approveImportedDWalletMessageTX(
+	conf: Config,
+	dwalletCapID: string,
+	hash: Hash,
+	message: Uint8Array,
+	tx: Transaction = new Transaction(),
+) {
+	const dWalletStateData = await getDWalletSecpState(conf);
+	const messageApproval = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::approve_imported_key_message`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dWalletStateData.object_id,
+				initialSharedVersion: dWalletStateData.initial_shared_version,
+				mutable: true,
+			}),
+			tx.object(dwalletCapID),
+			tx.pure.u32(0),
+			tx.pure(bcs.u32().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
+		],
+	});
+	return { dWalletStateData, tx, messageApproval };
 }
 
 export async function sign(
@@ -58,7 +137,68 @@ export async function sign(
 	secretKey: Uint8Array,
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
-): Promise<CompletedSignEvent> {
+): Promise<ReadySignObject> {
+	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
+	const dwalletID = dwalletCap.dwallet_id;
+	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
+	const presign = await getObjectWithType(conf, presignID, isPresign);
+
+	console.time('create_sign_centralized_output');
+	const centralizedSignedMessage = create_sign_centralized_output(
+		networkDecryptionKeyPublicOutput,
+		activeDWallet.state.fields.public_output,
+		secretKey,
+		presign.state.fields.presign,
+		message,
+		hash,
+	);
+	console.timeEnd('create_sign_centralized_output');
+
+	const { dWalletStateData, tx, messageApproval } = await approveMessageTX(
+		conf,
+		dwalletCapID,
+		hash,
+		message,
+	);
+	const emptyIKACoin = createEmptyIKACoin(tx, conf);
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	const [verifiedPresignCap] = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
+		arguments: [dwalletStateArg, tx.object(presign.cap_id)],
+	});
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
+	);
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign`,
+		arguments: [
+			dwalletStateArg,
+			verifiedPresignCap,
+			messageApproval,
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			sessionIdentifier,
+			emptyIKACoin,
+			tx.gas,
+		],
+	});
+	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
+}
+
+export async function signWithImportedDWallet(
+	conf: Config,
+	presignID: string,
+	dwalletCapID: string,
+	message: Uint8Array,
+	secretKey: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
+	hash = Hash.KECCAK256,
+): Promise<ReadySignObject> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
@@ -66,31 +206,22 @@ export async function sign(
 
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,
 		message,
 		hash,
 	);
-	const dWalletStateData = await getDWalletSecpState(conf);
-	const tx = new Transaction();
-	const messageApproval = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::approve_message`,
-		arguments: [
-			tx.object(dwalletCapID),
-			tx.pure(bcs.u8().serialize(hash.valueOf())),
-			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
-		],
-	});
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	const { dWalletStateData, tx, messageApproval } = await approveImportedDWalletMessageTX(
+		conf,
+		dwalletCapID,
+		hash,
+		message,
+	);
+	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 
-	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_sign`,
+	const [verifiedPresignCap] = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -98,39 +229,53 @@ export async function sign(
 				mutable: true,
 			}),
 			tx.object(presign.cap_id),
+		],
+	});
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
+	);
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_sign`,
+		arguments: [
+			dwalletStateArg,
+			verifiedPresignCap,
 			messageApproval,
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
 	});
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
-		throw new Error('invalid start session event');
-	}
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
-	return await fetchCompletedEvent(
-		conf,
-		startSessionEvent.session_id,
-		isCompletedSignEvent,
-		completedSignEventType,
+	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
+}
+
+function isReadySignObject(obj: any): obj is ReadySignObject {
+	return (
+		obj?.state !== undefined &&
+		obj.state.fields !== undefined &&
+		obj.state.fields.signature !== undefined
 	);
 }
 
-export async function createUnverifiedECDSAPartialUserSignatureCap(
+function isStartSignEvent(event: any): event is StartSignEvent {
+	return event.event_data !== undefined && event.event_data.sign_id !== undefined;
+}
+
+function isStartFutureSignEvent(event: any): event is StartFutureSignEvent {
+	return (
+		event.event_data !== undefined &&
+		event.event_data.partial_centralized_signed_message_id !== undefined
+	);
+}
+
+export async function createUnverifiedPartialUserSignatureCap(
 	conf: Config,
 	presignID: string,
 	dwalletCapID: string,
@@ -148,7 +293,6 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,
@@ -162,26 +306,38 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 
-	const [unverifiedECDSAPartialUserSignatureCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_future_sign`,
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+
+	const [verifiedPresignCap] = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
+		arguments: [dwalletStateArg, tx.object(presign.cap_id)],
+	});
+
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
+	);
+
+	const [unverifiedPartialUserSignatureCap] = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_future_sign`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
-			tx.object(presign.cap_id),
+			dwalletStateArg,
+			tx.pure.id(dwalletID),
+			verifiedPresignCap,
 			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
-			tx.pure(bcs.u8().serialize(hash.valueOf())),
+			tx.pure(bcs.u32().serialize(hash.valueOf())),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
 	});
-	tx.transferObjects(
-		[unverifiedECDSAPartialUserSignatureCap],
-		conf.suiClientKeypair.toSuiAddress(),
-	);
+	tx.transferObjects([unverifiedPartialUserSignatureCap], conf.suiClientKeypair.toSuiAddress());
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],
@@ -196,55 +352,47 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 			showObjectChanges: true,
 		},
 	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
+	const startSessionEvent = result.events?.at(1)?.parsedJson;
+	if (!isStartFutureSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
 
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAFutureSignEvent`;
-	await fetchCompletedEvent(
+	const partialSignature = await getObjectWithType(
 		conf,
-		startSessionEvent.session_id,
-		isCompletedFutureSignEvent,
-		completedSignEventType,
+		startSessionEvent.event_data.partial_centralized_signed_message_id,
+		isVerifiedPartialUserSignature,
 	);
-
-	const objects = result.objectChanges!;
-	if (!objects) {
-		throw new Error('no objects created during request_ecdsa_future_sign call');
-	}
-	for (const obj of objects) {
-		if (
-			obj &&
-			'objectType' in obj &&
-			obj.objectType! ===
-				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::UnverifiedECDSAPartialUserSignatureCap`
-		) {
-			return obj.objectId;
-		}
-	}
-	throw new Error('no unverified object created');
+	return partialSignature.cap_id;
 }
 
-export async function verifyECFSASignWithPartialUserSignatures(
+function isVerifiedPartialUserSignature(obj: any): obj is VerifiedPartialUserSignature {
+	return (
+		obj &&
+		'state' in obj &&
+		'variant' in obj.state &&
+		obj.state.variant === 'NetworkVerificationCompleted'
+	);
+}
+
+export async function verifySignWithPartialUserSignatures(
 	conf: Config,
-	unverifiedECDSAPartialUserSignatureCapID: string,
+	unverifiedPartialUserSignatureCapID: string,
 ): Promise<string> {
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 
-	const [verifiedECDSAPartialUserSignatureCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verify_ecdsa_partial_user_signature_cap`,
+	const [verifiedPartialUserSignatureCap] = tx.moveCall({
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_partial_user_signature_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
 				initialSharedVersion: dWalletStateData.initial_shared_version,
 				mutable: true,
 			}),
-			tx.object(unverifiedECDSAPartialUserSignatureCapID),
+			tx.object(unverifiedPartialUserSignatureCapID),
 		],
 	});
-	tx.transferObjects([verifiedECDSAPartialUserSignatureCap], conf.suiClientKeypair.toSuiAddress());
+	tx.transferObjects([verifiedPartialUserSignatureCap], conf.suiClientKeypair.toSuiAddress());
 
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
@@ -257,14 +405,14 @@ export async function verifyECFSASignWithPartialUserSignatures(
 	});
 	const objects = result.objectChanges!;
 	if (!objects) {
-		throw new Error('no objects created during verify_ecdsa_partial_user_signature_cap call');
+		throw new Error('no objects created during verify_partial_user_signature_cap call');
 	}
 	for (const obj of objects) {
 		if (
 			obj &&
 			'objectType' in obj &&
 			obj.objectType! ===
-				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::VerifiedECDSAPartialUserSignatureCap`
+				`${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME}::VerifiedPartialUserSignatureCap`
 		) {
 			return obj.objectId;
 		}
@@ -277,61 +425,38 @@ export async function completeFutureSign(
 	dwalletCapID: string,
 	message: Uint8Array,
 	hash = Hash.KECCAK256,
-	verifyECDSAPartialUserSignatureCapID: string,
-): Promise<CompletedSignEvent> {
-	const dWalletStateData = await getDWalletSecpState(conf);
-	const tx = new Transaction();
+	verifyPartialUserSignatureCapID: string,
+): Promise<ReadySignObject> {
+	const { dWalletStateData, tx, messageApproval } = await approveMessageTX(
+		conf,
+		dwalletCapID,
+		hash,
+		message,
+	);
+	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 
-	const messageApproval = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::approve_message`,
-		arguments: [
-			tx.object(dwalletCapID),
-			tx.pure(bcs.u8().serialize(hash.valueOf())),
-			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
-		],
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
 	});
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
+	);
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_sign_with_partial_user_signatures`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign_with_partial_user_signature`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
-			tx.object(verifyECDSAPartialUserSignatureCapID),
+			dwalletStateArg,
+			tx.object(verifyPartialUserSignatureCapID),
 			messageApproval,
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
 	});
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
-		throw new Error('invalid start session event');
-	}
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
-	return await fetchCompletedEvent(
-		conf,
-		startSessionEvent.session_id,
-		isCompletedSignEvent,
-		completedSignEventType,
-	);
+	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
 }

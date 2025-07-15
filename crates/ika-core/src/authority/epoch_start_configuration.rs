@@ -5,7 +5,6 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use ika_types::error::IkaResult;
-use ika_types::messages_checkpoint::CheckpointTimestamp;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 
 #[enum_dispatch]
@@ -29,16 +28,13 @@ impl EpochStartConfiguration {
         // We only need to implement this function for the latest version.
         // When a new version is introduced, this function should be updated.
         match self {
-            Self::V1(config) => {
-                Self::V1(EpochStartConfigurationV1 {
-                    system_state: config.system_state.new_at_next_epoch_for_testing(),
-                })
-            }
-            _ => panic!("This function is only implemented for the latest version of EpochStartConfiguration"),
+            Self::V1(config) => Self::V1(EpochStartConfigurationV1 {
+                system_state: config.system_state.new_at_next_epoch_for_testing(),
+            }),
         }
     }
 
-    pub fn epoch_start_timestamp_ms(&self) -> CheckpointTimestamp {
+    pub fn epoch_start_timestamp_ms(&self) -> u64 {
         self.epoch_start_state().epoch_start_timestamp_ms()
     }
 }

@@ -1,13 +1,13 @@
 [package]
 name = "dwallet-mpc-centralized-party"
-edition = "2021"
+edition = "2024"
 version.workspace = true
 
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "4a497815", subdir = "commitment" }
-shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "ed85dfa" }
+message-digest = { path = "../message-digest" }
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true
@@ -15,10 +15,14 @@ dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
-rand_core = "0.6.4"
-rand_chacha = "0.3.1"
-serde = { version = "1.0.217", features = ["derive"] }
+rand_core = { version = "0.9", default-features = false }
+rand_chacha = { version = "0.9", default-features = false }
+getrandom = { version = "0.2.16", features = ["js"], optional = true } # TODO: idk why, but we need this, also this is old version
+serde = { version = "1.0", features = ["derive"] }
 crypto-bigint.workspace = true
+
+[features]
+wasm_js = ["group/wasm_js", "dep:getrandom"]
 
 [lints]
 workspace = true

@@ -1,20 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::anyhow;
 use anyhow::Result;
 use ika_config::NodeConfig;
 use ika_node::IkaNodeHandle;
 use ika_types::crypto::AuthorityName;
-use ika_types::crypto::KeypairTraits;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use sui_types::base_types::ConciseableName;
-use tap::TapFallible;
-use tracing::{error, info};
+use tracing::info;
 
 use super::container::Container;
 
+#[allow(dead_code)]
 pub const IKA_VALIDATOR_SERVER_NAME: &str = "ika";
 
 /// A handle to an in-memory Ika Node.
@@ -80,7 +78,7 @@ impl Node {
             .lock()
             .unwrap()
             .as_ref()
-            .map_or(false, |c| c.is_alive())
+            .is_some_and(|c| c.is_alive())
     }
 
     pub fn get_node_handle(&self) -> Option<IkaNodeHandle> {
@@ -94,7 +92,7 @@ impl Node {
     /// Perform a health check on this Node by:
     /// * Checking that the node is running
     /// * Calling the Node's gRPC Health service if it's a validator.
-    pub async fn health_check(&self, is_validator: bool) -> Result<(), HealthCheckError> {
+    pub async fn health_check(&self, _is_validator: bool) -> Result<(), HealthCheckError> {
         {
             let lock = self.container.lock().unwrap();
             let container = lock.as_ref().ok_or(HealthCheckError::NotRunning)?;
@@ -142,7 +140,7 @@ pub enum HealthCheckError {
 
 impl std::fmt::Display for HealthCheckError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -162,7 +160,7 @@ mod test {
     #[tokio::test]
     async fn start_and_stop() {
         telemetry_subscribers::init_for_testing();
-        let swarm = Swarm::builder().build();
+        let swarm = Swarm::builder().build().await.unwrap();
 
         let validator = swarm.validator_nodes().next().unwrap();
 

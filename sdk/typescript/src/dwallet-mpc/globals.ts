@@ -1,10 +1,14 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import * as fs from 'node:fs';
+import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { Transaction } from '@mysten/sui/transactions';
+import sha3 from 'js-sha3';
 
-export const DWALLET_ECDSA_K1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-export const DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
+export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'coordinator';
+export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'coordinator_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
@@ -12,8 +16,11 @@ export const checkpointCreationTime = 2000;
 
 interface IkaConfig {
 	ika_package_id: string;
+	ika_common_package_id: string;
+	ika_dwallet_2pc_mpc_package_id: string;
 	ika_system_package_id: string;
 	ika_system_object_id: string;
+	ika_dwallet_coordinator_object_id: string;
 }
 
 export interface Config {
@@ -25,9 +32,10 @@ export interface Config {
 	dWalletSeed: Uint8Array;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum MPCKeyScheme {
-	Secp256k1 = 1,
-	Ristretto = 2,
+	Secp256k1 = 0,
+	Ristretto = 1,
 }
 
 /**
@@ -61,29 +69,49 @@ export async function getObjectWithType<TObject>(
 	objectID: string,
 	isObject: (obj: any) => obj is TObject,
 ): Promise<TObject> {
-	const obj = await conf.client.getObject({
-		id: objectID,
-		options: { showContent: true },
-	});
-	if (!isMoveObject(obj.data?.content)) {
-		throw new Error('Invalid object');
+	const startTime = Date.now();
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		const interval = 500;
+		await delay(interval);
+		const res = await conf.client.getObject({
+			id: objectID,
+			options: { showContent: true },
+		});
+
+		const objectData =
+			res.data?.content?.dataType === 'moveObject' && isObject(res.data.content.fields)
+				? (res.data.content.fields as TObject)
+				: null;
+
+		if (objectData) {
+			return objectData;
+		}
 	}
-	const objContent = obj.data?.content.fields;
-	if (!isObject(objContent)) {
-		throw new Error('Invalid object fields');
-	}
-	return objContent;
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 /**
- * Represents the Move `SystemInnerV1` struct.
+ * Represents the Move `coordinatorInner` struct.
  */
-interface IKASystemStateInner {
+interface CoordinatorInner {
 	fields: {
 		value: {
 			fields: {
-				dwallet_2pc_mpc_secp256k1_id: string;
-				dwallet_2pc_mpc_secp256k1_network_decryption_keys: Array<any>;
+				dwallet_network_encryption_keys: {
+					fields: {
+						id: {
+							id: string;
+						};
+						size: number;
+					};
+				};
+				current_epoch: number;
 			};
 		};
 	};
@@ -106,13 +134,6 @@ interface SharedObjectOwner {
 	};
 }
 
-/**
- * Represents a Move Address object owner.
- */
-interface AddressObjectOwner {
-	AddressOwner: string;
-}
-
 interface MoveObject {
 	fields: any;
 }
@@ -124,13 +145,10 @@ interface MoveDynamicField {
 	};
 }
 
+// todo(zeev): fix this
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
-}
-
-export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
-	return obj?.AddressOwner !== undefined;
 }
 
 export function isMoveObject(obj: any): obj is MoveObject {
@@ -141,33 +159,15 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 	return obj?.fields.name !== undefined || obj?.fields.value !== undefined;
 }
 
-export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
-	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
-}
-
-export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
+export function isCoordinatorInner(obj: any): obj is CoordinatorInner {
 	return (
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
+		obj?.fields?.value?.fields?.dwallet_network_encryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.current_epoch !== undefined
 	);
 }
 
 export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDecryptionKey {
 	return obj?.fields?.network_dkg_public_output !== undefined;
-}
-
-export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
-	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_object_id,
-	});
-	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_object_id,
-		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-	});
-	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
-		throw new Error('Invalid inner system state');
-	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
 }
 
 export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
@@ -188,89 +188,16 @@ export async function getInitialSharedVersion(c: Config, objectID: string): Prom
 	return owner.Shared?.initial_shared_version;
 }
 
+// todo(zeev): fix naming and fix the types.
 export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> {
-	const dwalletSecp256k1ObjID = await getDwalletSecp256k1ObjID(c);
-	const initialSharedVersion = await getInitialSharedVersion(c, dwalletSecp256k1ObjID);
+	const initialSharedVersion = await getInitialSharedVersion(
+		c,
+		c.ikaConfig.ika_dwallet_coordinator_object_id,
+	);
 	return {
-		object_id: dwalletSecp256k1ObjID,
+		object_id: c.ikaConfig.ika_dwallet_coordinator_object_id,
 		initial_shared_version: initialSharedVersion,
 	};
-}
-
-export async function fetchObjectWithType<TObject>(
-	conf: Config,
-	objectType: string,
-	isObject: (obj: any) => obj is TObject,
-	objectId: string,
-) {
-	const res = await conf.client.getObject({
-		id: objectId,
-		options: { showContent: true },
-	});
-
-	const objectData =
-		res.data?.content?.dataType === 'moveObject' &&
-		res.data?.content.type === objectType &&
-		isObject(res.data.content.fields)
-			? (res.data.content.fields as TObject)
-			: null;
-
-	if (!objectData) {
-		throw new Error(
-			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
-		);
-	}
-
-	return objectData;
-}
-
-interface StartSessionEvent {
-	session_id: string;
-}
-
-export function isStartSessionEvent(event: any): event is StartSessionEvent {
-	return event.session_id !== undefined;
-}
-
-export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
-	c: Config,
-	sessionID: string,
-	isEventFn: (parsedJson: any) => parsedJson is TEvent,
-	eventType: string = '',
-): Promise<TEvent> {
-	const startTime = Date.now();
-
-	while (Date.now() - startTime <= c.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		const interval = 500;
-		await delay(interval);
-
-		const { data } = await c.client.queryEvents({
-			query: {
-				TimeRange: {
-					startTime: (Date.now() - interval * 4).toString(),
-					endTime: Date.now().toString(),
-				},
-			},
-			limit: 1000,
-		});
-
-		const match = data.find(
-			(event) =>
-				(event.type === eventType || !eventType) &&
-				isEventFn(event.parsedJson) &&
-				event.parsedJson.session_id === sessionID,
-		);
-
-		if (match) return match.parsedJson as TEvent;
-	}
-
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an event of type ${eventType} within ${
-			c.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
 }
 
 export interface DWalletCap {
@@ -281,12 +208,13 @@ export function isDWalletCap(obj: any): obj is DWalletCap {
 	return !!obj?.dwallet_id;
 }
 
-interface ActiveDWallet {
+export interface ActiveDWallet {
 	state: {
 		fields: {
 			public_output: Uint8Array;
 		};
 	};
+	id: { id: string };
 }
 
 export function isActiveDWallet(obj: any): obj is ActiveDWallet {
@@ -354,33 +282,83 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 	return new Uint8Array(data.flatMap((arr) => Array.from(arr)));
 }
 
-export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
+export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
-	return await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
+	const currentEpoch = await getNetworkCurrentEpochNumber(c);
+	const cachedPP = getCachedPublicParameters(networkDecryptionKeyPublicOutputID, currentEpoch);
+	if (cachedPP) {
+		return cachedPP;
+	}
+	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
+	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
+	await cachePublicParameters(
+		networkDecryptionKeyPublicOutputID,
+		currentEpoch,
+		new Uint8Array(publicParameters),
+	);
+	return publicParameters;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_object_id,
+		parentId: c.ikaConfig.ika_dwallet_coordinator_object_id,
 	});
-	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_object_id,
+	const coordinatorInner = await c.client.getDynamicFieldObject({
+		parentId: c.ikaConfig.ika_dwallet_coordinator_object_id,
 		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
 	});
-	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
-		throw new Error('Invalid inner system state');
+	if (!isCoordinatorInner(coordinatorInner.data?.content)) {
+		throw new Error('Invalid coordinator inner');
 	}
+	const keysDynamicFields = await c.client.getDynamicFields({
+		parentId:
+			coordinatorInner.data?.content.fields.value.fields.dwallet_network_encryption_keys.fields.id
+				.id,
+	});
 
-	const network_decryption_keys =
-		innerSystemState.data.content.fields.value.fields
-			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
-	const decryptionKeyID =
-		network_decryption_keys[network_decryption_keys.length - 1]?.fields
-			?.dwallet_network_decryption_key_id;
+	const decryptionKeyID = keysDynamicFields.data[keysDynamicFields.data.length - 1].name
+		.value as string;
 	if (!decryptionKeyID) {
 		throw new Error('No network decryption key found');
 	}
 	return decryptionKeyID;
+}
+
+export async function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	if (!fs.existsSync(keyDirPath)) {
+		fs.mkdirSync(keyDirPath, { recursive: true });
+	}
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		fs.unlinkSync(filePath);
+	}
+	fs.writeFileSync(filePath, networkKey);
+}
+
+export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		return fs.readFileSync(filePath);
+	}
+	return null;
+}
+
+export async function getNetworkCurrentEpochNumber(c: Config): Promise<number> {
+	const dynamicFields = await c.client.getDynamicFields({
+		parentId: c.ikaConfig.ika_dwallet_coordinator_object_id,
+	});
+	const innerSystemState = await c.client.getDynamicFieldObject({
+		parentId: c.ikaConfig.ika_dwallet_coordinator_object_id,
+		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+	});
+	if (!isCoordinatorInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+	return innerSystemState.data.content.fields.value.fields.current_epoch;
 }
 
 export interface DWallet {
@@ -394,4 +372,70 @@ export interface DWallet {
 export interface EncryptedDWalletData {
 	dwallet_id: string;
 	encrypted_user_secret_key_share_id: string;
+}
+
+export interface SessionIdentifierRegisteredEvent {
+	session_object_id: string;
+	session_identifier_preimage: Uint8Array;
+}
+
+export async function createSessionIdentifier(
+	tx: Transaction,
+	dwalletCoordinatorArg: {
+		$kind: 'Input';
+		Input: number;
+		type?: 'object';
+	},
+	ika_dwallet_2pc_mpc_package_id: string,
+) {
+	const freshObjectAddress = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::tx_context::fresh_object_address`,
+		arguments: [],
+		typeArguments: [],
+	});
+	const freshObjectAddressBytes = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::address::to_bytes`,
+		arguments: [freshObjectAddress],
+		typeArguments: [],
+	});
+	return tx.moveCall({
+		target: `${ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::register_session_identifier`,
+		arguments: [dwalletCoordinatorArg, freshObjectAddressBytes],
+		typeArguments: [],
+	});
+}
+
+function encodeToASCII(input: string): Uint8Array {
+	const asciiValues: number[] = [];
+	for (let i = 0; i < input.length; i++) {
+		asciiValues.push(input.charCodeAt(i));
+	}
+	return Uint8Array.from(asciiValues);
+}
+
+function u64ToBytesBigEndian(value: number | bigint): Uint8Array {
+	// Ensure the input is a BigInt for accurate 64-bit operations
+	const bigIntValue = BigInt(value);
+
+	// Create an 8-byte (64-bit) ArrayBuffer
+	const buffer = new ArrayBuffer(8);
+	// Create a DataView to manipulate the buffer with specific endianness
+	const view = new DataView(buffer);
+
+	// Write the BigInt value as a BigInt64 (signed 64-bit integer)
+	// or BigUint64 (unsigned 64-bit integer) depending on the context.
+	// For u64, use setBigUint64.
+	view.setBigUint64(0, bigIntValue, false); // false for big-endian
+
+	// Return the Uint8Array representation of the buffer
+	return new Uint8Array(buffer);
+}
+
+export function sessionIdentifierDigest(sessionIdentifier: Uint8Array): Uint8Array {
+	const version = 0; // Version of the session identifier
+	// Calculate the user session identifier for digest
+	const data = [...u64ToBytesBigEndian(version), ...encodeToASCII('USER'), ...sessionIdentifier];
+	// Compute the SHA3-256 digest of the serialized data
+	const digest = sha3.keccak256.digest(data);
+	return Uint8Array.from(digest);
 }

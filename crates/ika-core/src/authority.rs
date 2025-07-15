@@ -2,126 +2,54 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::consensus_adapter::ConsensusOverloadChecker;
-use anyhow::anyhow;
 use arc_swap::{ArcSwap, Guard};
-use async_trait::async_trait;
-use authority_per_epoch_store::CertLockGuard;
 use chrono::prelude::*;
-use fastcrypto::encoding::Base58;
-use fastcrypto::encoding::Encoding;
-use fastcrypto::hash::MultisetHash;
 use ika_config::NodeConfig;
 use ika_types::messages_consensus::{AuthorityCapabilitiesV1, MovePackageDigest};
 use itertools::Itertools;
-use move_binary_format::binary_config::BinaryConfig;
-use move_binary_format::CompiledModule;
-use move_core_types::annotated_value::MoveStructLayout;
-use move_core_types::language_storage::ModuleId;
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
 use prometheus::{
+    Histogram, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Registry,
     register_histogram_vec_with_registry, register_histogram_with_registry,
     register_int_counter_vec_with_registry, register_int_counter_with_registry,
-    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, Histogram,
-    HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Registry,
+    register_int_gauge_vec_with_registry, register_int_gauge_with_registry,
 };
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
+use std::path::PathBuf;
 use std::time::Duration;
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    pin::Pin,
-    sync::Arc,
-    vec,
-};
-use sui_types::crypto::RandomnessRound;
-use sui_types::dynamic_field::visitor as DFV;
-use sui_types::execution_status::ExecutionStatus;
-use sui_types::inner_temporary_store::PackageStoreWithFallback;
-use sui_types::layout_resolver::into_struct_layout;
-use sui_types::layout_resolver::LayoutResolver;
-use sui_types::object::bounded_visitor::BoundedVisitor;
-use sui_types::transaction_executor::SimulateTransactionResult;
-use tap::{TapFallible, TapOptional};
-use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::{mpsc, oneshot, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{pin::Pin, sync::Arc, vec};
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use tokio::task::JoinHandle;
-use tracing::{debug, error, info, instrument, warn};
-
-use mysten_metrics::{monitored_scope, spawn_monitored_task};
-
-use once_cell::sync::OnceCell;
-use shared_crypto::intent::{AppId, Intent, IntentMessage, IntentScope, IntentVersion};
+use tracing::{error, info, instrument, warn};
 
 use ika_types::committee::EpochId;
 use ika_types::committee::ProtocolVersion;
-use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::{
-    CertifiedCheckpointMessage, CheckpointContentsDigest, CheckpointMessage,
-    CheckpointSequenceNumber, CheckpointTimestamp, VerifiedCheckpointMessage,
-};
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use ika_types::sui::SystemInner;
-use ika_types::sui::SystemInnerTrait;
 use ika_types::supported_protocol_versions::{ProtocolConfig, SupportedProtocolVersions};
-use sui_macros::{fail_point, fail_point_async, fail_point_if};
-use sui_types::authenticator_state::get_authenticator_state;
-use sui_types::crypto::{default_hash, AuthoritySignInfo, Signer};
-use sui_types::deny_list_v1::check_coin_deny_list_v1;
-use sui_types::digests::ChainIdentifier;
-use sui_types::digests::TransactionEventsDigest;
-use sui_types::dynamic_field::{DynamicFieldInfo, DynamicFieldName};
-use sui_types::effects::{
-    InputSharedObject, SignedTransactionEffects, TransactionEffects, TransactionEffectsAPI,
-    TransactionEvents, VerifiedSignedTransactionEffects,
-};
-use sui_types::error::{ExecutionError, UserInputError};
-use sui_types::event::{Event, EventID};
+use sui_macros::fail_point;
+use sui_types::crypto::Signer;
 use sui_types::executable_transaction::VerifiedExecutableTransaction;
-use sui_types::inner_temporary_store::{
-    InnerTemporaryStore, ObjectMap, TemporaryModuleResolver, TxCoins, WrittenObjects,
-};
-use sui_types::messages_grpc::{
-    HandleTransactionResponse, LayoutGenerationOption, ObjectInfoRequest, ObjectInfoRequestKind,
-    ObjectInfoResponse, TransactionInfoRequest, TransactionInfoResponse, TransactionStatus,
-};
 use sui_types::metrics::{BytecodeVerifierMetrics, LimitsMetrics};
-use sui_types::object::{MoveObject, Owner, PastObjectRead, OBJECT_START_VERSION};
-use sui_types::storage::{
-    BackingPackageStore, BackingStore, ObjectKey, ObjectOrTombstone, ObjectStore, WriteKind,
-};
 
-use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, CertTxGuard};
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
-use crate::checkpoints::CheckpointStore;
 use crate::epoch::committee_store::CommitteeStore;
 use ika_config::node::AuthorityOverloadConfig;
-use ika_types::message::*;
 use ika_types::{
     committee::Committee,
     crypto::{AuthorityName, AuthoritySignature},
     error::{IkaError, IkaResult},
 };
-use sui_types::{
-    base_types::*,
-    object::{Object, ObjectRead},
-};
-use typed_store::TypedStoreError;
+use sui_types::base_types::*;
 
 use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::stake_aggregator::StakeAggregator;
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 
@@ -130,6 +58,7 @@ pub mod authority_per_epoch_store;
 pub mod authority_perpetual_tables;
 pub mod epoch_start_configuration;
 
+#[allow(unused)]
 /// Prometheus metrics which can be displayed in Grafana, queried and alerted on.
 pub struct AuthorityMetrics {
     tx_orders: IntCounter,
@@ -695,6 +624,8 @@ pub struct AuthorityState {
     /// The signature key of the authority.
     pub secret: StableSyncAuthoritySigner,
 
+    // todo(zeev): why is it here?
+    #[allow(dead_code)]
     perpetual_tables: Arc<AuthorityPerpetualTables>,
 
     epoch_store: ArcSwap<AuthorityPerEpochStore>,
@@ -705,7 +636,7 @@ pub struct AuthorityState {
     /// from previous epoch that are executed but did not make into checkpoint.
     execution_lock: RwLock<EpochId>,
 
-    checkpoint_store: Arc<CheckpointStore>,
+    checkpoint_store: Arc<DWalletCheckpointStore>,
     committee_store: Arc<CommitteeStore>,
 
     pub metrics: Arc<AuthorityMetrics>,
@@ -746,6 +677,7 @@ impl AuthorityState {
             .check_system_overload_at_signing
     }
 
+    #[allow(dead_code)]
     fn update_overload_metrics(&self, source: &str) {
         self.metrics
             .transaction_overload_sources
@@ -761,12 +693,11 @@ impl AuthorityState {
         info!("supported versions are: {:?}", supported_protocol_versions);
         if !supported_protocol_versions.is_version_supported(current_version) {
             let msg = format!(
-                "Unsupported protocol version. The network is at {:?}, but this IkaNode only supports: {:?}. Shutting down.",
-                current_version, supported_protocol_versions,
+                "Unsupported protocol version. The network is at {current_version:?}, but this IkaNode only supports: {supported_protocol_versions:?}. Shutting down.",
             );
 
             error!("{}", msg);
-            eprintln!("{}", msg);
+            eprintln!("{msg}");
 
             #[cfg(not(msim))]
             std::process::exit(1);
@@ -784,7 +715,7 @@ impl AuthorityState {
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         committee_store: Arc<CommitteeStore>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         prometheus_registry: &Registry,
         config: NodeConfig,
     ) -> Arc<Self> {
@@ -793,7 +724,8 @@ impl AuthorityState {
         let metrics = Arc::new(AuthorityMetrics::new(prometheus_registry));
 
         let epoch = epoch_store.epoch();
-        let state = Arc::new(AuthorityState {
+
+        Arc::new(AuthorityState {
             name,
             secret,
             perpetual_tables,
@@ -803,9 +735,7 @@ impl AuthorityState {
             committee_store,
             metrics,
             config,
-        });
-
-        state
+        })
     }
 
     /// Attempts to acquire execution lock for an executable transaction.
@@ -845,7 +775,6 @@ impl AuthorityState {
         supported_protocol_versions: SupportedProtocolVersions,
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> IkaResult<Arc<AuthorityPerEpochStore>> {
         Self::check_protocol_version(
             supported_protocol_versions,
@@ -864,12 +793,7 @@ impl AuthorityState {
 
         let new_epoch = new_committee.epoch;
         let new_epoch_store = self
-            .reopen_epoch_db(
-                cur_epoch_store,
-                new_committee,
-                epoch_start_configuration,
-                perpetual_tables,
-            )
+            .reopen_epoch_db(cur_epoch_store, new_committee, epoch_start_configuration)
             .await?;
         assert_eq!(new_epoch_store.epoch(), new_epoch);
         //self.transaction_manager.reconfigure(new_epoch);
@@ -878,29 +802,6 @@ impl AuthorityState {
         // see also assert in AuthorityState::process_certificate
         // on the epoch store and execution lock epoch match
         Ok(new_epoch_store)
-    }
-
-    /// Advance the epoch store to the next epoch for testing only.
-    /// This only manually sets all the places where we have the epoch number.
-    /// It doesn't properly reconfigure the node, hence should be only used for testing.
-    pub async fn reconfigure_for_testing(&self) {
-        let mut execution_lock = self.execution_lock_for_reconfiguration().await;
-        let epoch_store = self.epoch_store_for_testing().clone();
-        let protocol_config = epoch_store.protocol_config().clone();
-        // The current protocol config used in the epoch store may have been overridden and diverged from
-        // the protocol config definitions. That override may have now been dropped when the initial guard was dropped.
-        // We reapply the override before creating the new epoch store, to make sure that
-        // the new epoch store has the same protocol config as the current one.
-        // Since this is for testing only, we mostly like to keep the protocol config the same
-        // across epochs.
-        let _guard =
-            ProtocolConfig::apply_overrides_for_testing(move |_, _| protocol_config.clone());
-        let new_epoch_store = epoch_store.new_at_next_epoch_for_testing();
-        let new_epoch = new_epoch_store.epoch();
-        //self.transaction_manager.reconfigure(new_epoch);
-        self.epoch_store.store(new_epoch_store);
-        epoch_store.epoch_terminated().await;
-        *execution_lock = new_epoch;
     }
 
     pub fn current_epoch_for_testing(&self) -> EpochId {
@@ -925,7 +826,7 @@ impl AuthorityState {
         Committee::clone(self.epoch_store_for_testing().committee())
     }
 
-    pub fn get_checkpoint_store(&self) -> &Arc<CheckpointStore> {
+    pub fn get_checkpoint_store(&self) -> &Arc<DWalletCheckpointStore> {
         &self.checkpoint_store
     }
 
@@ -973,7 +874,7 @@ impl AuthorityState {
     fn is_protocol_version_supported_v1(
         current_protocol_version: ProtocolVersion,
         proposed_protocol_version: ProtocolVersion,
-        protocol_config: &ProtocolConfig,
+        _protocol_config: &ProtocolConfig,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         mut buffer_stake_bps: u64,
@@ -1037,7 +938,7 @@ impl AuthorityState {
                 let f = committee.total_votes() - committee.quorum_threshold();
 
                 // multiple by buffer_stake_bps / 10000, rounded up.
-                let buffer_stake = (f * buffer_stake_bps + 9999) / 10000;
+                let buffer_stake = (f * buffer_stake_bps).div_ceil(10000);
                 let effective_threshold = quorum_threshold + buffer_stake;
 
                 info!(
@@ -1056,7 +957,7 @@ impl AuthorityState {
             })
     }
 
-    fn choose_protocol_version_and_system_packages_v1(
+    pub fn choose_protocol_version_and_system_packages_v1(
         current_protocol_version: ProtocolVersion,
         protocol_config: &ProtocolConfig,
         committee: &Committee,
@@ -1092,7 +993,6 @@ impl AuthorityState {
         cur_epoch_store: &AuthorityPerEpochStore,
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> IkaResult<Arc<AuthorityPerEpochStore>> {
         let new_epoch = new_committee.epoch;
         info!(new_epoch = ?new_epoch, "re-opening AuthorityEpochTables for new epoch");
@@ -1106,8 +1006,7 @@ impl AuthorityState {
             new_committee,
             epoch_start_configuration,
             cur_epoch_store.get_chain_identifier(),
-            perpetual_tables,
-        );
+        )?;
         self.epoch_store.store(new_epoch_store.clone());
         Ok(new_epoch_store)
     }

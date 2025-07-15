@@ -3,8 +3,13 @@
 
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
-use crate::digests::CheckpointMessageDigest;
-use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
+use crate::digests::{DWalletCheckpointMessageDigest, SystemCheckpointMessageDigest};
+use crate::messages_dwallet_checkpoint::{
+    DWalletCheckpointSequenceNumber, VerifiedDWalletCheckpointMessage,
+};
+use crate::messages_system_checkpoints::{
+    SystemCheckpointSequenceNumber, VerifiedSystemCheckpointMessage,
+};
 use std::sync::Arc;
 
 pub trait ReadStore {
@@ -18,54 +23,87 @@ pub trait ReadStore {
     // Checkpoint Getters
     //
 
-    /// Get the latest available checkpoint. This is the latest executed checkpoint.
+    /// Get the latest available dwallet checkpoint. This is the latest executed dwallet checkpoint.
     ///
     /// All transactions, effects, objects and events are guaranteed to be available for the
-    /// returned checkpoint.
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage>;
+    /// returned dwallet checkpoint.
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage>;
 
-    /// Get the latest available checkpoint sequence number. This is the sequence number of the latest executed checkpoint.
-    fn get_latest_checkpoint_sequence_number(&self) -> Result<CheckpointSequenceNumber> {
-        let latest_checkpoint = self.get_latest_checkpoint()?;
-        Ok(*latest_checkpoint.sequence_number())
+    /// Get the latest available dwallet checkpoint sequence number. This is the sequence number of the latest executed dwallet checkpoint.
+    fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
+        let latest_dwallet_checkpoint = self.get_latest_dwallet_checkpoint()?;
+        Ok(*latest_dwallet_checkpoint.sequence_number())
     }
 
-    /// Get the epoch of the latest checkpoint
+    /// Get the epoch of the latest dwallet checkpoint
     fn get_latest_epoch_id(&self) -> Result<EpochId> {
-        let latest_checkpoint = self.get_latest_checkpoint()?;
-        Ok(latest_checkpoint.epoch())
+        let latest_dwallet_checkpoint = self.get_latest_dwallet_checkpoint()?;
+        Ok(latest_dwallet_checkpoint.epoch())
     }
 
-    /// Get the highest verified checkpint. This is the highest checkpoint summary that has been
-    /// verified, generally by state-sync. Only the checkpoint header is guaranteed to be present in
+    /// Get the highest verified dwallet checkpint. This is the highest dwallet checkpoint summary that has been
+    /// verified, generally by state-sync. Only the dwallet checkpoint header is guaranteed to be present in
     /// the store.
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>>;
+    fn get_highest_verified_dwallet_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>>;
 
-    /// Get the highest synced checkpint. This is the highest checkpoint that has been synced from
-    /// state-synce. The checkpoint header, contents, transactions, and effects of this checkpoint
+    /// Get the highest synced dwallet checkpint. This is the highest dwallet checkpoint that has been synced from
+    /// state-synce. The dwallet checkpoint header, contents, transactions, and effects of this dwallet checkpoint
     /// are guaranteed to be present in the store
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>>;
+    fn get_highest_synced_dwallet_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>>;
 
-    /// Lowest available checkpoint for which transaction and checkpoint data can be requested.
+    /// Lowest available dwallet checkpoint for which transaction and dwallet checkpoint data can be requested.
     ///
-    /// Specifically this is the lowest checkpoint for which the following data can be requested:
-    ///  - checkpoints
+    /// Specifically this is the lowest dwallet checkpoint for which the following data can be requested:
+    ///  - dwallet checkpoints
     ///  - transactions
     ///  - effects
     ///  - events
     ///
-    /// For object availability see `get_lowest_available_checkpoint_objects`.
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber>;
+    /// For object availability see `get_lowest_available_dwallet_checkpoint_objects`.
+    fn get_lowest_available_dwallet_checkpoint(&self) -> Result<DWalletCheckpointSequenceNumber>;
 
-    fn get_checkpoint_by_digest(
+    fn get_dwallet_checkpoint_by_digest(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>>;
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>>;
 
-    fn get_checkpoint_by_sequence_number(
+    fn get_dwallet_checkpoint_by_sequence_number(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>>;
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>>;
+
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage>;
+
+    fn get_latest_system_checkpoint_sequence_number(
+        &self,
+    ) -> Result<SystemCheckpointSequenceNumber> {
+        let latest_system_checkpoint = self.get_latest_system_checkpoint()?;
+        Ok(*latest_system_checkpoint.sequence_number())
+    }
+
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
+
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
+
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber>;
+
+    fn get_system_checkpoint_by_digest(
+        &self,
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
+
+    fn get_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for &T {
@@ -73,11 +111,11 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
-        (*self).get_latest_checkpoint()
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+        (*self).get_latest_dwallet_checkpoint()
     }
 
-    fn get_latest_checkpoint_sequence_number(&self) -> Result<CheckpointSequenceNumber> {
+    fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
         (*self).get_latest_checkpoint_sequence_number()
     }
 
@@ -85,30 +123,68 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_latest_epoch_id()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        (*self).get_highest_verified_checkpoint()
-    }
-
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        (*self).get_highest_synced_checkpoint()
-    }
-
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
-        (*self).get_lowest_available_checkpoint()
-    }
-
-    fn get_checkpoint_by_digest(
+    fn get_highest_verified_dwallet_checkpoint(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        (*self).get_checkpoint_by_digest(digest)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (*self).get_highest_verified_dwallet_checkpoint()
     }
 
-    fn get_checkpoint_by_sequence_number(
+    fn get_highest_synced_dwallet_checkpoint(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        (*self).get_checkpoint_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (*self).get_highest_synced_dwallet_checkpoint()
+    }
+
+    fn get_lowest_available_dwallet_checkpoint(&self) -> Result<DWalletCheckpointSequenceNumber> {
+        (*self).get_lowest_available_dwallet_checkpoint()
+    }
+
+    fn get_dwallet_checkpoint_by_digest(
+        &self,
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (*self).get_dwallet_checkpoint_by_digest(digest)
+    }
+
+    fn get_dwallet_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (*self).get_dwallet_checkpoint_by_sequence_number(sequence_number)
+    }
+
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
+        (*self).get_latest_system_checkpoint()
+    }
+
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (*self).get_highest_verified_system_checkpoint()
+    }
+
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (*self).get_highest_synced_system_checkpoint()
+    }
+
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        (*self).get_lowest_available_system_checkpoint()
+    }
+
+    fn get_system_checkpoint_by_digest(
+        &self,
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (*self).get_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (*self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -117,11 +193,11 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
-        (**self).get_latest_checkpoint()
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+        (**self).get_latest_dwallet_checkpoint()
     }
 
-    fn get_latest_checkpoint_sequence_number(&self) -> Result<CheckpointSequenceNumber> {
+    fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
         (**self).get_latest_checkpoint_sequence_number()
     }
 
@@ -129,30 +205,68 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_latest_epoch_id()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_highest_verified_checkpoint()
-    }
-
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_highest_synced_checkpoint()
-    }
-
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
-        (**self).get_lowest_available_checkpoint()
-    }
-
-    fn get_checkpoint_by_digest(
+    fn get_highest_verified_dwallet_checkpoint(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_checkpoint_by_digest(digest)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_highest_verified_dwallet_checkpoint()
     }
 
-    fn get_checkpoint_by_sequence_number(
+    fn get_highest_synced_dwallet_checkpoint(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_checkpoint_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_highest_synced_dwallet_checkpoint()
+    }
+
+    fn get_lowest_available_dwallet_checkpoint(&self) -> Result<DWalletCheckpointSequenceNumber> {
+        (**self).get_lowest_available_dwallet_checkpoint()
+    }
+
+    fn get_dwallet_checkpoint_by_digest(
+        &self,
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_dwallet_checkpoint_by_digest(digest)
+    }
+
+    fn get_dwallet_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_dwallet_checkpoint_by_sequence_number(sequence_number)
+    }
+
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
+        (**self).get_latest_system_checkpoint()
+    }
+
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_highest_verified_system_checkpoint()
+    }
+
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_highest_synced_system_checkpoint()
+    }
+
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        (**self).get_lowest_available_system_checkpoint()
+    }
+
+    fn get_system_checkpoint_by_digest(
+        &self,
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -161,11 +275,11 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
-        (**self).get_latest_checkpoint()
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+        (**self).get_latest_dwallet_checkpoint()
     }
 
-    fn get_latest_checkpoint_sequence_number(&self) -> Result<CheckpointSequenceNumber> {
+    fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
         (**self).get_latest_checkpoint_sequence_number()
     }
 
@@ -173,29 +287,67 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_latest_epoch_id()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_highest_verified_checkpoint()
-    }
-
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_highest_synced_checkpoint()
-    }
-
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
-        (**self).get_lowest_available_checkpoint()
-    }
-
-    fn get_checkpoint_by_digest(
+    fn get_highest_verified_dwallet_checkpoint(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_checkpoint_by_digest(digest)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_highest_verified_dwallet_checkpoint()
     }
 
-    fn get_checkpoint_by_sequence_number(
+    fn get_highest_synced_dwallet_checkpoint(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        (**self).get_checkpoint_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_highest_synced_dwallet_checkpoint()
+    }
+
+    fn get_lowest_available_dwallet_checkpoint(&self) -> Result<DWalletCheckpointSequenceNumber> {
+        (**self).get_lowest_available_dwallet_checkpoint()
+    }
+
+    fn get_dwallet_checkpoint_by_digest(
+        &self,
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_dwallet_checkpoint_by_digest(digest)
+    }
+
+    fn get_dwallet_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        (**self).get_dwallet_checkpoint_by_sequence_number(sequence_number)
+    }
+
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
+        (**self).get_latest_system_checkpoint()
+    }
+
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_highest_verified_system_checkpoint()
+    }
+
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_highest_synced_system_checkpoint()
+    }
+
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        (**self).get_lowest_available_system_checkpoint()
+    }
+
+    fn get_system_checkpoint_by_digest(
+        &self,
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
+        (**self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }

@@ -10,11 +10,10 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config, EncryptedDWalletData } from './globals.js';
 import {
+	createSessionIdentifier,
 	delay,
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchObjectWithType,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
-	getEncryptionKeyMoveType,
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
@@ -35,12 +34,12 @@ export interface ClassGroupsSecpKeyPair {
  * `EncryptionKey` Move object is created.
  */
 interface CreatedEncryptionKeyEvent {
-	session_id: string;
+	session_identifier_preimage: Uint8Array;
 	encryption_key_id: string;
 }
 
 /**
- * A class groups Move encryption key object.
+ * A `class groups` Move encryption key object.
  */
 interface EncryptionKey {
 	encryption_key: Uint8Array;
@@ -58,7 +57,7 @@ interface StartEncryptedShareVerificationEvent {
 	event_data: {
 		encrypted_user_secret_key_share_id: string;
 	};
-	session_id: string;
+	session_identifier_preimage: Uint8Array;
 }
 
 interface VerifiedEncryptedUserSecretKeyShare {
@@ -92,11 +91,10 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
 	if (activeEncryptionKeyObjID) {
-		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
+		const activeEncryptionKeyObj = await getObjectWithType<EncryptionKey>(
 			conf,
-			getEncryptionKeyMoveType(conf.ikaConfig.ika_system_package_id),
-			isEncryptionKey,
 			activeEncryptionKeyObjID,
+			isEncryptionKey,
 		);
 		if (isEqual(activeEncryptionKeyObj?.encryption_key, expectedEncryptionKey)) {
 			return {
@@ -106,7 +104,7 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 			};
 		}
 		throw new Error(
-			'encryption key derived from the key pair does not match the one in the active encryption keys table',
+			'the encryption key derived from the key pair does not match the one in the active encryption keys table',
 		);
 	}
 
@@ -136,7 +134,7 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
 	const tx = new Transaction();
 	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::get_active_encryption_key`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::get_active_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
@@ -166,7 +164,7 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
  * This function facilitates the storage of an encryption key as an immutable object
  * on the blockchain.
  * The key is signed with the provided key pair to ensure
- * cryptographic integrity, and validate it by the blockchain.
+ * cryptographic integrity and validate it by the blockchain.
  * Currently, only Class Groups encryption keys are supported.
  *
  * ### Parameters
@@ -186,13 +184,15 @@ async function registerEncryptionKey(
 
 	const dwalletState = await getDWalletSecpState(conf);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::register_encryption_key`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::register_encryption_key`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletState.object_id,
 				initialSharedVersion: dwalletState.initial_shared_version,
 				mutable: true,
 			}),
+			// TODO: select the correct curve
+			tx.pure.u32(0),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
 			tx.pure(
@@ -235,8 +235,9 @@ function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent
  *
  * @param sourceConf - The key pair that currently owns the sourceDwallet that will
  * be encrypted for the destination.
- * @param destSuiPublicKey - The public key of the destination entity, used to encrypt the secret user key share.
+ * @param destSuiAddress - The sui network address of the destination entity, used to get the encryption key.
  * @param dWalletSecretShare - The secret user key share to encrypt.
+ * @param networkDecryptionKeyPublicOutput - The public output of the network decryption key.
  * @returns The encrypted secret user key share.
  * @throws Will throw an error if the destination public key does not have an active encryption key
  *         or if the encryption key is not valid (not signed by the destination's public key).
@@ -305,7 +306,7 @@ async function fetchPublicKeyByAddress(conf: Config, address: string): Promise<E
 }
 
 /**
- * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
+ * Transfers an encrypted dWallet user secret key share from a source entity to a destination entity.
  * This function emits an event with the encrypted user secret key share,
  * along with its cryptographic proof, to the blockchain.
  * The chain verifies that the encrypted data matches the expected secret key share
@@ -340,15 +341,20 @@ export async function transferEncryptedSecretShare(
 		arguments: [],
 		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
-
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		sourceConf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
+	);
 	tx.moveCall({
-		target: `${sourceConf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_re_encrypt_user_share_for`,
+		target: `${sourceConf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_re_encrypt_user_share_for`,
 		arguments: [
 			dwalletStateArg,
 			dwalletIDArg,
 			destinationEncryptionKeyAddressArg,
 			encryptedCentralizedSecretShareAndProofArg,
 			sourceEncryptedUserSecretKeyShareIDArg,
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -367,7 +373,7 @@ export async function transferEncryptedSecretShare(
 			showEvents: true,
 		},
 	});
-	const startVerificationEvent = result.events?.at(0)?.parsedJson;
+	const startVerificationEvent = result.events?.at(1)?.parsedJson;
 	if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
 		throw new Error('invalid start DKG first round event');
 	}
@@ -381,7 +387,9 @@ export async function transferEncryptedSecretShare(
 function isStartEncryptedShareVerificationEvent(
 	obj: any,
 ): obj is StartEncryptedShareVerificationEvent {
-	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
+	return (
+		!!obj?.session_identifier_preimage && !!obj?.event_data?.encrypted_user_secret_key_share_id
+	);
 }
 
 function isVerifiedEncryptedUserSecretKeyShare(
@@ -432,6 +440,7 @@ export async function decryptAndVerifyReceivedUserShare(
 	conf: Config,
 	encryptedDWalletData: EncryptedDWalletData,
 	sourceSuiAddress: string,
+	networkDecryptionKeyPublicOutput: Uint8Array,
 ) {
 	const dwallet = await getObjectWithType(conf, encryptedDWalletData.dwallet_id, isActiveDWallet);
 	const dwalletOutput = dwallet.state.fields.public_output;
@@ -459,13 +468,19 @@ export async function decryptAndVerifyReceivedUserShare(
 	}
 	const cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const decryptedSecretShare = decrypt_user_share(
-		cgKeyPair.encryptionKey,
 		cgKeyPair.decryptionKey,
+		cgKeyPair.encryptionKey,
+		dwalletOutput,
 		encryptedSecretShareAndProof,
+		networkDecryptionKeyPublicOutput,
 	);
 	// Before validating this centralized output,
 	// we are making sure it was signed by us.
-	const isValid = verify_user_share(decryptedSecretShare, new Uint8Array(dwalletOutput));
+	const isValid = verify_user_share(
+		new Uint8Array(decryptedSecretShare),
+		new Uint8Array(dwalletOutput),
+		networkDecryptionKeyPublicOutput,
+	);
 	if (!isValid) {
 		throw new Error('the decrypted key share does not match the dWallet public key share');
 	}
