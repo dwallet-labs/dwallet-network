@@ -3,11 +3,9 @@
 
 module ika_common::bls_committee;
 
-// === Imports ===
-
 use sui::bls12381::{Self, G1, UncompressedG1};
-use sui::group_ops::{Self, Element};
 use sui::event;
+use sui::group_ops::{Self, Element};
 
 // === Constants ===
 
@@ -29,7 +27,7 @@ const ENotEnoughStake: u64 = 3;
 /// Represents a single member of the BLS committee with their validator ID and protocol public key
 public struct BlsCommitteeMember has copy, drop, store {
     validator_id: ID,
-    protocol_pubkey: Element<UncompressedG1>
+    protocol_pubkey: Element<UncompressedG1>,
 }
 
 /// Represents the current committee in the system with aggregated public keys and voting thresholds
@@ -71,7 +69,7 @@ public fun validity_threshold(self: &BlsCommittee): u64 {
 /// Creates a new BLS committee member with the given validator ID and protocol public key
 public fun new_bls_committee_member(
     validator_id: ID,
-    protocol_pubkey: Element<UncompressedG1>
+    protocol_pubkey: Element<UncompressedG1>,
 ): BlsCommitteeMember {
     BlsCommitteeMember {
         validator_id,

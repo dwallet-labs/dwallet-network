@@ -418,6 +418,7 @@ where
                         )?;
                         let info = validator.verified_validator_info();
                         Ok(EpochStartValidatorInfoV1 {
+                            name: info.name.clone(),
                             validator_id: validator.id,
                             protocol_pubkey: info.protocol_pubkey.clone(),
                             network_pubkey: info.network_pubkey.clone(),
@@ -629,7 +630,7 @@ where
                     warn!(
                         ?err,
                         system_object_id=%self.ika_system_object_id,
-                        "failed to get system inner object",
+                        "failed to get ika system inner object",
                     );
                 }
             }
@@ -1098,7 +1099,7 @@ impl SuiClientInner for SuiSdkClient {
             info!(
                 key_id = ?key.id,
                 ?epoch,
-                "Reconfiguration public output for key not is not ready for epoch",
+                "Reconfiguration public output for key is not ready for epoch",
             );
         } else {
             let current_reconfiguration_public_output_id = self

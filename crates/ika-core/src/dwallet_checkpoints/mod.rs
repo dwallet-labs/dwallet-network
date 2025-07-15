@@ -132,7 +132,7 @@ pub struct DWalletCheckpointStore {
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed dwallet_checkpoints
     pub(crate) watermarks: DBMap<
-        DWalletCheckpointWatermark,
+        DWalletCheckpointHighestWatermark,
         (
             DWalletCheckpointSequenceNumber,
             DWalletCheckpointMessageDigest,
@@ -230,7 +230,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
         let highest_verified = if let Some(highest_verified) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestVerified)?
+            .get(&DWalletCheckpointHighestWatermark::Verified)?
         {
             highest_verified
         } else {
@@ -244,7 +244,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestSynced)?
+            .get(&DWalletCheckpointHighestWatermark::Synced)?
         {
             highest_synced
         } else {
@@ -258,7 +258,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<DWalletCheckpointSequenceNumber>, TypedStoreError> {
         if let Some(highest_executed) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestExecuted)?
+            .get(&DWalletCheckpointHighestWatermark::Executed)?
         {
             Ok(Some(highest_executed.0))
         } else {
@@ -271,7 +271,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
         let highest_executed = if let Some(highest_executed) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestExecuted)?
+            .get(&DWalletCheckpointHighestWatermark::Executed)?
         {
             highest_executed
         } else {
@@ -285,7 +285,7 @@ impl DWalletCheckpointStore {
     ) -> Result<DWalletCheckpointSequenceNumber, TypedStoreError> {
         Ok(self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestPruned)?
+            .get(&DWalletCheckpointHighestWatermark::Pruned)?
             .unwrap_or((1, Default::default()))
             .0)
     }
@@ -342,7 +342,7 @@ impl DWalletCheckpointStore {
                 "Updating highest verified dwallet checkpoint",
             );
             self.watermarks.insert(
-                &DWalletCheckpointWatermark::HighestVerified,
+                &DWalletCheckpointHighestWatermark::Verified,
                 &(*checkpoint.sequence_number(), *checkpoint.digest()),
             )?;
         }
@@ -359,7 +359,7 @@ impl DWalletCheckpointStore {
             "Updating highest synced dwallet checkpoint",
         );
         self.watermarks.insert(
-            &DWalletCheckpointWatermark::HighestSynced,
+            &DWalletCheckpointHighestWatermark::Synced,
             &(*checkpoint.sequence_number(), *checkpoint.digest()),
         )
     }
@@ -370,7 +370,7 @@ impl DWalletCheckpointStore {
         let mut wb = self.watermarks.batch();
         wb.delete_batch(
             &self.watermarks,
-            std::iter::once(DWalletCheckpointWatermark::HighestExecuted),
+            std::iter::once(DWalletCheckpointHighestWatermark::Executed),
         )?;
         wb.write()?;
         Ok(())
@@ -378,11 +378,11 @@ impl DWalletCheckpointStore {
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum DWalletCheckpointWatermark {
-    HighestVerified,
-    HighestSynced,
-    HighestExecuted,
-    HighestPruned,
+pub enum DWalletCheckpointHighestWatermark {
+    Verified,
+    Synced,
+    Executed,
+    Pruned,
 }
 
 pub struct DWalletCheckpointBuilder {
@@ -494,9 +494,12 @@ impl DWalletCheckpointBuilder {
         }
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
-    async fn make_checkpoint(&self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
-        let last_details = pendings.last().unwrap().details().clone();
+    #[instrument(level = "debug", skip_all, fields(last_height = pending_checkpoints.last().unwrap().details().checkpoint_height))]
+    async fn make_checkpoint(
+        &self,
+        pending_checkpoints: Vec<PendingDWalletCheckpoint>,
+    ) -> anyhow::Result<()> {
+        let last_details = pending_checkpoints.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
         // This is used when there are multiple pending checkpoints to create a single checkpoint
@@ -507,7 +510,7 @@ impl DWalletCheckpointBuilder {
         // Stores the transactions that should be included in the checkpoint.
         // Transactions will be recorded in the checkpoint in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
-        for pending_checkpoint in pendings.into_iter() {
+        for pending_checkpoint in pending_checkpoints.into_iter() {
             let logger = MPCSessionLogger::new();
             let pending = pending_checkpoint.into_v1();
             logger.write_pending_checkpoint(&pending);

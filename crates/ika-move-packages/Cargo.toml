@@ -2,7 +2,7 @@
 name = "ika-move-packages"
 version = "0.1.0"
 edition = "2024"
-authors = ["dWallet Labs Ltd. <dev@dwalletlabs.com>"]
+authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
 description = "Sui Move packages"
 license = "BSD-3-Clause-Clear"
 publish = false

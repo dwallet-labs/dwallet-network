@@ -1,4 +1,4 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::{bail, ensure};

@@ -24,6 +24,7 @@ use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
 pub enum PublicInput {
     DWalletImportedKeyVerificationRequest(
         <DWalletImportedKeyVerificationParty as mpc::Party>::PublicInput,

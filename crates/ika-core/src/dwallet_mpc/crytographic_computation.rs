@@ -45,6 +45,8 @@ use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 pub(crate) use mpc_computations::advance_and_serialize;
 pub(crate) use orchestrator::CryptographicComputationsOrchestrator;
 
+const MPC_SIGN_SECOND_ROUND: u64 = 2;
+
 /// A unique key for a computation request.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub(crate) struct ComputationId {
@@ -411,7 +413,7 @@ impl ComputationRequest {
                         return Err(DwalletMPCError::InvalidSessionPublicInput);
                     };
 
-                    if computation_id.mpc_round == 2 {
+                    if computation_id.mpc_round == MPC_SIGN_SECOND_ROUND {
                         if let Some(sign_first_round_messages) = self.messages.get(&1) {
                             let decrypters = sign_first_round_messages.keys().copied().collect();
                             update_expected_decrypters_metrics(
