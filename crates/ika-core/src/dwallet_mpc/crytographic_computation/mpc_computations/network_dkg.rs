@@ -273,7 +273,7 @@ pub(crate) fn advance_network_dkg(
                 public_input,
                 class_groups_decryption_key,
                 &logger,
-                rng
+                rng,
             ),
             DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
         }?;
@@ -283,7 +283,6 @@ pub(crate) fn advance_network_dkg(
     }
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            
             let result = advance_and_serialize::<Secp256k1Party>(
                 session_id,
                 party_id,
