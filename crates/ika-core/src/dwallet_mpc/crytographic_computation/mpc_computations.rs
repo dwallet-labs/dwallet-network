@@ -152,17 +152,27 @@ mod tests {
     #[test]
     fn test_build_messages_to_advance() {
         let messages_to_advance = build_messages_to_advance(
+            // current MPC round
             2,
-            0,
+            // rounds to delay
+            3,
+            // mpc_round_to_threshold_not_reached_consensus_rounds
             HashMap::new(),
-            HashMap::new(),
-            WeightedThresholdAccessStructure::new(3, HashMap::from(
-                [
-                    (PartyID::from(1), 1),
-                    (PartyID::from(2), 1),
-                    (PartyID::from(3), 1),
-                ]
-            )),
+            // messages_by_consensus_round
+            HashMap::from([(
+                1,
+                HashMap::from([(3, HashMap::from([(1 as PartyID, vec![1])]))]),
+            )]),
+            &WeightedThresholdAccessStructure::new(
+                3,
+                HashMap::from([
+                    (1 as PartyID, 1),
+                    (2 as PartyID, 1),
+                    (3 as PartyID, 1),
+                    (4 as PartyID, 1),
+                ]),
+            )
+            .unwrap(),
         );
     }
 }
