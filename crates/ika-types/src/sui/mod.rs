@@ -49,9 +49,31 @@ pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
     ident_str!("request_add_validator_candidate");
 pub const REQUEST_ADD_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("request_add_validator");
+pub const REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_remove_validator_candidate");
 pub const REQUEST_ADD_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("request_add_stake");
 pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
     ident_str!("request_remove_validator");
+pub const SET_NEXT_COMMISSION_FUNCTION_NAME: &IdentStr = ident_str!("set_next_commission");
+pub const WITHDRAW_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("withdraw_stake");
+pub const REPORT_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("report_validator");
+pub const UNDO_REPORT_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("undo_report_validator");
+pub const ROTATE_OPERATION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("rotate_operation_cap");
+pub const ROTATE_COMMISSION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("rotate_commission_cap");
+pub const COLLECT_COMMISSION_FUNCTION_NAME: &IdentStr = ident_str!("collect_commission");
+pub const SET_VALIDATOR_NAME_FUNCTION_NAME: &IdentStr = ident_str!("set_validator_name");
+pub const VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("validator_metadata");
+pub const SET_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("set_validator_metadata");
+pub const SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_network_address");
+pub const SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_p2p_address");
+pub const SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_consensus_address");
+pub const SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_protocol_pubkey_bytes");
+pub const SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_network_pubkey_bytes");
+pub const SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_consensus_pubkey_bytes");
+pub const SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_class_groups_pubkey_and_proof_bytes");
+pub const VERIFY_VALIDATOR_CAP_FUNCTION_NAME: &IdentStr = ident_str!("verify_validator_cap");
+pub const VERIFY_OPERATION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("verify_operation_cap");
+pub const VERIFY_COMMISSION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("verify_commission_cap");
 pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
 pub const INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME: &IdentStr =
