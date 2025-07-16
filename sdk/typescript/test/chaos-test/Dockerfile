@@ -31,7 +31,7 @@ COPY crates crates
 RUN cargo fetch --locked
 
 # Conditionally compile with the network DKG feature
-RUN cargo build --profile ${PROFILE} --locked --bin ika-node
+RUN cargo build --no-default-features --profile ${PROFILE} --locked --bin ika-node
 
 # ==========================
 # Runtime stage
