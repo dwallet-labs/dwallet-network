@@ -98,7 +98,7 @@ pub enum ConsensusCertificateResult {
     /// The consensus message was ignored (e.g. because it has already been processed).
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
-    IkaTransaction(DWalletCheckpointMessageKind),
+    IkaTransaction(Vec<DWalletCheckpointMessageKind>),
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
@@ -934,7 +934,6 @@ impl AuthorityPerEpochStore {
                     return None;
                 }
             }
-            SequencedConsensusTransactionKind::System(_) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::EndOfPublish(authority),
                 ..
@@ -977,7 +976,6 @@ impl AuthorityPerEpochStore {
         Vec<DWalletCheckpointMessageKind>,
         Vec<SystemCheckpointMessageKind>,
     )> {
-        // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
             .into_iter()
             .filter_map(|transaction| {
@@ -987,31 +985,8 @@ impl AuthorityPerEpochStore {
                 )
             })
             .collect();
-        let mut system_transactions = Vec::with_capacity(verified_transactions.len());
-        let mut current_commit_sequenced_consensus_transactions =
-            Vec::with_capacity(verified_transactions.len());
-
-        for tx in verified_transactions {
-            if tx.0.is_system() {
-                system_transactions.push(tx);
-            } else {
-                current_commit_sequenced_consensus_transactions.push(tx);
-            }
-        }
 
         let mut output = ConsensusCommitOutput::new(consensus_commit_info.round);
-
-        // Sequenced_transactions stores all transactions that will be sent to
-        // process_consensus_transactions.
-        let mut sequenced_transactions: Vec<VerifiedSequencedConsensusTransaction> =
-            Vec::with_capacity(current_commit_sequenced_consensus_transactions.len());
-
-        sequenced_transactions.extend(current_commit_sequenced_consensus_transactions);
-
-        let consensus_transactions: Vec<_> = system_transactions
-            .into_iter()
-            .chain(sequenced_transactions)
-            .collect();
 
         let (
             verified_dwallet_checkpoint_messages,
@@ -1020,7 +995,7 @@ impl AuthorityPerEpochStore {
         ) = self
             .process_consensus_transactions(
                 &mut output,
-                &consensus_transactions,
+                &verified_transactions,
                 checkpoint_service,
                 system_checkpoint_service,
                 consensus_commit_info,
@@ -1099,7 +1074,7 @@ impl AuthorityPerEpochStore {
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
 
-        let mut verified_certificates = VecDeque::with_capacity(transactions.len() + 1);
+        let mut verified_dwallet_checkpoint_certificates = VecDeque::with_capacity(transactions.len() + 1);
         let mut verified_system_checkpoint_certificates =
             VecDeque::with_capacity(transactions.len() + 1);
         let mut notifications = Vec::with_capacity(transactions.len());
@@ -1124,7 +1099,7 @@ impl AuthorityPerEpochStore {
             {
                 ConsensusCertificateResult::IkaTransaction(cert) => {
                     notifications.push(key.clone());
-                    verified_certificates.push_back(cert);
+                    verified_dwallet_checkpoint_certificates.extend(cert);
                 }
                 ConsensusCertificateResult::SystemTransaction(certs) => {
                     notifications.push(key.clone());
@@ -1188,7 +1163,7 @@ impl AuthorityPerEpochStore {
                         }
                     }
                     verified_system_checkpoint_certificates.extend(system_transactions);
-                    verified_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
+                    verified_dwallet_checkpoint_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
                     verified_system_checkpoint_certificates
                         .push_back(SystemCheckpointMessageKind::EndOfPublish);
                     let mut reconfig_state = self.reconfig_state.write();
@@ -1210,7 +1185,7 @@ impl AuthorityPerEpochStore {
             .consensus_handler_cancelled_transactions
             .inc_by(cancelled_txns.len() as u64);
 
-        let verified_certificates: Vec<_> = verified_certificates.into();
+        let verified_certificates: Vec<_> = verified_dwallet_checkpoint_certificates.into();
 
         Ok((
             verified_certificates,
@@ -1326,9 +1301,6 @@ impl AuthorityPerEpochStore {
                 system_checkpoint_service.notify_checkpoint_signature(self, data)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
-            SequencedConsensusTransactionKind::System(system_transaction) => {
-                Ok(self.process_consensus_system_transaction(system_transaction))
-            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::EndOfPublish(authority),
                 ..
@@ -1351,13 +1323,6 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
         }
-    }
-
-    fn process_consensus_system_transaction(
-        &self,
-        system_transaction: &DWalletCheckpointMessageKind,
-    ) -> ConsensusCertificateResult {
-        ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
     }
 
     pub fn insert_pending_dwallet_checkpoint(
