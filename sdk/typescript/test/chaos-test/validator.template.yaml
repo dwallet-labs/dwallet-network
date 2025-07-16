@@ -1,5 +1,5 @@
-class-groups-key-pair-and-proof:
-  path: /opt/ika/key-pairs/class-groups.key
+root_seed:
+  path: /opt/ika/key-pairs/class-groups.seed
 protocol-key-pair:
   path: /opt/ika/key-pairs/protocol.key
 consensus-key-pair:
