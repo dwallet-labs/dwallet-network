@@ -106,7 +106,7 @@ impl DWalletMPCSession {
             .as_ref()
             .map(|event_data| event_data.request_input.to_string())
             .unwrap_or_default();
-        debug!(
+        info!(
             session_identifier=?message.session_identifier,
             from_authority=?message.authority,
             receiving_authority=?self.validator_name,
@@ -193,7 +193,7 @@ impl DWalletMPCSession {
             .as_ref()
             .map(|event_data| event_data.request_input.to_string())
             .unwrap_or_default();
-        debug!(
+        info!(
             session_identifier=?output.session_identifier,
             from_authority=?output.authority,
             receiving_authority=?self.validator_name,
