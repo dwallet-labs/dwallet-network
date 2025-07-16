@@ -156,7 +156,7 @@ pub(crate) fn build_messages_to_advance(
 ///
 /// By maintaining a structured transition between instantiated types, and their
 /// serialized forms, this function ensures compatibility across various components.
-pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
+pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_structure: &WeightedThresholdAccessStructure,
@@ -196,5 +196,28 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                 _ => Err(general_error),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use group::OsCsRng;
+    use super::*;
+
+    #[test]
+    fn builds_empty_messages_for_round1() {
+        let access_structure =
+            WeightedThresholdAccessStructure::uniform(3, 4, 4, &mut OsCsRng).unwrap();
+
+        let current_mpc_round = 1;
+        let rounds_to_delay = 0;
+        let mpc_round_to_threshold_not_reached_consensus_rounds = HashMap::new();
+        let messages_by_consensus_round = HashMap::new();
+        let messages = build_messages_to_advance(current_mpc_round, rounds_to_delay, mpc_round_to_threshold_not_reached_consensus_rounds, messages_by_consensus_round, &access_structure);
+
+        assert_eq!(
+            messages,
+            Some((None, HashMap::new()))
+        );
     }
 }

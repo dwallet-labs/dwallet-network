@@ -6,7 +6,7 @@
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
 
-use crate::dwallet_mpc::crytographic_computation::advance_and_serialize;
+use crate::dwallet_mpc::crytographic_computation::advance;
 use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
@@ -259,7 +259,7 @@ pub(crate) fn advance_network_dkg(
             let PublicInput::NetworkEncryptionKeyDkg(public_input) = public_input else {
                 unreachable!();
             };
-            let result = advance_and_serialize::<Secp256k1Party>(
+            let result = advance::<Secp256k1Party>(
                 session_id,
                 party_id,
                 access_structure,
