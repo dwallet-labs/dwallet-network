@@ -5,24 +5,27 @@ use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, COLLECT_COMMISSION_FUNCTION_NAME,
     CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
     ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
-    SET_NEXT_COMMISSION_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
-    REPORT_VALIDATOR_FUNCTION_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME,
-    ROTATE_OPERATION_CAP_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
-    COLLECT_COMMISSION_FUNCTION_NAME, SET_VALIDATOR_NAME_FUNCTION_NAME,
-    VALIDATOR_METADATA_FUNCTION_NAME, SET_VALIDATOR_METADATA_FUNCTION_NAME,
-    SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME, SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME,
-    SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
-    VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REPORT_VALIDATOR_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
+    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
+    SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
+    SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
+    SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
+    SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
+    SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_VALIDATOR_METADATA_FUNCTION_NAME,
+    SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME,
+    VALIDATOR_METADATA_FUNCTION_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    VALIDATOR_OPERATION_STRUCT_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME,
+    VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
+    WITHDRAW_STAKE_FUNCTION_NAME,
 };
+use jsonrpsee::core::Serialize;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
@@ -37,6 +40,14 @@ use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
 use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
+
+#[derive(Serialize)]
+pub struct BecomeCandidateValidatorData {
+    pub validator_id: ObjectID,
+    pub validator_cap_id: ObjectID,
+    pub validator_operation_cap_id: ObjectID,
+    pub validator_commission_cap_id: ObjectID,
+}
 
 /// Create a ClassGroupsPublicKeyAndProofBuilder object
 async fn create_class_groups_public_key_and_proof_builder_object(
@@ -209,7 +220,7 @@ pub async fn request_add_validator_candidate(
     ika_system_object_id: ObjectID,
     class_groups_pubkey_and_proof_obj_ref: ObjectRef,
     gas_budget: u64,
-) -> Result<(SuiTransactionBlockResponse, ObjectID, ObjectID), anyhow::Error> {
+) -> Result<(SuiTransactionBlockResponse, BecomeCandidateValidatorData), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     let name = ptb.input(CallArg::Pure(bcs::to_bytes(
         validator_initialization_metadata.name.as_str(),
@@ -363,6 +374,48 @@ pub async fn request_add_validator_candidate(
         .first()
         .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?;
 
+    let validator_operation_cap_type = StructTag {
+        address: ika_system_package_id.into(),
+        module: VALIDATOR_CAP_MODULE_NAME.into(),
+        name: VALIDATOR_OPERATION_STRUCT_NAME.into(),
+        type_params: vec![],
+    };
+
+    let validator_operation_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if validator_operation_cap_type == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?;
+
+    let validator_commission_cap_type = StructTag {
+        address: ika_system_package_id.into(),
+        module: VALIDATOR_CAP_MODULE_NAME.into(),
+        name: VALIDATOR_COMMISSION_STRUCT_NAME.into(),
+        type_params: vec![],
+    };
+
+    let validator_commission_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if validator_commission_cap_type == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?;
+
     let validator_cap = context
         .get_client()
         .await?
@@ -371,7 +424,15 @@ pub async fn request_add_validator_candidate(
         .await?;
     let validator_cap: ValidatorCapV1 = bcs::from_bytes(&validator_cap)?;
 
-    Ok((response, validator_cap.validator_id, validator_cap_id))
+    Ok((
+        response,
+        BecomeCandidateValidatorData {
+            validator_id: validator_cap.validator_id,
+            validator_cap_id,
+            validator_operation_cap_id,
+            validator_commission_cap_id,
+        },
+    ))
 }
 
 pub async fn stake_ika(
@@ -539,10 +600,10 @@ pub async fn set_next_commission(
     let mut ptb = ProgrammableTransactionBuilder::new();
     let new_commission_rate = ptb.input(CallArg::Pure(bcs::to_bytes(&new_commission_rate)?))?;
     let call_args = vec![
+        new_commission_rate,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        new_commission_rate,
     ];
 
     let sender = context.active_address()?;
@@ -577,9 +638,7 @@ pub async fn withdraw_stake(
         .await?;
 
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let call_args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-        staked_ika_ref,
-    )))?];
+    let call_args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(staked_ika_ref)))?];
 
     let sender = context.active_address()?;
 
@@ -975,10 +1034,10 @@ pub async fn set_validator_name(
     let mut ptb = ProgrammableTransactionBuilder::new();
     let name = ptb.input(CallArg::Pure(bcs::to_bytes(&name)?))?;
     let call_args = vec![
+        name,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        name,
     ];
 
     let sender = context.active_address()?;
@@ -1086,10 +1145,10 @@ pub async fn set_next_epoch_network_address(
     let mut ptb = ProgrammableTransactionBuilder::new();
     let network_address = ptb.input(CallArg::Pure(bcs::to_bytes(&network_address)?))?;
     let call_args = vec![
+        network_address,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        network_address,
     ];
 
     let sender = context.active_address()?;
@@ -1127,10 +1186,10 @@ pub async fn set_next_epoch_p2p_address(
     let mut ptb = ProgrammableTransactionBuilder::new();
     let p2p_address = ptb.input(CallArg::Pure(bcs::to_bytes(&p2p_address)?))?;
     let call_args = vec![
+        p2p_address,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        p2p_address,
     ];
 
     let sender = context.active_address()?;
@@ -1168,10 +1227,10 @@ pub async fn set_next_epoch_consensus_address(
     let mut ptb = ProgrammableTransactionBuilder::new();
     let consensus_address = ptb.input(CallArg::Pure(bcs::to_bytes(&consensus_address)?))?;
     let call_args = vec![
+        consensus_address,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        consensus_address,
     ];
 
     let sender = context.active_address()?;
@@ -1209,13 +1268,14 @@ pub async fn set_next_epoch_protocol_pubkey_bytes(
 
     let mut ptb = ProgrammableTransactionBuilder::new();
     let protocol_pubkey = ptb.input(CallArg::Pure(bcs::to_bytes(&protocol_pubkey)?))?;
-    let proof_of_possession_bytes = ptb.input(CallArg::Pure(bcs::to_bytes(&proof_of_possession_bytes)?))?;
+    let proof_of_possession_bytes =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&proof_of_possession_bytes)?))?;
     let call_args = vec![
+        protocol_pubkey,
+        proof_of_possession_bytes,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        protocol_pubkey,
-        proof_of_possession_bytes,
     ];
 
     let sender = context.active_address()?;
@@ -1253,10 +1313,10 @@ pub async fn set_next_epoch_network_pubkey_bytes(
     let mut ptb = ProgrammableTransactionBuilder::new();
     let network_pubkey = ptb.input(CallArg::Pure(bcs::to_bytes(&network_pubkey)?))?;
     let call_args = vec![
+        network_pubkey,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        network_pubkey,
     ];
 
     let sender = context.active_address()?;
@@ -1292,12 +1352,13 @@ pub async fn set_next_epoch_consensus_pubkey_bytes(
         .await?;
 
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let consensus_pubkey_bytes = ptb.input(CallArg::Pure(bcs::to_bytes(&consensus_pubkey_bytes)?))?;
+    let consensus_pubkey_bytes =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&consensus_pubkey_bytes)?))?;
     let call_args = vec![
+        consensus_pubkey_bytes,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
-        consensus_pubkey_bytes,
     ];
 
     let sender = context.active_address()?;
@@ -1305,49 +1366,6 @@ pub async fn set_next_epoch_consensus_pubkey_bytes(
     add_ika_system_command_to_ptb(
         context,
         SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
-        call_args,
-        ika_system_object_id,
-        ika_system_package_id,
-        &mut ptb,
-    )
-    .await?;
-
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    execute_transaction(context, tx_data).await
-}
-
-/// Set next epoch class groups pubkey and proof bytes
-pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
-    context: &mut WalletContext,
-    ika_system_package_id: ObjectID,
-    ika_system_object_id: ObjectID,
-    validator_operation_cap_id: ObjectID,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
-    gas_budget: u64,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let client = context.get_client().await?;
-    let validator_operation_cap_ref = client
-        .transaction_builder()
-        .get_object_ref(validator_operation_cap_id)
-        .await?;
-
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    let class_groups_pubkey_and_proof = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-        client.transaction_builder().get_object_ref(class_groups_pubkey_and_proof.id).await?,
-    )))?;
-    let call_args = vec![
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            validator_operation_cap_ref,
-        )))?,
-        class_groups_pubkey_and_proof,
-    ];
-
-    let sender = context.active_address()?;
-
-    add_ika_system_command_to_ptb(
-        context,
-        SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
         call_args,
         ika_system_object_id,
         ika_system_package_id,

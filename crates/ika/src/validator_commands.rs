@@ -16,14 +16,14 @@ use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
-    request_add_validator, request_add_validator_candidate, request_remove_validator,
-    request_remove_validator_candidate, set_next_commission, withdraw_stake,
-    report_validator, undo_report_validator, rotate_operation_cap, rotate_commission_cap,
-    collect_commission, set_validator_name, validator_metadata, set_validator_metadata,
-    set_next_epoch_network_address, set_next_epoch_p2p_address, set_next_epoch_consensus_address,
-    set_next_epoch_protocol_pubkey_bytes, set_next_epoch_network_pubkey_bytes,
-    set_next_epoch_consensus_pubkey_bytes,
-    verify_validator_cap, verify_operation_cap, verify_commission_cap, stake_ika,
+    BecomeCandidateValidatorData, collect_commission, report_validator, request_add_validator,
+    request_add_validator_candidate, request_remove_validator, request_remove_validator_candidate,
+    rotate_commission_cap, rotate_operation_cap, set_next_commission,
+    set_next_epoch_consensus_address, set_next_epoch_consensus_pubkey_bytes,
+    set_next_epoch_network_address, set_next_epoch_network_pubkey_bytes,
+    set_next_epoch_p2p_address, set_next_epoch_protocol_pubkey_bytes, set_validator_metadata,
+    set_validator_name, stake_ika, undo_report_validator, validator_metadata,
+    verify_commission_cap, verify_operation_cap, verify_validator_cap, withdraw_stake,
 };
 use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
@@ -318,12 +318,6 @@ pub enum IkaValidatorCommand {
 }
 
 #[derive(Serialize)]
-pub struct BecomeCandidateValidatorData {
-    validator_id: ObjectID,
-    validator_cap_id: ObjectID,
-}
-
-#[derive(Serialize)]
 #[serde(untagged)]
 pub enum IkaValidatorCommandResponse {
     MakeValidatorInfo,
@@ -463,7 +457,7 @@ impl IkaValidatorCommand {
                     gas_budget,
                 ).await?;
 
-                let (res, validator_id, validator_cap_id) = request_add_validator_candidate(
+                let (res, validator_data) = request_add_validator_candidate(
                     context,
                     &validator_info,
                     config.ika_system_package_id,
@@ -472,13 +466,7 @@ impl IkaValidatorCommand {
                     gas_budget,
                 )
                 .await?;
-                IkaValidatorCommandResponse::BecomeCandidate(
-                    res,
-                    BecomeCandidateValidatorData {
-                        validator_id,
-                        validator_cap_id,
-                    },
-                )
+                IkaValidatorCommandResponse::BecomeCandidate(res, validator_data)
             }
             IkaValidatorCommand::JoinCommittee {
                 gas_budget,
@@ -1061,11 +1049,21 @@ impl Display for IkaValidatorCommandResponse {
                 BecomeCandidateValidatorData {
                     validator_id,
                     validator_cap_id,
+                    validator_operation_cap_id,
+                    validator_commission_cap_id,
                 },
             ) => {
                 write!(writer, "{}", write_transaction_response(response)?)?;
                 writeln!(writer, "Validator ID: {validator_id}")?;
                 writeln!(writer, "Validator Cap ID: {validator_cap_id}")?;
+                writeln!(
+                    writer,
+                    "Validator Operation Cap ID: {validator_operation_cap_id}"
+                )?;
+                writeln!(
+                    writer,
+                    "Validator Commission Cap ID: {validator_commission_cap_id}"
+                )?;
             }
             IkaValidatorCommandResponse::JoinCommittee(response)
             | IkaValidatorCommandResponse::StakeValidator(response)

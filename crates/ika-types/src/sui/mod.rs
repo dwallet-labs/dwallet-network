@@ -34,6 +34,8 @@ pub const DEFAULT_COMMISSION_RATE: u16 = 200;
 pub const INIT_CAP_STRUCT_NAME: &IdentStr = ident_str!("InitCap");
 pub const SYSTEM_STRUCT_NAME: &IdentStr = ident_str!("System");
 pub const VALIDATOR_CAP_STRUCT_NAME: &IdentStr = ident_str!("ValidatorCap");
+pub const VALIDATOR_OPERATION_STRUCT_NAME: &IdentStr = ident_str!("ValidatorOperationCap");
+pub const VALIDATOR_COMMISSION_STRUCT_NAME: &IdentStr = ident_str!("ValidatorCommissionCap");
 pub const PROTOCOL_CAP_STRUCT_NAME: &IdentStr = ident_str!("ProtocolCap");
 pub const DWALLET_COORDINATOR_STRUCT_NAME: &IdentStr = ident_str!("DWalletCoordinator");
 
@@ -64,13 +66,18 @@ pub const COLLECT_COMMISSION_FUNCTION_NAME: &IdentStr = ident_str!("collect_comm
 pub const SET_VALIDATOR_NAME_FUNCTION_NAME: &IdentStr = ident_str!("set_validator_name");
 pub const VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("validator_metadata");
 pub const SET_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("set_validator_metadata");
-pub const SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_network_address");
-pub const SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_p2p_address");
-pub const SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_consensus_address");
-pub const SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_protocol_pubkey_bytes");
-pub const SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_network_pubkey_bytes");
-pub const SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_consensus_pubkey_bytes");
-pub const SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME: &IdentStr = ident_str!("set_next_epoch_class_groups_pubkey_and_proof_bytes");
+pub const SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_network_address");
+pub const SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_p2p_address");
+pub const SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_consensus_address");
+pub const SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_protocol_pubkey_bytes");
+pub const SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_network_pubkey_bytes");
+pub const SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_consensus_pubkey_bytes");
 pub const VERIFY_VALIDATOR_CAP_FUNCTION_NAME: &IdentStr = ident_str!("verify_validator_cap");
 pub const VERIFY_OPERATION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("verify_operation_cap");
 pub const VERIFY_COMMISSION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("verify_commission_cap");
