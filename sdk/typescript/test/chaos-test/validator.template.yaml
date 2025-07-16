@@ -1,4 +1,4 @@
-root_seed:
+root-seed:
   path: /opt/ika/key-pairs/class-groups.seed
 protocol-key-pair:
   path: /opt/ika/key-pairs/protocol.key
