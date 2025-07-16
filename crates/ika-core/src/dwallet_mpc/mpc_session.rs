@@ -188,12 +188,18 @@ impl DWalletMPCSession {
         sender_party_id: PartyID,
         output: DWalletMPCOutput,
     ) {
+        let mpc_protocol = self
+            .mpc_event_data
+            .as_ref()
+            .map(|event_data| event_data.request_input.to_string())
+            .unwrap_or_default();
         debug!(
             session_identifier=?output.session_identifier,
             from_authority=?output.authority,
             receiving_authority=?self.validator_name,
             output_messages=?output.output,
             consensus_round,
+            ?mpc_protocol,
             "Received a dWallet MPC output",
         );
 
