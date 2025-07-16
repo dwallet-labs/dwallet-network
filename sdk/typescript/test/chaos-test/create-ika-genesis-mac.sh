@@ -537,11 +537,6 @@ mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 
 PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_config.json"
 
-
-IKA_DWALLET_COORDINATOR_OBJECT_ID=$(jq -r '.ika_dwallet_coordinator_object_id' "$PUBLISHER_CONFIG_FILE")
-
-echo "Ika dWallet Coordinator Object ID: placeholder"
-
 cat > locals.tf <<EOF
 locals {
   ika_chain_config = {
