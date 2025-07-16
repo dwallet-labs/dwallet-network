@@ -249,16 +249,39 @@ mod tests {
         let current_mpc_round = 2;
         let rounds_to_delay = 0;
         let mpc_round_to_threshold_not_reached_consensus_rounds = HashMap::new();
-        let round1_messages = HashMap::from([(1u16, vec![42u8]), (2u16, vec![0u8, 42u8]), (3, vec![43u8]), (4u16, vec![42u8])]);
+        let round1_messages = HashMap::from([
+            (1u16, vec![42u8]),
+            (2u16, vec![0u8, 42u8]),
+            (3, vec![43u8]),
+            (4u16, vec![42u8]),
+        ]);
         let messages_by_consensus_round = HashMap::from([
             (
                 3,
-                HashMap::from([(1, HashMap::from([(1, round1_messages.get(&1).unwrap().clone()), (3, round1_messages.get(&3).unwrap().clone())]))]),
+                HashMap::from([(
+                    1,
+                    HashMap::from([
+                        (1, round1_messages.get(&1).unwrap().clone()),
+                        (3, round1_messages.get(&3).unwrap().clone()),
+                    ]),
+                )]),
             ),
             (4, HashMap::new()),
-            (5, HashMap::from([(1, HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]))])),
+            (
+                5,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]),
+                )]),
+            ),
             (6, HashMap::new()),
-            (7, HashMap::from([(1, HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]))])),
+            (
+                7,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]),
+                )]),
+            ),
         ]);
 
         let messages = build_messages_to_advance(
@@ -268,11 +291,16 @@ mod tests {
             messages_by_consensus_round,
             &access_structure,
         );
-        let expected_messages = HashMap::from([(1, round1_messages.clone().into_iter().filter(|(pid, _)| *pid != 2).collect())]);
+        let expected_messages = HashMap::from([(
+            1,
+            round1_messages
+                .clone()
+                .into_iter()
+                .filter(|(pid, _)| *pid != 2)
+                .collect(),
+        )]);
 
-        assert_eq!(messages, Some(
-            (Some(5), expected_messages)
-        ));
+        assert_eq!(messages, Some((Some(5), expected_messages)));
     }
 
     #[test]
@@ -309,16 +337,39 @@ mod tests {
         let current_mpc_round = 2;
         let rounds_to_delay = 3;
         let mpc_round_to_threshold_not_reached_consensus_rounds = HashMap::new();
-        let round1_messages = HashMap::from([(1u16, vec![42u8]), (2u16, vec![0u8, 42u8]), (3, vec![43u8]), (4u16, vec![42u8])]);
+        let round1_messages = HashMap::from([
+            (1u16, vec![42u8]),
+            (2u16, vec![0u8, 42u8]),
+            (3, vec![43u8]),
+            (4u16, vec![42u8]),
+        ]);
         let messages_by_consensus_round = HashMap::from([
             (
                 3,
-                HashMap::from([(1, HashMap::from([(1, round1_messages.get(&1).unwrap().clone()), (3, round1_messages.get(&3).unwrap().clone())]))]),
+                HashMap::from([(
+                    1,
+                    HashMap::from([
+                        (1, round1_messages.get(&1).unwrap().clone()),
+                        (3, round1_messages.get(&3).unwrap().clone()),
+                    ]),
+                )]),
             ),
             (4, HashMap::new()),
-            (5, HashMap::from([(1, HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]))])),
+            (
+                5,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]),
+                )]),
+            ),
             (6, HashMap::new()),
-            (7, HashMap::from([(1, HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]))])),
+            (
+                7,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]),
+                )]),
+            ),
         ]);
 
         let messages = build_messages_to_advance(
@@ -339,16 +390,39 @@ mod tests {
 
         let current_mpc_round = 2;
         let mpc_round_to_threshold_not_reached_consensus_rounds = HashMap::new();
-        let round1_messages = HashMap::from([(1u16, vec![42u8]), (2u16, vec![0u8, 42u8]), (3, vec![43u8]), (4u16, vec![42u8])]);
+        let round1_messages = HashMap::from([
+            (1u16, vec![42u8]),
+            (2u16, vec![0u8, 42u8]),
+            (3, vec![43u8]),
+            (4u16, vec![42u8]),
+        ]);
         let messages_by_consensus_round = HashMap::from([
             (
                 3,
-                HashMap::from([(1, HashMap::from([(1, round1_messages.get(&1).unwrap().clone()), (3, round1_messages.get(&3).unwrap().clone())]))]),
+                HashMap::from([(
+                    1,
+                    HashMap::from([
+                        (1, round1_messages.get(&1).unwrap().clone()),
+                        (3, round1_messages.get(&3).unwrap().clone()),
+                    ]),
+                )]),
             ),
             (4, HashMap::new()),
-            (5, HashMap::from([(1, HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]))])),
+            (
+                5,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]),
+                )]),
+            ),
             (6, HashMap::new()),
-            (7, HashMap::from([(1, HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]))])),
+            (
+                7,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]),
+                )]),
+            ),
             (8, HashMap::new()),
         ]);
 
@@ -360,7 +434,14 @@ mod tests {
             messages_by_consensus_round.clone(),
             &access_structure,
         );
-        let expected_messages = HashMap::from([(1, round1_messages.clone().into_iter().filter(|(pid, _)| *pid != 2).collect())]);
+        let expected_messages = HashMap::from([(
+            1,
+            round1_messages
+                .clone()
+                .into_iter()
+                .filter(|(pid, _)| *pid != 2)
+                .collect(),
+        )]);
 
         assert_eq!(messages, Some((Some(6), expected_messages)));
 
@@ -373,7 +454,10 @@ mod tests {
             &access_structure,
         );
 
-        assert_eq!(messages, Some((Some(7),  HashMap::from([(1, round1_messages.clone())]))));
+        assert_eq!(
+            messages,
+            Some((Some(7), HashMap::from([(1, round1_messages.clone())])))
+        );
 
         let rounds_to_delay = 3;
         let messages = build_messages_to_advance(
@@ -384,6 +468,82 @@ mod tests {
             &access_structure,
         );
 
-        assert_eq!(messages, Some((Some(8),  HashMap::from([(1, round1_messages)]))));
+        assert_eq!(
+            messages,
+            Some((Some(8), HashMap::from([(1, round1_messages)])))
+        );
+    }
+
+    #[test]
+    fn builds_messages_for_round3() {
+        let access_structure =
+            WeightedThresholdAccessStructure::uniform(3, 4, 4, &mut OsCsRng).unwrap();
+
+        let current_mpc_round = 3;
+        let rounds_to_delay = 0;
+        let mpc_round_to_threshold_not_reached_consensus_rounds = HashMap::new();
+        let round1_messages = HashMap::from([
+            (1u16, vec![42u8]),
+            (2u16, vec![0u8, 42u8]),
+            (3, vec![43u8]),
+            (4u16, vec![42u8]),
+        ]);
+        let round2_messages =
+            HashMap::from([(1u16, vec![]), (2u16, vec![0u8, 1u8]), (4u16, vec![42u8])]);
+        let messages_by_consensus_round = HashMap::from([
+            (
+                3,
+                HashMap::from([(
+                    1,
+                    HashMap::from([
+                        (1, round1_messages.get(&1).unwrap().clone()),
+                        (3, round1_messages.get(&3).unwrap().clone()),
+                    ]),
+                )]),
+            ),
+            (4, HashMap::new()),
+            (
+                5,
+                HashMap::from([(
+                    1,
+                    HashMap::from([(4, round1_messages.get(&4).unwrap().clone())]),
+                )]),
+            ),
+            (6, HashMap::new()),
+            (
+                7,
+                HashMap::from([
+                    (
+                        1,
+                        HashMap::from([(2, round1_messages.get(&2).unwrap().clone())]),
+                    ),
+                    (
+                        2,
+                        HashMap::from([
+                            (1, round2_messages.get(&1).unwrap().clone()),
+                            (4, round2_messages.get(&4).unwrap().clone()),
+                        ]),
+                    ),
+                ]),
+            ),
+            (
+                8,
+                HashMap::from([(
+                    2,
+                    HashMap::from([(2, round2_messages.get(&2).unwrap().clone())]),
+                )]),
+            ),
+        ]);
+
+        let messages = build_messages_to_advance(
+            current_mpc_round,
+            rounds_to_delay,
+            mpc_round_to_threshold_not_reached_consensus_rounds,
+            messages_by_consensus_round,
+            &access_structure,
+        );
+        let expected_messages = HashMap::from([(1, round1_messages), (2, round2_messages)]);
+
+        assert_eq!(messages, Some((Some(8), expected_messages)));
     }
 }
