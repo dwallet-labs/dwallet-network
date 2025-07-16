@@ -365,13 +365,12 @@ pub struct SessionIdentifier {
 }
 
 impl SessionIdentifier {
-    /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
-    /// Guarantees same values of `self.session_identifier_preimage` yield different output for `User` and `System`
-    pub fn new_from_preimage(
-        session_type: SessionType,
-        session_identifier_preimage: [u8; Self::LENGTH],
-    ) -> Self {
+    /// Instantiate a [`SessionIdentifier`] from the pre-image session identifier.
+    /// It is hashed together with its distinguisher and the version.
+    /// Guarantees same values of `session_identifier_preimage` yield different output for `User` and `System`
+    pub fn new(session_type: SessionType, session_identifier_preimage: [u8; Self::LENGTH]) -> Self {
         let version = 0u64;
+
         // We are adding a string distinguisher between
         // the `User` and `System` sessions, so that when it is hashed, the same inner value
         // in the two different options will yield a different output, thus guaranteeing
@@ -531,7 +530,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
             .try_into()
             .expect("Session Identifier Preimage is Hardcoded to 32-bytes Length in Move");
 
-        SessionIdentifier::new_from_preimage(self.session_type, session_identifier_preimage)
+        SessionIdentifier::new(self.session_type, session_identifier_preimage)
     }
 }
 
