@@ -16,7 +16,6 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
 use tracing::{debug, info, instrument, trace, warn};
 use typed_store::rocks::{DBBatch, DBMap, DBOptions, MetricConf, default_db_options};
@@ -1074,7 +1073,8 @@ impl AuthorityPerEpochStore {
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
 
-        let mut verified_dwallet_checkpoint_certificates = VecDeque::with_capacity(transactions.len() + 1);
+        let mut verified_dwallet_checkpoint_certificates =
+            VecDeque::with_capacity(transactions.len() + 1);
         let mut verified_system_checkpoint_certificates =
             VecDeque::with_capacity(transactions.len() + 1);
         let mut notifications = Vec::with_capacity(transactions.len());
@@ -1163,7 +1163,8 @@ impl AuthorityPerEpochStore {
                         }
                     }
                     verified_system_checkpoint_certificates.extend(system_transactions);
-                    verified_dwallet_checkpoint_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
+                    verified_dwallet_checkpoint_certificates
+                        .push_back(DWalletCheckpointMessageKind::EndOfPublish);
                     verified_system_checkpoint_certificates
                         .push_back(SystemCheckpointMessageKind::EndOfPublish);
                     let mut reconfig_state = self.reconfig_state.write();
