@@ -431,7 +431,7 @@ impl fmt::Display for SessionIdentifier {
 
         write!(
             f,
-            "SessionIdentifier {{ session_type: {session_type:?}, session_identifier_preimage: {}, session_identifier: {} }}",
+            "SessionIdentifier {{ session_type: {session_type:?}, session_identifier_preimage: 0x{}, session_identifier: 0x{} }}",
             hex::encode(&self.session_identifier_preimage),
             hex::encode(&self.session_identifier)
         )
@@ -444,7 +444,7 @@ impl fmt::Debug for SessionIdentifier {
 
         write!(
             f,
-            "SessionIdentifier {{ session_type: {session_type:?}, session_identifier_preimage: {}, session_identifier: {} }}",
+            "SessionIdentifier {{ session_type: {session_type:?}, session_identifier_preimage: 0x{}, session_identifier: 0x{} }}",
             hex::encode(&self.session_identifier_preimage),
             hex::encode(&self.session_identifier)
         )
