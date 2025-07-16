@@ -194,6 +194,15 @@ impl CryptographicComputationsOrchestrator {
             let party_id = computation_request.party_id;
             let request_input = computation_request.request_input.clone();
 
+            info!(
+                party_id,
+                session_identifier=?computation_id.session_identifier,
+                mpc_round=?computation_id.mpc_round,
+                attempt_number=?computation_id.attempt_number,
+                mpc_protocol=?request_input,
+                "Starting cryptographic computation for session",
+            );
+
             let computation_result =
                 computation_request.compute(computation_id, root_seed, dwallet_mpc_metrics.clone());
 
