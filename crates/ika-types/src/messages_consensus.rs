@@ -263,13 +263,13 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_capability_notification_v1(data: AuthorityCapabilitiesV1) -> Self {
+    pub fn new_capability_notification_v1(capabilities: AuthorityCapabilitiesV1) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.authority.hash(&mut hasher);
+        capabilities.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::CapabilityNotificationV1(data),
+            kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
         }
     }
 

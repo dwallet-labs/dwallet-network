@@ -18,14 +18,14 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, info, instrument, trace, warn};
 use typed_store::rocks::{DBBatch, DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
 
 use super::epoch_start_configuration::EpochStartConfigTrait;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
-use crate::authority::{AuthorityMetrics, AuthorityState};
+use crate::authority::{AuthorityCapabilitiesVotingResults, AuthorityMetrics, AuthorityState};
 use crate::dwallet_checkpoints::{
     BuilderDWalletCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify,
     PendingDWalletCheckpoint,
@@ -1146,6 +1146,48 @@ impl AuthorityPerEpochStore {
                     // filter_roots = true;
                 }
                 ConsensusCertificateResult::EndOfPublish => {
+                    let capabilities = self.get_capabilities_v1()?;
+                    let AuthorityCapabilitiesVotingResults {
+                        protocol_version: new_version,
+                        move_contracts_to_upgrade
+                    } = AuthorityState::choose_highest_protocol_version_and_move_contracts_upgrades_v1(
+                        self.protocol_version(),
+                        self.committee(),
+                        capabilities.clone(),
+                        self.get_effective_buffer_stake_bps(),
+                    );
+
+                    let mut system_transactions: Vec<SystemCheckpointMessageKind> = Vec::new();
+                    let current_protocol_version = self.protocol_version();
+                    if self.protocol_version() != new_version {
+                        info!(
+                            validator=?self.name,
+                            ?current_protocol_version,
+                            new_protocol_version=?new_version,
+                            "New protocol version reached quorum from capabilities v1",
+                        );
+                        system_transactions.push(
+                            SystemCheckpointMessageKind::SetNextConfigVersion(new_version),
+                        );
+                    }
+
+                    if !move_contracts_to_upgrade.is_empty() {
+                        info!(
+                            validator=?self.name,
+                            ?current_protocol_version,
+                            ?move_contracts_to_upgrade,
+                            "New move contracts upgrade reached quorum from capabilities v1",
+                        );
+                        for (package_id, digest) in move_contracts_to_upgrade.iter() {
+                            system_transactions.push(
+                                SystemCheckpointMessageKind::SetApprovedUpgrade {
+                                    package_id: package_id.to_vec(),
+                                    digest: Some(digest.to_vec()),
+                                },
+                            );
+                        }
+                    }
+                    verified_system_checkpoint_certificates.extend(system_transactions);
                     verified_certificates.push_back(DWalletCheckpointMessageKind::EndOfPublish);
                     verified_system_checkpoint_certificates
                         .push_back(SystemCheckpointMessageKind::EndOfPublish);
@@ -1274,56 +1316,8 @@ impl AuthorityPerEpochStore {
                     authority.concise()
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
-                let capabilities = self.get_capabilities_v1()?;
-                let (new_version, move_contracts_to_upgrade) =
-                    AuthorityState::choose_highest_protocol_version_and_move_contracts_upgrades_v1(
-                        self.protocol_version(),
-                        self.committee(),
-                        capabilities.clone(),
-                        self.get_effective_buffer_stake_bps(),
-                    );
 
-                let mut system_transactions: Vec<SystemCheckpointMessageKind> = Vec::new();
-
-                error!(curr_protocol_version=?self.protocol_version(),
-                new_version=?new_version,
-                    move_contracts_to_upgrade=?move_contracts_to_upgrade,
-                    "find me"
-                );
-                if self.protocol_version() != new_version {
-                    info!(
-                        validator=?self.name,
-                        protocol_version=?new_version,
-                        "Found new version quorum from capabilities v1 {:?}",
-                        capabilities.first()
-                    );
-                    system_transactions.push(SystemCheckpointMessageKind::SetNextConfigVersion(
-                        new_version,
-                    ));
-                }
-
-                if !move_contracts_to_upgrade.is_empty() {
-                    info!(
-                        validator=?self.name,
-                        protocol_version=?new_version,
-                        move_contracts_to_upgrade=?move_contracts_to_upgrade,
-                        "Move contracts to upgrade found",
-                    );
-                    for (package_id, digest) in move_contracts_to_upgrade.iter() {
-                        system_transactions.push(SystemCheckpointMessageKind::SetApprovedUpgrade {
-                            package_id: package_id.to_vec(),
-                            digest: Some(digest.to_vec()),
-                        });
-                    }
-                }
-
-                if system_transactions.is_empty() {
-                    return Ok(ConsensusCertificateResult::ConsensusMessage);
-                }
-
-                Ok(ConsensusCertificateResult::SystemTransaction(
-                    system_transactions,
-                ))
+                Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SystemCheckpointSignature(data),

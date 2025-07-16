@@ -14,7 +14,6 @@ use prometheus::Registry;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::Arc;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
@@ -1128,35 +1127,31 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            if let Some(supported_versions) = self.config.supported_protocol_versions {
-                let transaction = ConsensusTransaction::new_capability_notification_v1(
-                    AuthorityCapabilitiesV1::new(
-                        self.state.name,
-                        cur_epoch_store.get_chain_identifier().chain(),
-                        supported_versions,
-                        vec![],
-                        // vec![
-                        //     (
-                        //         ObjectID::from_str(
-                        //             "0x123e4567e89bfbde1234567890abcdef12345678")?,
-                        //         [0; 32].into(),
-                        //     ),
-                        // ],
-                        // Note: this is a temp fix, we will handle package upgrades later.
-                        // sui_client
-                        // .get_available_move_packages()
-                        //     .await
-                        //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
-                    ),
-                );
+            let config = cur_epoch_store.protocol_config();
 
-                if let Some(components) = &*self.validator_components.lock().await {
-                    info!(?transaction, "submitting capabilities to consensus");
-                    components
-                        .consensus_adapter
-                        .submit_to_consensus(&[transaction], &cur_epoch_store)
-                        .await?;
-                }
+            let transaction =
+                ConsensusTransaction::new_capability_notification_v1(AuthorityCapabilitiesV1::new(
+                    self.state.name,
+                    cur_epoch_store.get_chain_identifier().chain(),
+                    self.config
+                        .supported_protocol_versions
+                        .expect("Supported versions should be populated")
+                        // no need to send digests of versions less than the current version
+                        .truncate_below(config.version),
+                    vec![],
+                    // Note: this is a temp fix, we will handle package upgrades later.
+                    // sui_client
+                    // .get_available_move_packages()
+                    //     .await
+                    //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                ));
+
+            if let Some(components) = &*self.validator_components.lock().await {
+                info!(?transaction, "submitting capabilities to consensus");
+                components
+                    .consensus_adapter
+                    .submit_to_consensus(&[transaction], &cur_epoch_store)
+                    .await?;
             }
 
             let end_of_publish_sender_handle =

@@ -617,6 +617,12 @@ pub type ExecutionLockWriteGuard<'a> = RwLockWriteGuard<'a, EpochId>;
 ///
 pub type StableSyncAuthoritySigner = Pin<Arc<dyn Signer<AuthoritySignature> + Send + Sync>>;
 
+pub(crate) struct AuthorityCapabilitiesVotingResults {
+    pub(crate) protocol_version: ProtocolVersion,
+    /// Move package ID -> Move package digest
+    pub(crate) move_contracts_to_upgrade: Vec<(ObjectID, MovePackageDigest)>,
+}
+
 pub struct AuthorityState {
     // Fixed size, static, identity of the authority
     /// The name of this authority.
@@ -876,7 +882,7 @@ impl AuthorityState {
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         mut buffer_stake_bps: u64,
-    ) -> Option<(ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>)> {
+    ) -> (Option<AuthorityCapabilitiesVotingResults>, bool) {
         if buffer_stake_bps > 10000 {
             warn!("clamping buffer_stake_bps to 10000");
             buffer_stake_bps = 10000;
@@ -903,13 +909,19 @@ impl AuthorityState {
             })
             .collect();
 
+        if desired_upgrades.is_empty() {
+            return (None, true);
+        }
+
         // There can only be one set of votes that have a majority, find one if it exists.
         desired_upgrades.sort();
-        desired_upgrades
+        let res = desired_upgrades
             .into_iter()
-            .chunk_by(|(digest, packages, _authority)| (*digest, packages.clone()))
+            .chunk_by(|(digest, move_contracts_to_upgrade, _authority)| {
+                (*digest, move_contracts_to_upgrade.clone())
+            })
             .into_iter()
-            .find_map(|((digest, packages), group)| {
+            .find_map(|((digest, move_contracts_to_upgrade), group)| {
                 let mut stake_aggregator: StakeAggregator<(), true> =
                     StakeAggregator::new(Arc::new(committee.clone()));
 
@@ -921,46 +933,64 @@ impl AuthorityState {
                 let quorum_threshold = committee.quorum_threshold();
                 let f = committee.total_votes() - committee.quorum_threshold();
 
-                // multiple by buffer_stake_bps / 10000, rounded up.
+                // multiply by buffer_stake_bps / 10000, rounded up.
                 let buffer_stake = (f * buffer_stake_bps).div_ceil(10000);
                 let effective_threshold = quorum_threshold + buffer_stake;
+                let has_support = total_votes >= effective_threshold;
 
-                debug!(
+                info!(
                     protocol_config_digest = ?digest,
                     ?total_votes,
                     ?quorum_threshold,
                     ?buffer_stake_bps,
                     ?effective_threshold,
                     ?proposed_protocol_version,
-                    ?packages,
-                    "support for upgrade"
+                    ?move_contracts_to_upgrade,
+                    has_support,
+                    "checking support for upgrade"
                 );
 
-                let has_support = total_votes >= effective_threshold;
-                has_support.then_some((proposed_protocol_version, packages))
-            })
+                has_support.then_some(AuthorityCapabilitiesVotingResults {
+                    protocol_version: proposed_protocol_version,
+                    move_contracts_to_upgrade,
+                })
+            });
+        (res, false)
     }
 
-    pub fn choose_highest_protocol_version_and_move_contracts_upgrades_v1(
+    pub(crate) fn choose_highest_protocol_version_and_move_contracts_upgrades_v1(
         current_protocol_version: ProtocolVersion,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         buffer_stake_bps: u64,
-    ) -> (ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>) {
+    ) -> AuthorityCapabilitiesVotingResults {
         let mut next_protocol_version = current_protocol_version;
-        let mut system_packages = vec![];
+        let mut versions = vec![];
+        let mut completed = false;
 
-        while let Some((version, packages)) = Self::is_protocol_version_supported_v1(
-            current_protocol_version,
-            committee,
-            capabilities.clone(),
-            buffer_stake_bps,
-        ) {
-            next_protocol_version = version;
-            system_packages = packages;
+        while !completed {
+            let (version, current_completed) = Self::is_protocol_version_supported_v1(
+                next_protocol_version,
+                committee,
+                capabilities.clone(),
+                buffer_stake_bps,
+            );
+            completed = current_completed;
+            versions.push(version);
+            next_protocol_version = next_protocol_version + 1;
         }
 
-        (next_protocol_version, system_packages)
+        let versions = versions.into_iter().flatten().collect_vec();
+        let last_version = versions.into_iter().last();
+
+        if let Some(version) = last_version {
+            version
+        } else {
+            AuthorityCapabilitiesVotingResults {
+                protocol_version: current_protocol_version,
+                move_contracts_to_upgrade: vec![],
+            }
+        }
     }
 
     pub fn unixtime_now_ms() -> u64 {
