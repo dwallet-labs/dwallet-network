@@ -43,6 +43,10 @@ export async function createValidatorPod(
 							name: 'RUST_MIN_STACK',
 							value: '16777216',
 						},
+						{
+							name: 'RUST_BACKTRACE',
+							value: '1',
+						},
 					],
 					command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/validator.yaml'],
 					name: 'ika-node',
