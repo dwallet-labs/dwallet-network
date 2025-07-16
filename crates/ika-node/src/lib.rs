@@ -1174,6 +1174,10 @@ impl IkaNode {
 
             let (latest_system_state, epoch_start_system_state) = match stop_condition {
                 StopReason::EpochComplete(latest_system_state, epoch_start_system_state) => {
+                    info!(
+                        epoch_number=?latest_system_state.epoch(),
+                        "Epoch completed, switching to the next epoch"
+                    );
                     (latest_system_state, epoch_start_system_state)
                 }
                 StopReason::RunWithRangeCondition => {
