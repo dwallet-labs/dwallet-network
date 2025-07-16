@@ -270,6 +270,7 @@ IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_OBJECT_ID=$(jq -r '.ika_system_object_id' "$PUBLISHER_CONFIG_FILE")
 IKA_COMMON_PACKAGE_ID=$(jq -r '.ika_common_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_2pc_mpc_package_id' "$PUBLISHER_CONFIG_FILE")
+IKA_DWALLET_COORDINATOR_OBJECT_ID=$(jq -r '.ika_dwallet_coordinator_object_id' "$PUBLISHER_CONFIG_FILE")
 
 
 # Print the values for verification.
