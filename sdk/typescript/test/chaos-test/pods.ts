@@ -45,7 +45,7 @@ export async function createValidatorPod(
 						},
 						{
 							name: 'RUST_BACKTRACE',
-							value: '1',
+							value: 'full',
 						},
 					],
 					command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/validator.yaml'],
@@ -110,7 +110,7 @@ export async function createValidatorPod(
 					},
 				},
 			],
-			restartPolicy: 'Always',
+			restartPolicy: 'Never',
 		},
 	};
 	await k8sApi.createNamespacedPod({
@@ -179,7 +179,7 @@ export async function createPods(kc: KubeConfig, namespaceName: string, numOfVal
 					},
 				},
 			],
-			restartPolicy: 'Always',
+			restartPolicy: 'Never',
 		},
 	};
 	await k8sApi.createNamespacedPod({
