@@ -101,22 +101,23 @@ impl DWalletMPCSession {
         sender_party_id: PartyID,
         message: DWalletMPCMessage,
     ) {
+        let mpc_protocol = self
+            .mpc_event_data
+            .as_ref()
+            .map(|event_data| event_data.request_input.to_string())
+            .unwrap_or_default();
         debug!(
             session_identifier=?message.session_identifier,
             from_authority=?message.authority,
             receiving_authority=?self.validator_name,
             mpc_round=?message.round_number,
             message_size_bytes=?message.message.len(),
+            ?mpc_protocol,
             "Received a dWallet MPC message",
         );
 
         if sender_party_id == self.party_id && self.current_mpc_round <= message.round_number {
             // Received a message from ourselves from the consensus, so it's safe to advance the round.
-            let mpc_protocol = self
-                .mpc_event_data
-                .as_ref()
-                .map(|event_data| event_data.request_input.to_string())
-                .unwrap_or_default();
             let new_mpc_round = message.round_number + 1;
             info!(
                 session_identifier=?message.session_identifier,
@@ -187,12 +188,18 @@ impl DWalletMPCSession {
         sender_party_id: PartyID,
         output: DWalletMPCOutput,
     ) {
+        let mpc_protocol = self
+            .mpc_event_data
+            .as_ref()
+            .map(|event_data| event_data.request_input.to_string())
+            .unwrap_or_default();
         debug!(
             session_identifier=?output.session_identifier,
             from_authority=?output.authority,
             receiving_authority=?self.validator_name,
             output_messages=?output.output,
             consensus_round,
+            ?mpc_protocol,
             "Received a dWallet MPC output",
         );
 
