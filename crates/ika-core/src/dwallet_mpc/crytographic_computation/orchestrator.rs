@@ -200,7 +200,7 @@ impl CryptographicComputationsOrchestrator {
                 mpc_round=?computation_id.mpc_round,
                 attempt_number=?computation_id.attempt_number,
                 mpc_protocol=?request_input,
-                "Starting cryptographic computation for session",
+                "Starting cryptographic computation",
             );
 
             let computation_result =
