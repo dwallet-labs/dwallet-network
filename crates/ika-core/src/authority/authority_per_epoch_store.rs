@@ -1287,8 +1287,8 @@ impl AuthorityPerEpochStore {
             }) => {
                 let authority = authority_capabilities.authority;
                 debug!(
-                    "Received CapabilityNotificationV1 from {:?}",
-                    authority.concise()
+                    from_authority=?authority,
+                    "Received CapabilityNotificationV1",
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
 
