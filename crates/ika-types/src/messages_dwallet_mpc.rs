@@ -1,19 +1,15 @@
 use crate::crypto::{AuthorityName, keccak256_digest};
 use crate::message::DWalletCheckpointMessageKind;
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
-use hex::FromHex;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
-use rand::Rng;
-use rand_chacha::rand_core::OsRng;
 use schemars::JsonSchema;
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::{Debug, Display};
-use std::str::FromStr;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
 
@@ -361,100 +357,63 @@ pub enum SessionType {
     System,
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy)]
-pub struct SessionIdentifier([u8; SessionIdentifier::LENGTH]);
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Serialize, Deserialize)]
+pub struct SessionIdentifier {
+    session_type: SessionType,
+    session_identifier: [u8; SessionIdentifier::LENGTH],
+    session_identifier_preimage: [u8; SessionIdentifier::LENGTH],
+}
 
 impl SessionIdentifier {
-    pub const fn new(address: [u8; Self::LENGTH]) -> Self {
-        Self(address)
+    /// Instantiate a [`SessionIdentifier`] from the pre-image session identifier.
+    /// It is hashed together with its distinguisher and the version.
+    /// Guarantees same values of `session_identifier_preimage` yield different output for `User` and `System`
+    pub fn new(session_type: SessionType, session_identifier_preimage: [u8; Self::LENGTH]) -> Self {
+        let version = 0u64;
+
+        // We are adding a string distinguisher between
+        // the `User` and `System` sessions, so that when it is hashed, the same inner value
+        // in the two different options will yield a different output, thus guaranteeing
+        // user-initiated sessions can never block or reuse session IDs for system sessions.
+        let session_type_unique_prefix = match session_type {
+            SessionType::User => [
+                version.to_be_bytes().as_slice(),
+                b"USER",
+                &session_identifier_preimage,
+            ]
+            .concat(),
+            SessionType::System => [
+                version.to_be_bytes().as_slice(),
+                b"SYSTEM",
+                &session_identifier_preimage,
+            ]
+            .concat(),
+        };
+
+        let session_identifier = keccak256_digest(&session_type_unique_prefix);
+
+        Self {
+            session_type,
+            session_identifier,
+            session_identifier_preimage,
+        }
     }
 
     /// The number of bytes in an address.
     pub const LENGTH: usize = 32;
 
-    /// Hex address: 0x0
-    pub const ZERO: Self = Self([0u8; Self::LENGTH]);
-
-    /// Hex address: 0x1
-    pub const ONE: Self = Self::get_hex_address_one();
-
-    /// Hex address: 0x2
-    pub const TWO: Self = Self::get_hex_address_two();
-
-    pub const fn from_suffix(suffix: u16) -> SessionIdentifier {
-        let mut addr = [0u8; SessionIdentifier::LENGTH];
-        let [hi, lo] = suffix.to_be_bytes();
-        addr[SessionIdentifier::LENGTH - 2] = hi;
-        addr[SessionIdentifier::LENGTH - 1] = lo;
-        SessionIdentifier::new(addr)
-    }
-
-    const fn get_hex_address_one() -> Self {
-        let mut addr = [0u8; SessionIdentifier::LENGTH];
-        addr[SessionIdentifier::LENGTH - 1] = 1u8;
-        Self(addr)
-    }
-
-    const fn get_hex_address_two() -> Self {
-        let mut addr = [0u8; SessionIdentifier::LENGTH];
-        addr[SessionIdentifier::LENGTH - 1] = 2u8;
-        Self(addr)
-    }
-
-    pub fn random() -> Self {
-        let mut rng = OsRng;
-        let buf: [u8; Self::LENGTH] = rng.r#gen();
-        Self(buf)
-    }
-
     pub fn to_vec(self) -> Vec<u8> {
-        self.0.to_vec()
+        self.session_identifier.to_vec()
     }
 
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
-        self.0
-    }
-
-    pub fn from_hex_literal(literal: &str) -> Result<Self, SessionIdentifierParseError> {
-        if !literal.starts_with("0x") {
-            return Err(SessionIdentifierParseError);
-        }
-
-        let hex_len = literal.len() - 2;
-
-        // If the string is too short, pad it
-        if hex_len < Self::LENGTH * 2 {
-            let mut hex_str = String::with_capacity(Self::LENGTH * 2);
-            for _ in 0..Self::LENGTH * 2 - hex_len {
-                hex_str.push('0');
-            }
-            hex_str.push_str(&literal[2..]);
-            SessionIdentifier::from_hex(hex_str)
-        } else {
-            SessionIdentifier::from_hex(&literal[2..])
-        }
-    }
-
-    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, SessionIdentifierParseError> {
-        <[u8; Self::LENGTH]>::from_hex(hex)
-            .map_err(|_| SessionIdentifierParseError)
-            .map(Self)
-    }
-
-    pub fn to_hex(self) -> String {
-        format!("{self:x}")
-    }
-
-    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self, SessionIdentifierParseError> {
-        <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
-            .map_err(|_| SessionIdentifierParseError)
-            .map(Self)
+        self.session_identifier
     }
 }
 
 impl AsRef<[u8]> for SessionIdentifier {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        &self.session_identifier
     }
 }
 
@@ -462,175 +421,71 @@ impl std::ops::Deref for SessionIdentifier {
     type Target = [u8; Self::LENGTH];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.session_identifier
     }
 }
 
 impl fmt::Display for SessionIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:#x}")
+        let session_type = self.session_type;
+
+        write!(
+            f,
+            "SessionIdentifier {{ session_type: {session_type:?}, session_identifier_preimage: {}, session_identifier: {} }}",
+            hex::encode(&self.session_identifier_preimage),
+            hex::encode(&self.session_identifier)
+        )
     }
 }
 
 impl fmt::Debug for SessionIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:#x}")
-    }
-}
+        let session_type = self.session_type;
 
-impl fmt::LowerHex for SessionIdentifier {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-
-        for byte in &self.0 {
-            write!(f, "{byte:02x}")?;
-        }
-
-        Ok(())
-    }
-}
-
-impl fmt::UpperHex for SessionIdentifier {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-
-        for byte in &self.0 {
-            write!(f, "{byte:02X}")?;
-        }
-
-        Ok(())
-    }
-}
-
-impl From<[u8; SessionIdentifier::LENGTH]> for SessionIdentifier {
-    fn from(bytes: [u8; SessionIdentifier::LENGTH]) -> Self {
-        Self::new(bytes)
-    }
-}
-
-impl TryFrom<&[u8]> for SessionIdentifier {
-    type Error = SessionIdentifierParseError;
-
-    /// Tries to convert the provided byte array into Address.
-    fn try_from(bytes: &[u8]) -> Result<SessionIdentifier, SessionIdentifierParseError> {
-        Self::from_bytes(bytes)
-    }
-}
-
-impl TryFrom<Vec<u8>> for SessionIdentifier {
-    type Error = SessionIdentifierParseError;
-
-    /// Tries to convert the provided byte buffer into Address.
-    fn try_from(bytes: Vec<u8>) -> Result<SessionIdentifier, SessionIdentifierParseError> {
-        Self::from_bytes(bytes)
-    }
-}
-
-impl From<SessionIdentifier> for Vec<u8> {
-    fn from(addr: SessionIdentifier) -> Vec<u8> {
-        addr.0.to_vec()
-    }
-}
-
-impl From<&SessionIdentifier> for Vec<u8> {
-    fn from(addr: &SessionIdentifier) -> Vec<u8> {
-        addr.0.to_vec()
-    }
-}
-
-impl From<SessionIdentifier> for [u8; SessionIdentifier::LENGTH] {
-    fn from(addr: SessionIdentifier) -> Self {
-        addr.0
-    }
-}
-
-impl From<&SessionIdentifier> for [u8; SessionIdentifier::LENGTH] {
-    fn from(addr: &SessionIdentifier) -> Self {
-        addr.0
-    }
-}
-
-impl From<&SessionIdentifier> for String {
-    fn from(addr: &SessionIdentifier) -> String {
-        ::hex::encode(addr.as_ref())
-    }
-}
-
-impl TryFrom<String> for SessionIdentifier {
-    type Error = SessionIdentifierParseError;
-
-    fn try_from(s: String) -> Result<SessionIdentifier, SessionIdentifierParseError> {
-        Self::from_hex(s)
-    }
-}
-
-impl FromStr for SessionIdentifier {
-    type Err = SessionIdentifierParseError;
-
-    fn from_str(s: &str) -> Result<Self, SessionIdentifierParseError> {
-        // Accept 0xADDRESS or ADDRESS
-        if let Ok(address) = SessionIdentifier::from_hex_literal(s) {
-            Ok(address)
-        } else {
-            Self::from_hex(s)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for SessionIdentifier {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let s = <String>::deserialize(deserializer)?;
-            SessionIdentifier::from_str(&s).map_err(Error::custom)
-        } else {
-            // In order to preserve the Serde data model and help analysis tools,
-            // make sure to wrap our value in a container with the same name
-            // as the original type.
-            #[derive(::serde::Deserialize)]
-            #[serde(rename = "SessionIdentifier")]
-            struct Value([u8; SessionIdentifier::LENGTH]);
-
-            let value = Value::deserialize(deserializer)?;
-            Ok(SessionIdentifier::new(value.0))
-        }
-    }
-}
-
-impl Serialize for SessionIdentifier {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            self.to_hex().serialize(serializer)
-        } else {
-            // See comment in deserialize.
-            serializer.serialize_newtype_struct("SessionIdentifier", &self.0)
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct SessionIdentifierParseError;
-
-impl fmt::Display for SessionIdentifierParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Unable to parse SessionIdentifier (must be hex string of length {})",
-            SessionIdentifier::LENGTH
+            "SessionIdentifier {{ session_type: {session_type:?}, session_identifier_preimage: {}, session_identifier: {} }}",
+            hex::encode(&self.session_identifier_preimage),
+            hex::encode(&self.session_identifier)
         )
     }
 }
 
-impl std::error::Error for SessionIdentifierParseError {}
+impl From<SessionIdentifier> for Vec<u8> {
+    fn from(session_identifier: SessionIdentifier) -> Vec<u8> {
+        session_identifier.to_vec()
+    }
+}
+
+impl From<&SessionIdentifier> for Vec<u8> {
+    fn from(session_identifier: &SessionIdentifier) -> Vec<u8> {
+        session_identifier.to_vec()
+    }
+}
+
+impl From<SessionIdentifier> for [u8; SessionIdentifier::LENGTH] {
+    fn from(session_identifier: SessionIdentifier) -> Self {
+        session_identifier.session_identifier
+    }
+}
+
+impl From<&SessionIdentifier> for [u8; SessionIdentifier::LENGTH] {
+    fn from(session_identifier: &SessionIdentifier) -> Self {
+        session_identifier.session_identifier
+    }
+}
+
+impl PartialOrd for SessionIdentifier {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(&other))
+    }
+}
+
+impl Ord for SessionIdentifier {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.session_identifier.cmp(&other.session_identifier)
+    }
+}
 
 pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -669,26 +524,13 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
     /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
     /// Guarantees same values of `self.session_identifier_preimage` yield different output for `User` and `System`
     pub fn session_identifier_digest(&self) -> SessionIdentifier {
-        let version = 0u64;
-        // We are adding a string distinguisher between
-        // the `User` and `System` sessions, so that when it is hashed, the same inner value
-        // in the two different options will yield a different output, thus guaranteeing
-        // user-initiated sessions can never block or reuse session IDs for system sessions.
-        let session_type = match self.session_type {
-            SessionType::User => [
-                version.to_be_bytes().as_slice(),
-                b"USER",
-                self.session_identifier_preimage.as_slice(),
-            ]
-            .concat(),
-            SessionType::System => [
-                version.to_be_bytes().as_slice(),
-                b"SYSTEM",
-                self.session_identifier_preimage.as_slice(),
-            ]
-            .concat(),
-        };
-        SessionIdentifier(keccak256_digest(&session_type))
+        let session_identifier_preimage = self
+            .session_identifier_preimage
+            .clone()
+            .try_into()
+            .expect("Session Identifier Preimage is Hardcoded to 32-bytes Length in Move");
+
+        SessionIdentifier::new(self.session_type, session_identifier_preimage)
     }
 }
 
