@@ -270,7 +270,6 @@ IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_OBJECT_ID=$(jq -r '.ika_system_object_id' "$PUBLISHER_CONFIG_FILE")
 IKA_COMMON_PACKAGE_ID=$(jq -r '.ika_common_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_2pc_mpc_package_id' "$PUBLISHER_CONFIG_FILE")
-exit 0
 
 # Print the values for verification.
 echo "Ika Package ID: $IKA_PACKAGE_ID"
@@ -305,7 +304,6 @@ request_and_generate_yaml() {
   yq e ".\"sui-connector-config\".\"ika-dwallet-2pc-mpc-package-id\" = \"$IKA_DWALLET_2PC_MPC_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-system-object-id\" = \"$IKA_SYSTEM_OBJECT_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
-  yq e ".\"sui-connector-config\".\"ika-dwallet-coordinator-object-id\" = \"$IKA_DWALLET_COORDINATOR_OBJECT_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
 
   yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR/validator.yaml"
 
@@ -536,6 +534,9 @@ mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 
 PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_config.json"
 
+
+IKA_DWALLET_COORDINATOR_OBJECT_ID=$(jq -r '.ika_dwallet_coordinator_object_id' "$PUBLISHER_CONFIG_FILE")
+
 cat > locals.tf <<EOF
 locals {
   ika_chain_config = {
@@ -550,6 +551,24 @@ locals {
 }
 EOF
 
+update_coordinator_object_id() {
+  local entry="$1"
+  IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
+  local VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+
+  # Extract values from the validator.info file
+  local ACCOUNT_ADDRESS
+  ACCOUNT_ADDRESS=$(yq e '.account_address' "${VALIDATOR_DIR}/validator.info")
+  local P2P_ADDR
+  P2P_ADDR=$(yq e '.p2p_address' "${VALIDATOR_DIR}/validator.info")
+
+  # Replace placeholders using yq
+    yq e ".\"sui-connector-config\".\"ika-dwallet-coordinator-object-id\" = \"$IKA_DWALLET_COORDINATOR_OBJECT_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
+}
+
+for entry in "${VALIDATORS_ARRAY[@]}"; do
+  update_coordinator_object_id "$entry" &
+done
 
 ############################
 # Generate Seed Peers
