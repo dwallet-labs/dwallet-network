@@ -389,23 +389,14 @@ fn update_variance(old_mean: i64, new_mean: i64, old_variance: i64, new_value: i
     let old_variance = old_variance as f64;
     let new_value = new_value as f64;
     let n = n as f64;
-    println!(
-        "old_mean: {}, new_mean: {}, old_variance: {}, new_value: {}, n: {}",
-        old_mean, new_mean, old_variance, new_value, n
-    );
-    let first = (n - 1.0) / n * (pow(old_mean, 2) + old_variance);
-    let second = pow(new_value, 2) / n;
-    let third = pow(new_mean, 2);
-    println!(
-        "first: {}, second: {}, third: {}",
-        first, second, third
-    );
-    let result = (first + second - third)*n/(n-1.0);
-    return result as i64;
+    let first = old_variance * (n - 2.0);
+    let second = (new_value - new_mean) * (new_value - old_mean);
+    let result = (first + second) / (n - 1.0);
+    result as i64
 }
 
 mod tests {
-    use super::*;
+    use super::update_variance;
 
     // test the update variance function
     #[test]
@@ -419,6 +410,7 @@ mod tests {
         let updated_variance = update_variance(old_mean, new_mean, old_variance, new_value, n);
         assert_eq!(updated_variance, 162);
 
+        let new_value = 70;
         let old_mean = 55;
         let new_mean = 60;
         let old_variance = 50;
