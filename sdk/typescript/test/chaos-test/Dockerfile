@@ -1,7 +1,7 @@
 # ==========================
 # Build stage
 # ==========================
-FROM rust:1.88-bullseye AS builder
+FROM rust:1.88-bookworm AS builder
 
 # Arguments
 ARG PROFILE=release
@@ -26,12 +26,12 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates crates
 
 # Conditionally compile with the network DKG feature
-RUN cargo build --no-default-features --profile ${PROFILE} --locked --bin ika-core
+RUN cargo build --no-default-features --profile ${PROFILE} --bin ika-core
 
 # ==========================
 # Runtime stage
 # ==========================
-FROM debian:bullseye-slim AS runtime
+FROM debian:bookworm-slim AS runtime
 
 ARG WORKDIR=/opt
 ARG BUILD_DATE
