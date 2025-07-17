@@ -36,6 +36,7 @@ sui-sdk.workspace = true
 sui-types.workspace = true
 ika-move-packages.workspace = true
 move-core-types.workspace = true
+clap.workspace = true
 serde_json.workspace = true
 move-package.workspace = true
 url.workspace = true
