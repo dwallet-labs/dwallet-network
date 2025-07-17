@@ -38,6 +38,9 @@ RUN cargo build --profile ${PROFILE} --locked --bin ika-proxy
 # ==========================
 FROM debian:bullseye-slim AS runtime
 
+RUN apt update && apt install -y ca-certificates
+
+
 ARG PROFILE=release
 
 
