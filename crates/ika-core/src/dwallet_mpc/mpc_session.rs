@@ -226,6 +226,10 @@ impl DWalletMPCSession {
         self.status = MPCSessionStatus::Completed;
     }
 
+    pub(crate) fn mark_mpc_session_as_computation_completed(&mut self) {
+        self.status = MPCSessionStatus::ComputationCompleted;
+    }
+
     pub(crate) fn mpc_event_data(&self) -> Option<&MPCEventData> {
         self.mpc_event_data.as_ref()
     }
