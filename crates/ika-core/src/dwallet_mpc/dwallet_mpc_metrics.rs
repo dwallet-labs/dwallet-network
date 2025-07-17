@@ -25,7 +25,6 @@ use prometheus::{
     register_int_gauge_with_registry,
 };
 use std::sync::Arc;
-use test_fuzz::runtime::num_traits::pow;
 
 /// Prometheus metrics for DWallet MPC operations.
 ///
