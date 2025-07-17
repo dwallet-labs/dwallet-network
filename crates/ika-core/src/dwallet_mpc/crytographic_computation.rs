@@ -535,6 +535,7 @@ impl ComputationRequest {
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
+
                 verify_partial_signature(
                     &hashed_message,
                     &event_data.event_data.dkg_output,
