@@ -898,6 +898,7 @@ impl IkaNode {
             new_events_receiver,
             next_epoch_committee_receiver,
             dwallet_mpc_metrics.clone(),
+            state.clone(),
         );
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
