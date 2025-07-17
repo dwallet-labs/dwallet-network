@@ -13,6 +13,7 @@ use ika_types::sui::{
     REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
     REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
     ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
+    SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
@@ -1474,6 +1475,48 @@ pub async fn verify_commission_cap(
     add_ika_system_command_to_ptb(
         context,
         VERIFY_COMMISSION_CAP_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+/// Set next epoch class groups pubkey and proof bytes
+pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    validator_operation_cap_id: ObjectID,
+    class_groups_pubkey_and_proof_obj_ref: ObjectRef,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let client = context.get_client().await?;
+    let validator_operation_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(validator_operation_cap_id)
+        .await?;
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let call_args = vec![
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+            validator_operation_cap_ref,
+        )))?,
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+            class_groups_pubkey_and_proof_obj_ref,
+        )))?,
+    ];
+
+    let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
+        context,
+        SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
         call_args,
         ika_system_object_id,
         ika_system_package_id,

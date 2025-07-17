@@ -349,9 +349,10 @@ where
     pub async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<StakingPool>,
+        read_next_epoch_class_groups_keys: bool,
     ) -> IkaResult<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>> {
         self.inner
-            .get_class_groups_public_keys_and_proofs(validators)
+            .get_class_groups_public_keys_and_proofs(validators, read_next_epoch_class_groups_keys)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
@@ -396,7 +397,7 @@ where
 
                 let validators_class_groups_public_key_and_proof = self
                     .inner
-                    .get_class_groups_public_keys_and_proofs(&validators)
+                    .get_class_groups_public_keys_and_proofs(&validators, false)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
@@ -774,6 +775,7 @@ pub trait SuiClientInner: Send + Sync {
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<StakingPool>,
+        read_next_epoch_class_groups_keys: bool,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
     #[allow(clippy::ptr_arg)]
@@ -953,6 +955,7 @@ impl SuiClientInner for SuiSdkClient {
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<StakingPool>,
+        read_next_epoch_class_groups_keys: bool,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
         let mut class_groups_public_keys_and_proofs: HashMap<
             ObjectID,
@@ -960,13 +963,24 @@ impl SuiClientInner for SuiSdkClient {
         > = HashMap::new();
         for validator in validators {
             let info = validator.verified_validator_info();
+            let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys {
+                if let Some(next_epoch_class_groups_pubkey_and_proof) =
+                    &info.next_epoch_class_groups_pubkey_and_proof_bytes
+                {
+                    next_epoch_class_groups_pubkey_and_proof
+                        .public_keys_and_proofs
+                        .contents
+                        .id
+                } else {
+                    info.class_groups_pubkey_and_proof_bytes.contents.id
+                }
+            } else {
+                info.class_groups_pubkey_and_proof_bytes.contents.id
+            };
+
             let dynamic_fields = self
                 .read_api()
-                .get_dynamic_fields(
-                    info.class_groups_pubkey_and_proof_bytes.contents.id,
-                    None,
-                    None,
-                )
+                .get_dynamic_fields(class_groups_pubkey_and_proof_bytes_id, None, None)
                 .await?;
             let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
                 NUM_OF_CLASS_GROUPS_KEY_OBJECTS] = Default::default();
