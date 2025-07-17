@@ -16,9 +16,10 @@ use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
-    BecomeCandidateValidatorData, collect_commission, report_validator, request_add_validator,
+    BecomeCandidateValidatorData, collect_commission,
+    create_class_groups_public_key_and_proof_object, report_validator, request_add_validator,
     request_add_validator_candidate, request_remove_validator, request_remove_validator_candidate,
-    rotate_commission_cap, rotate_operation_cap, set_next_commission,
+    request_withdraw_stake, rotate_commission_cap, rotate_operation_cap, set_next_commission,
     set_next_epoch_class_groups_pubkey_and_proof_bytes, set_next_epoch_consensus_address,
     set_next_epoch_consensus_pubkey_bytes, set_next_epoch_network_address,
     set_next_epoch_network_pubkey_bytes, set_next_epoch_p2p_address,
@@ -134,6 +135,15 @@ pub enum IkaValidatorCommand {
     },
     #[clap(name = "withdraw-stake")]
     WithdrawStake {
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "staked-ika-id", long)]
+        staked_ika_id: ObjectID,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
+    },
+    #[clap(name = "request-withdraw-stake")]
+    RequestWithdrawStake {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
         #[clap(name = "staked-ika-id", long)]
@@ -339,6 +349,7 @@ pub enum IkaValidatorCommandResponse {
     RemoveCandidate(SuiTransactionBlockResponse),
     SetCommission(SuiTransactionBlockResponse),
     WithdrawStake(SuiTransactionBlockResponse),
+    RequestWithdrawStake(SuiTransactionBlockResponse),
     ReportValidator(SuiTransactionBlockResponse),
     UndoReportValidator(SuiTransactionBlockResponse),
     RotateOperationCap(SuiTransactionBlockResponse),
@@ -625,6 +636,29 @@ impl IkaValidatorCommand {
                 )
                 .await?;
                 IkaValidatorCommandResponse::WithdrawStake(response)
+            }
+            IkaValidatorCommand::RequestWithdrawStake {
+                gas_budget,
+                staked_ika_id,
+                ika_sui_config,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {config_path:?}"
+                        ))
+                    })?;
+                let response = request_withdraw_stake(
+                    context,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    staked_ika_id,
+                    gas_budget,
+                )
+                .await?;
+                IkaValidatorCommandResponse::RequestWithdrawStake(response)
             }
             IkaValidatorCommand::ReportValidator {
                 gas_budget,
@@ -996,13 +1030,15 @@ impl IkaValidatorCommand {
                 let new_class_groups_key = ClassGroupsKeyPairAndProof::from_seed(&new_seed);
 
                 // Create the class groups object with the new key
-                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
-                    context.active_address()?,
-                    context,
-                    config.ika_common_package_id,
-                    new_class_groups_key.encryption_key_and_proof(),
-                    gas_budget,
-                ).await?;
+                let class_groups_keypair_and_proof_obj_ref =
+                    create_class_groups_public_key_and_proof_object(
+                        context.active_address()?,
+                        context,
+                        config.ika_common_package_id,
+                        new_class_groups_key.encryption_key_and_proof(),
+                        gas_budget,
+                    )
+                    .await?;
 
                 let response = set_next_epoch_class_groups_pubkey_and_proof_bytes(
                     context,
@@ -1129,6 +1165,7 @@ impl Display for IkaValidatorCommandResponse {
             | IkaValidatorCommandResponse::RemoveCandidate(response)
             | IkaValidatorCommandResponse::SetCommission(response)
             | IkaValidatorCommandResponse::WithdrawStake(response)
+            | IkaValidatorCommandResponse::RequestWithdrawStake(response)
             | IkaValidatorCommandResponse::ReportValidator(response)
             | IkaValidatorCommandResponse::UndoReportValidator(response)
             | IkaValidatorCommandResponse::RotateOperationCap(response)

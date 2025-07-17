@@ -58,6 +58,7 @@ pub const REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME: &IdentStr =
     ident_str!("request_remove_validator");
 pub const SET_NEXT_COMMISSION_FUNCTION_NAME: &IdentStr = ident_str!("set_next_commission");
 pub const WITHDRAW_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("withdraw_stake");
+pub const REQUEST_WITHDRAW_STAKE_FUNCTION_NAME: &IdentStr = ident_str!("request_withdraw_stake");
 pub const REPORT_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("report_validator");
 pub const UNDO_REPORT_VALIDATOR_FUNCTION_NAME: &IdentStr = ident_str!("undo_report_validator");
 pub const ROTATE_OPERATION_CAP_FUNCTION_NAME: &IdentStr = ident_str!("rotate_operation_cap");
@@ -99,7 +100,7 @@ pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_p
 pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
     ident_str!("set_paused_curves_and_signature_algorithms");
 pub const SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME: &IdentStr =
-    ident_str!("set_next_epoch_class_groups_public_key_and_proof");
+    ident_str!("set_next_epoch_class_groups_pubkey_and_proof_bytes");
 
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
