@@ -59,8 +59,10 @@ pub struct DWalletMPCMetrics {
     /// and problematic rounds.
     advance_completions: IntGaugeVec,
 
+    /// Records the average duration of computations for each MPC round.
     computation_duration_avg: IntGaugeVec,
 
+    /// Tracks the number of MPC protocol sessions that have been started.
     session_start_count: IntGaugeVec,
 
     /// Tracks the total number of completed MPC protocol sessions.
