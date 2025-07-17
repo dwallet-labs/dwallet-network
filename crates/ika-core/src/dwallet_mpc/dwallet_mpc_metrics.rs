@@ -62,6 +62,8 @@ pub struct DWalletMPCMetrics {
     /// Records the average duration of computations for each MPC round.
     computation_duration_avg: IntGaugeVec,
 
+    computation_duration_variance: IntGaugeVec,
+
     /// Tracks the number of MPC protocol sessions that have been started.
     session_start_count: IntGaugeVec,
 
@@ -134,6 +136,13 @@ impl DWalletMPCMetrics {
             advance_calls: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_advance_calls",
                 "Number of advance calls",
+                &round_metric_labels,
+                registry
+            )
+            .unwrap(),
+            computation_duration_variance: register_int_gauge_vec_with_registry!(
+                "dwallet_mpc_computation_duration_variance",
+                "Variance of the duration of MPC computations in milliseconds",
                 &round_metric_labels,
                 registry
             )
@@ -303,6 +312,40 @@ impl DWalletMPCMetrics {
                 &mpc_event_data.get_signature_algorithm(),
             ])
             .set(new_avg);
+        if advance_completions_count > 1 {
+            let current_variance = self
+                .computation_duration_variance
+                .with_label_values(&[
+                    &mpc_event_data.to_string(),
+                    &mpc_event_data.get_curve(),
+                    mpc_round,
+                    &mpc_event_data.get_hash_scheme(),
+                    &mpc_event_data.get_signature_algorithm(),
+                ])
+                .get();
+            let new_variance = (current_variance * (advance_completions_count - 1)
+                + (duration_ms - new_avg).pow(2))
+                / (advance_completions_count - 1);
+            self.computation_duration_variance
+                .with_label_values(&[
+                    &mpc_event_data.to_string(),
+                    &mpc_event_data.get_curve(),
+                    mpc_round,
+                    &mpc_event_data.get_hash_scheme(),
+                    &mpc_event_data.get_signature_algorithm(),
+                ])
+                .set(new_variance);
+        } else {
+            self.computation_duration_variance
+                .with_label_values(&[
+                    &mpc_event_data.to_string(),
+                    &mpc_event_data.get_curve(),
+                    mpc_round,
+                    &mpc_event_data.get_hash_scheme(),
+                    &mpc_event_data.get_signature_algorithm(),
+                ])
+                .set(0);
+        }
     }
 
     /// Sets the duration of the last completion for a specific MPC round.
