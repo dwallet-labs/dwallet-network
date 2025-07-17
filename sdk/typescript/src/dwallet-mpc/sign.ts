@@ -50,12 +50,7 @@ interface VerifiedPartialUserSignature {
 	cap_id: string;
 }
 
-async function call_mpc_sign_tx(tx: Transaction, emptyIKACoin: TransactionResult, conf: Config) {
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+export async function executeSignTransaction(tx: Transaction, conf: Config) {
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
@@ -68,7 +63,12 @@ async function call_mpc_sign_tx(tx: Transaction, emptyIKACoin: TransactionResult
 	if (!isStartSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
-	return await getObjectWithType(conf, startSessionEvent.event_data.sign_id, isReadySignObject);
+	const signObj = await getObjectWithType(
+		conf,
+		startSessionEvent.event_data.sign_id,
+		isReadySignObject,
+	);
+	return signObj;
 }
 
 function createEmptyIKACoin(tx: Transaction, conf: Config) {
@@ -128,7 +128,6 @@ async function approveImportedDWalletMessageTX(
 	});
 	return { dWalletStateData, tx, messageApproval };
 }
-
 export async function sign(
 	conf: Config,
 	presignID: string,
@@ -138,12 +137,33 @@ export async function sign(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
 ): Promise<ReadySignObject> {
+	const tx = await prepareSignTransaction(
+		conf,
+		presignID,
+		dwalletCapID,
+		message,
+		secretKey,
+		networkDecryptionKeyPublicOutput,
+		hash,
+	);
+	return executeSignTransaction(tx, conf);
+}
+
+export async function prepareSignTransaction(
+	conf: Config,
+	presignID: string,
+	dwalletCapID: string,
+	message: Uint8Array,
+	secretKey: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
+	hash = Hash.KECCAK256,
+): Promise<Transaction> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
 
-	console.time('create_sign_centralized_output');
+	console.time(`sign centralized party ${conf.suiClientKeypair.toSuiAddress()}`);
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
 		activeDWallet.state.fields.public_output,
@@ -152,8 +172,7 @@ export async function sign(
 		message,
 		hash,
 	);
-	console.timeEnd('create_sign_centralized_output');
-
+	console.timeEnd(`sign centralized party ${conf.suiClientKeypair.toSuiAddress()}`);
 	const { dWalletStateData, tx, messageApproval } = await approveMessageTX(
 		conf,
 		dwalletCapID,
@@ -187,7 +206,12 @@ export async function sign(
 			tx.gas,
 		],
 	});
-	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+	return tx;
 }
 
 export async function signWithImportedDWallet(
@@ -253,7 +277,7 @@ export async function signWithImportedDWallet(
 			tx.gas,
 		],
 	});
-	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
+	return await executeSignTransaction(tx, emptyIKACoin, conf);
 }
 
 function isReadySignObject(obj: any): obj is ReadySignObject {
@@ -458,5 +482,5 @@ export async function completeFutureSign(
 			tx.gas,
 		],
 	});
-	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
+	return await executeSignTransaction(tx, emptyIKACoin, conf);
 }
