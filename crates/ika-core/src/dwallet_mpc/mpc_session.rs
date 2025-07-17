@@ -182,6 +182,8 @@ impl DWalletMPCSession {
     /// Add an output received from a party for the current consensus round.
     /// If the party already sent an output for this consensus round, it is ignored.
     /// This is used to collect outputs from different parties for the same consensus round,
+    ///
+    /// If we got an output from ourselves, mark the session as computation completed.
     pub(crate) fn add_output(
         &mut self,
         consensus_round: u64,
@@ -202,6 +204,18 @@ impl DWalletMPCSession {
             ?mpc_protocol,
             "Received a dWallet MPC output",
         );
+
+        if sender_party_id == self.party_id {
+            // Received an output from ourselves from the consensus, so it's safe to mark the session as computation completed.
+            info!(
+                authority=?self.validator_name,
+                current_mpc_round=self.current_mpc_round,
+                mpc_protocol,
+                "Received our output from consensus, marking MPC session as computation completed",
+            );
+
+            self.mark_mpc_session_as_computation_completed()
+        }
 
         let consensus_round_output_map = self
             .outputs_by_consensus_round
@@ -224,6 +238,10 @@ impl DWalletMPCSession {
 
     pub(crate) fn mark_mpc_session_as_completed(&mut self) {
         self.status = MPCSessionStatus::Completed;
+    }
+
+    pub(crate) fn mark_mpc_session_as_computation_completed(&mut self) {
+        self.status = MPCSessionStatus::ComputationCompleted;
     }
 
     pub(crate) fn mpc_event_data(&self) -> Option<&MPCEventData> {

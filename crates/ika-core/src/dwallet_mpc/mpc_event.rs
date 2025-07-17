@@ -47,7 +47,7 @@ impl DWalletMPCManager {
     ///
     /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
-    pub(crate) fn handle_sui_db_event_batch(&mut self, events: Vec<DBSuiEvent>) {
+    pub(crate) fn handle_mpc_event_batch(&mut self, events: Vec<DWalletMPCEvent>) {
         // We only update `next_active_committee` in this block. Once it's set,
         // there will no longer be any pending events targeting it for this epoch.
         if self.next_active_committee.is_none() {
@@ -88,57 +88,8 @@ impl DWalletMPCManager {
         }
 
         for event in events {
-            self.handle_sui_event(event);
+            self.handle_mpc_event(event);
         }
-    }
-
-    fn handle_sui_event(&mut self, event: DBSuiEvent) {
-        if event.type_.address != *self.packages_config.ika_dwallet_2pc_mpc_package_id
-            || event.type_.module != SESSIONS_MANAGER_MODULE_NAME.into()
-        {
-            // TODO: Omer - should/can we check if it is not from any of our modules before reporting it as an error?
-            error!(
-                module=?event.type_.module,
-                address=?event.type_.address,
-                "received an event from a wrong SUI module - rejecting!"
-            );
-
-            return;
-        }
-
-        let event = match self.parse_sui_event(event.clone()) {
-            Ok(Some(event)) => {
-                debug!(
-                    session_identifier=?event.session_request.session_identifier,
-                    session_type=?event.session_request.session_type,
-                    mpc_protocol=?event.session_request.request_input,
-                    mpc_round=?event.session_request.request_input,
-                    current_epoch=?self.epoch_id,
-                    "Successfully parsed a Sui event"
-                );
-
-                event
-            }
-            Ok(None) => {
-                debug!(
-                    event=?event,
-                    "Received an event that does not trigger the start of an MPC flow"
-                );
-
-                return;
-            }
-            Err(e) => {
-                error!(
-                    event=?event,
-                    error=?e,
-                    "Error while parsing Sui event"
-                );
-
-                return;
-            }
-        };
-
-        self.handle_mpc_event(event)
     }
 
     /// Handle an MPC event.
@@ -364,6 +315,57 @@ impl DWalletMPCManager {
 
         Ok(Some(event))
     }
+
+    pub(crate) fn parse_sui_events(&mut self, events: Vec<DBSuiEvent>) -> Vec<DWalletMPCEvent> {
+        events
+            .into_iter()
+            .filter_map(|event| {
+                if event.type_.address != *self.packages_config.ika_dwallet_2pc_mpc_package_id
+                    || event.type_.module != SESSIONS_MANAGER_MODULE_NAME.into()
+                {
+                    error!(
+                        module=?event.type_.module,
+                        address=?event.type_.address,
+                        "received an event from a wrong SUI module - rejecting!"
+                    );
+
+                    None
+                } else {
+                    match self.parse_sui_event(event.clone()) {
+                        Ok(Some(event)) => {
+                            debug!(
+                                session_identifier=?event.session_request.session_identifier,
+                                session_type=?event.session_request.session_type,
+                                mpc_protocol=?event.session_request.request_input,
+                                mpc_round=?event.session_request.request_input,
+                                current_epoch=?self.epoch_id,
+                                "Successfully parsed a Sui event"
+                            );
+
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            debug!(
+                                event=?event,
+                                "Received an event that does not trigger the start of an MPC flow"
+                            );
+
+                            None
+                        }
+                        Err(e) => {
+                            error!(
+                                event=?event,
+                                error=?e,
+                                "Error while parsing Sui event"
+                            );
+
+                            None
+                        }
+                    }
+                }
+            })
+            .collect()
+    }
 }
 
 impl DWalletMPCService {
@@ -424,7 +426,7 @@ impl DWalletMPCService {
                 return Ok(vec![]);
             }
             Err(e) => {
-                return Err(IkaError::ReveiverError(e.to_string()));
+                return Err(IkaError::ReceiverError(e.to_string()));
             }
         };
 
