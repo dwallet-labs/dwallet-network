@@ -1013,6 +1013,15 @@ impl IkaValidatorCommand {
                     gas_budget,
                 )
                 .await?;
+
+                if response.status_ok().is_some() && response.status_ok().unwrap() {
+                    // Save the new seed to class-groups.key file (override if exists)
+                    let dir = std::env::current_dir()?;
+                    let class_groups_key_file = dir.join("class-groups.key");
+                    new_seed.save_to_file(class_groups_key_file.clone())?;
+                    println!("Generated new class groups seed file: {class_groups_key_file:?}.");
+                }
+
                 IkaValidatorCommandResponse::SetNextEpochClassGroupsPubkey(response)
             }
             IkaValidatorCommand::VerifyValidatorCap {
