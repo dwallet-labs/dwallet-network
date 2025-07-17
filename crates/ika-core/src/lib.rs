@@ -24,3 +24,4 @@ pub mod dwallet_mpc;
 pub mod sui_connector;
 
 pub mod runtime;
+mod main;

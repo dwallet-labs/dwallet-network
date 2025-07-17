@@ -136,7 +136,7 @@ move-symbol-pool.workspace = true
 sui-test-transaction-builder.workspace = true
 sui-move.workspace = true
 
-ika-types = {workspace = true, features = ["test_helpers"]}
+ika-types = {workspace = true}
 class_groups = { workspace = true, features = ["threshold", "parallel", "test_helpers"]}
 
 [target.'cfg(not(target_env = "msvc"))'.dev-dependencies]
