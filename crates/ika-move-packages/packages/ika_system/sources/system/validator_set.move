@@ -440,6 +440,10 @@ public(package) fun set_validator_name(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_name(name, cap);
 }
@@ -455,6 +459,10 @@ public(package) fun set_validator_metadata(
     metadata: ValidatorMetadata,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_validator_metadata(cap, metadata);
 }
@@ -467,6 +475,10 @@ public(package) fun set_next_commission(
     current_epoch: u64,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_commission(new_commission_rate, current_epoch, cap);
 }
@@ -477,6 +489,10 @@ public(package) fun set_next_epoch_network_address(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_network_address(network_address, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -488,6 +504,10 @@ public(package) fun set_next_epoch_p2p_address(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_p2p_address(p2p_address, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -499,6 +519,10 @@ public(package) fun set_next_epoch_consensus_address(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_consensus_address(consensus_address, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -512,6 +536,10 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
     ctx: &TxContext,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_protocol_pubkey_bytes(
         protocol_pubkey_bytes,
@@ -528,6 +556,10 @@ public(package) fun set_next_epoch_network_pubkey_bytes(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -539,6 +571,10 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
