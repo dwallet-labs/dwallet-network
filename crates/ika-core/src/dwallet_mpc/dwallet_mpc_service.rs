@@ -6,6 +6,7 @@
 //! local DB every [`READ_INTERVAL_MS`] seconds
 //! and forward them to the [`DWalletMPCManager`].
 
+use crate::authority::AuthorityState;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::consensus_manager::ReplayWaiter;
@@ -53,6 +54,7 @@ pub struct DWalletMPCService {
     last_read_consensus_round: Option<Round>,
     pub(crate) epoch_store: Arc<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
+    state: Arc<AuthorityState>,
     pub(crate) sui_client: Arc<SuiConnectorClient>,
     dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
     dwallet_mpc_manager: DWalletMPCManager,
@@ -73,6 +75,7 @@ impl DWalletMPCService {
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        state: Arc<AuthorityState>,
     ) -> Self {
         let validator_name = epoch_store.name;
         let committee = epoch_store.committee().clone();
@@ -104,6 +107,7 @@ impl DWalletMPCService {
             last_read_consensus_round: None,
             epoch_store: epoch_store.clone(),
             consensus_adapter,
+            state,
             sui_client: sui_client.clone(),
             dwallet_checkpoint_service,
             dwallet_mpc_manager,
@@ -197,7 +201,38 @@ impl DWalletMPCService {
                 }
             };
 
-            self.dwallet_mpc_manager.handle_sui_db_event_batch(events);
+            let events = self.dwallet_mpc_manager.parse_sui_events(events);
+            for event in &events {
+                let session_identifier = event.session_request.session_identifier;
+                match self
+                    .state
+                    .perpetual_tables
+                    .is_dwallet_mpc_session_completed(&session_identifier)
+                {
+                    Ok(session_completed) => {
+                        if session_completed {
+                            self.dwallet_mpc_manager
+                                .complete_computation_mpc_session_and_create_if_not_exists(
+                                    &session_identifier,
+                                );
+
+                            info!(
+                                ?session_identifier,
+                                "Got an event for a session that was previously computation completed, marking it as computation completed"
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        error!(
+                            ?session_identifier,
+                            error=?e,
+                            "Could not read from the DB if the session was completed, got error"
+                        );
+                    }
+                }
+            }
+
+            self.dwallet_mpc_manager.handle_mpc_event_batch(events);
 
             if !self.process_consensus_rounds_from_storage() {
                 // If we failed to process consensus rounds from storage
@@ -303,7 +338,7 @@ impl DWalletMPCService {
 
             // Now we have the MPC messages for the current round, we can
             // process the MPC outputs for the current round.
-            let mut checkpoint_messages = self
+            let (mut checkpoint_messages, completed_sessions) = self
                 .dwallet_mpc_manager
                 .handle_consensus_round_outputs(consensus_round, mpc_outputs);
 
@@ -359,6 +394,20 @@ impl DWalletMPCService {
                     return false;
                 }
             }
+
+            if let Err(e) = self
+                .state
+                .perpetual_tables
+                .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
+            {
+                error!(
+                    err=?e,
+                    ?consensus_round,
+                    ?completed_sessions,
+                    "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
+                );
+            }
+
             self.last_read_consensus_round = Some(consensus_round);
         }
 
