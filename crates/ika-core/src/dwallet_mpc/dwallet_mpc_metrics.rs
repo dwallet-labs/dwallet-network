@@ -400,3 +400,30 @@ fn update_variance(
     let new_var_f = (old_var_f * n_f + delta * delta2) / (n_f + 1.0);
     new_var_f.round() as i64
 }
+
+mod tests {
+    use super::*;
+    // test the update variance function
+    #[test]
+    fn test_update_variance() {
+        let old_mean = 10;
+        let new_mean = 12;
+        let old_variance = 4;
+        let new_value = 14;
+        let n = 3; // number of values before adding new_value
+
+        let updated_variance = update_variance(old_mean, new_mean, old_variance, new_value, n);
+        assert_eq!(updated_variance, 8);
+
+        let old_mean = 10;
+        let new_mean = 10;
+        let old_variance = 0;
+        let new_value = 10;
+        let n = 1; // number of values before adding new_value
+
+        let updated_variance = update_variance(old_mean, new_mean, old_variance, new_value, n);
+        assert_eq!(updated_variance, 0);
+        
+        
+    }
+}
