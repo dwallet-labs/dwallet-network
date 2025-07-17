@@ -379,6 +379,8 @@ impl DWalletMPCMetrics {
     }
 }
 
+/// Calculating the variance using the Welford's method.
+/// Learn more in this [article](https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/)
 fn update_variance(
     old_mean: i64,
     new_mean: i64,
