@@ -59,6 +59,12 @@ pub struct DWalletMPCMetrics {
     /// and problematic rounds.
     advance_completions: IntGaugeVec,
 
+    /// Records the average duration of computations for each MPC round.
+    computation_duration_avg: IntGaugeVec,
+
+    /// Tracks the number of MPC protocol sessions that have been started.
+    session_start_count: IntGaugeVec,
+
     /// Tracks the total number of completed MPC protocol sessions.
     ///
     /// Labels: protocol_name, curve, hash_scheme, signature_algorithm
@@ -111,6 +117,13 @@ impl DWalletMPCMetrics {
         ];
 
         Arc::new(Self {
+            session_start_count: register_int_gauge_vec_with_registry!(
+                "dwallet_mpc_session_start_count",
+                "Number of MPC protocol sessions started",
+                &protocol_metric_labels,
+                registry
+            )
+            .unwrap(),
             received_events_start_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_received_events_start_count",
                 "Number of received start events",
@@ -121,6 +134,13 @@ impl DWalletMPCMetrics {
             advance_calls: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_advance_calls",
                 "Number of advance calls",
+                &round_metric_labels,
+                registry
+            )
+            .unwrap(),
+            computation_duration_avg: register_int_gauge_vec_with_registry!(
+                "dwallet_mpc_computation_duration_avg",
+                "Average duration of MPC computations in milliseconds",
                 &round_metric_labels,
                 registry
             )
@@ -208,6 +228,16 @@ impl DWalletMPCMetrics {
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_call(&self, request_input: &MPCRequestInput, mpc_round: &str) {
+        if mpc_round == "1" {
+            self.session_start_count
+                .with_label_values(&[
+                    &request_input.to_string(),
+                    &request_input.get_curve(),
+                    &request_input.get_hash_scheme(),
+                    &request_input.get_signature_algorithm(),
+                ])
+                .inc();
+        }
         self.advance_calls
             .with_label_values(&[
                 &request_input.to_string(),
@@ -227,7 +257,12 @@ impl DWalletMPCMetrics {
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
-    pub fn add_advance_completion(&self, mpc_event_data: &MPCRequestInput, mpc_round: &str) {
+    pub fn add_advance_completion(
+        &self,
+        mpc_event_data: &MPCRequestInput,
+        mpc_round: &str,
+        duration_ms: i64,
+    ) {
         self.advance_completions
             .with_label_values(&[
                 &mpc_event_data.to_string(),
@@ -237,6 +272,37 @@ impl DWalletMPCMetrics {
                 &mpc_event_data.get_signature_algorithm(),
             ])
             .inc();
+        let current_avg = self
+            .computation_duration_avg
+            .with_label_values(&[
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
+                mpc_round,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
+            ])
+            .get();
+        let advance_completions_count = self
+            .advance_completions
+            .with_label_values(&[
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
+                mpc_round,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
+            ])
+            .get();
+        let new_avg = (current_avg * (advance_completions_count - 1) + duration_ms)
+            / advance_completions_count;
+        self.computation_duration_avg
+            .with_label_values(&[
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
+                mpc_round,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
+            ])
+            .set(new_avg);
     }
 
     /// Sets the duration of the last completion for a specific MPC round.
