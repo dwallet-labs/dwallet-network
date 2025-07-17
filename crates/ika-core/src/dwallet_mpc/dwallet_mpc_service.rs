@@ -140,7 +140,6 @@ impl DWalletMPCService {
 
         info!(
             validator=?self.epoch_store.name,
-            bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),
             "Spawning dWallet MPC Service"
         );
         let mut loop_index = 0;
