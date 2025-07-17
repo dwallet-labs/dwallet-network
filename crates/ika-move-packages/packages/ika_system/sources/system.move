@@ -474,7 +474,8 @@ public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut System,
     class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
     cap: &ValidatorOperationCap,
-) {
+): Option<TableVec<vector<u8>>> {
+    let class_groups_pubkey_and_proof = class_groups_pubkey_and_proof.destroy();
     self
         .inner_mut()
         .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
@@ -683,6 +684,7 @@ public fun validator_stake_amount(self: &mut System, validator_id: ID): u64 {
 
 #[test_only]
 use sui::vec_set::VecSet;
+use sui::table_vec::TableVec;
 
 #[test_only]
 /// Returns all the validators who are currently reporting `validator_id`

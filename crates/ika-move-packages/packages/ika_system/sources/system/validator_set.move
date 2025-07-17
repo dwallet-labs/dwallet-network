@@ -22,6 +22,7 @@ use sui::object_table::{Self, ObjectTable};
 use sui::table::Table;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::{Self, VecSet};
+use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -57,8 +58,8 @@ const EInvalidCap: u64 = 10;
 const EProcessMidEpochOnlyAfterAdvanceEpoch: u64 = 11;
 /// Advance epoch can be called only after process mid epoch.
 const EAdvanceEpochOnlyAfterProcessMidEpoch: u64 = 12;
-/// Replace validator class groups key only if validator not in next committee
-const EReplaceValidatorClassGroupsKeyIfValidatorOutOfNextCommittee: u64 = 13;
+/// Cannot set validator new info before next epoch if validator is in next epoch committee.
+const ECannotSetBeforeNextEpoch: u64 = 13;
 
 // === Structs ===
 
@@ -545,20 +546,22 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut ValidatorSet,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
-) {
+): Option<TableVec<vector<u8>>> {
     let validator_id = cap.validator_id();
     let is_next_committee = self
             .next_epoch_active_committee
             .is_some_and!(|c| c.contains(&validator_id));
-    assert!(is_next_committee, EReplaceValidatorClassGroupsKeyIfValidatorOutOfNextCommittee);
+    assert!(is_next_committee, ECannotSetBeforeNextEpoch);
     let validator = self.get_validator_mut(validator_id);
-    validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(
+    let previous_class_groups_key = validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(
         class_groups_pubkey_and_proof_bytes,
         cap,
     );
     self.assert_no_pending_or_active_duplicates(validator_id);
+    previous_class_groups_key
+
 }
 
 // ==== epoch change functions ====
