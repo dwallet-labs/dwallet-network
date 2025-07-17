@@ -395,6 +395,7 @@ impl DWalletMPCManager {
         let mut ready_to_advance_sessions: Vec<_> = self
             .mpc_sessions
             .iter()
+            .filter(|(_, session)| session.status == MPCSessionStatus::Active)
             .filter_map(|(_, session)| {
                 // Only sessions with MPC event data should be advanced
                 session.mpc_event_data.clone().and_then(|mpc_event_data| {
