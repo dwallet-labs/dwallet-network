@@ -231,8 +231,11 @@ impl CryptographicComputationsOrchestrator {
                     "Cryptographic computation completed successfully"
                 );
 
-                dwallet_mpc_metrics
-                    .add_advance_completion(&request_input, &computation_id.mpc_round.to_string());
+                dwallet_mpc_metrics.add_advance_completion(
+                    &request_input,
+                    &computation_id.mpc_round.to_string(),
+                    elapsed_ms as i64,
+                );
 
                 dwallet_mpc_metrics.set_last_completion_duration(
                     &request_input,
