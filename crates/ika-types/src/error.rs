@@ -239,7 +239,7 @@ pub enum IkaError {
     BCSError(String),
 
     #[error("failed to receive data: {0}")]
-    ReveiverError(String),
+    ReceiverError(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;

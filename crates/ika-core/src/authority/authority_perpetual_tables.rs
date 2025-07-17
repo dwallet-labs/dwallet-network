@@ -3,11 +3,12 @@
 
 use super::*;
 use std::path::Path;
-use typed_store::rocks::{DBBatch, DBMap, MetricConf};
 use typed_store::traits::Map;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
+use ika_types::messages_dwallet_mpc::SessionIdentifier;
 use typed_store::DBMapUtils;
+use typed_store::rocks::{DBBatch, DBMap, MetricConf};
 use typed_store::rocksdb::Options;
 
 /// AuthorityPerpetualTables contains data that must be preserved from one epoch to the next.
@@ -18,6 +19,10 @@ pub struct AuthorityPerpetualTables {
 
     /// A singleton table that stores latest pruned checkpoint. Used to keep objects pruner progress
     pub(crate) pruned_checkpoint: DBMap<(), DWalletCheckpointSequenceNumber>,
+
+    /// Holds the completed MPC session IDs, to avoid re-using them in the case of a bug
+    /// or in the unlikely case of a malicious full-node/Move contract/Sui network.
+    pub(crate) dwallet_mpc_computation_completed_sessions: DBMap<SessionIdentifier, ()>,
 }
 
 impl AuthorityPerpetualTables {
@@ -75,6 +80,35 @@ impl AuthorityPerpetualTables {
     ) -> IkaResult {
         let mut wb = self.pruned_checkpoint.batch();
         self.set_highest_pruned_checkpoint(&mut wb, checkpoint_number)?;
+        wb.write()?;
+        Ok(())
+    }
+
+    pub fn is_dwallet_mpc_session_completed(
+        &self,
+        session_identifier: &SessionIdentifier,
+    ) -> IkaResult<bool> {
+        let entry = self
+            .dwallet_mpc_computation_completed_sessions
+            .get(session_identifier)?;
+
+        Ok(entry.is_some())
+    }
+
+    pub fn insert_dwallet_mpc_computation_completed_sessions(
+        &self,
+        newly_completed_session_ids: &[SessionIdentifier],
+    ) -> IkaResult {
+        let newly_completed_session_ids: Vec<_> = newly_completed_session_ids
+            .iter()
+            .map(|&session_identifier| (session_identifier, ()))
+            .collect();
+
+        let mut wb = self.dwallet_mpc_computation_completed_sessions.batch();
+        wb.insert_batch(
+            &self.dwallet_mpc_computation_completed_sessions,
+            newly_completed_session_ids,
+        )?;
         wb.write()?;
         Ok(())
     }
