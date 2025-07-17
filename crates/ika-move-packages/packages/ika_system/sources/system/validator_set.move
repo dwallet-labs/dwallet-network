@@ -57,6 +57,8 @@ const EInvalidCap: u64 = 10;
 const EProcessMidEpochOnlyAfterAdvanceEpoch: u64 = 11;
 /// Advance epoch can be called only after process mid epoch.
 const EAdvanceEpochOnlyAfterProcessMidEpoch: u64 = 12;
+/// Replace validator class groups key only if validator not in next committee
+const EReplaceValidatorClassGroupsKeyIfValidatorOutOfNextCommittee: u64 = 13;
 
 // === Structs ===
 
@@ -547,6 +549,10 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    let is_next_committee = self
+            .next_epoch_active_committee
+            .is_some_and!(|c| c.contains(&validator_id));
+    assert!(is_next_committee, EReplaceValidatorClassGroupsKeyIfValidatorOutOfNextCommittee);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(
         class_groups_pubkey_and_proof_bytes,
