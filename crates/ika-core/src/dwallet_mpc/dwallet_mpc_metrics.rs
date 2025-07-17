@@ -61,6 +61,8 @@ pub struct DWalletMPCMetrics {
 
     computation_duration_avg: IntGaugeVec,
 
+    session_start_count: IntGaugeVec,
+
     /// Tracks the total number of completed MPC protocol sessions.
     ///
     /// Labels: protocol_name, curve, hash_scheme, signature_algorithm
@@ -113,6 +115,13 @@ impl DWalletMPCMetrics {
         ];
 
         Arc::new(Self {
+            session_start_count: register_int_gauge_vec_with_registry!(
+                "dwallet_mpc_session_start_count",
+                "Number of MPC protocol sessions started",
+                &protocol_metric_labels,
+                registry
+            )
+            .unwrap(),
             received_events_start_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_received_events_start_count",
                 "Number of received start events",
@@ -217,6 +226,17 @@ impl DWalletMPCMetrics {
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_call(&self, request_input: &MPCRequestInput, mpc_round: &str) {
+        if mpc_round == "0" {
+            self.session_start_count
+                .with_label_values(&[
+                    &request_input.to_string(),
+                    &request_input.get_curve(),
+                    mpc_round,
+                    &request_input.get_hash_scheme(),
+                    &request_input.get_signature_algorithm(),
+                ])
+                .inc();    
+        }
         self.advance_calls
             .with_label_values(&[
                 &request_input.to_string(),
