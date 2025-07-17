@@ -233,7 +233,6 @@ impl DWalletMPCMetrics {
                 .with_label_values(&[
                     &request_input.to_string(),
                     &request_input.get_curve(),
-                    mpc_round,
                     &request_input.get_hash_scheme(),
                     &request_input.get_signature_algorithm(),
                 ])
