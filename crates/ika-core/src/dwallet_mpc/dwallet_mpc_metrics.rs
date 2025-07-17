@@ -417,5 +417,13 @@ mod tests {
         let n = 3;
         let updated_variance = update_variance(old_mean, new_mean, old_variance, new_value, n);
         assert_eq!(updated_variance, 100);
+
+        let new_value = 60;
+        let old_mean = 50;
+        let new_mean = 55;
+        let old_variance = 0;
+        let n = 2;
+        let updated_variance = update_variance(old_mean, new_mean, old_variance, new_value, n);
+        assert_eq!(updated_variance, 50);
     }
 }
