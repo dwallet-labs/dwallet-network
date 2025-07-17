@@ -63,6 +63,7 @@ pub struct DWalletMPCMetrics {
     /// Records the average duration of computations for each MPC round.
     computation_duration_avg: IntGaugeVec,
 
+    /// Records the variance of the duration of computations for each MPC round.
     computation_duration_variance: IntGaugeVec,
 
     /// Tracks the number of MPC protocol sessions that have been started.
