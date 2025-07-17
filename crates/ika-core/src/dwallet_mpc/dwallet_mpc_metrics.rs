@@ -228,7 +228,7 @@ impl DWalletMPCMetrics {
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_call(&self, request_input: &MPCRequestInput, mpc_round: &str) {
-        if mpc_round == "0" {
+        if mpc_round == "1" {
             self.session_start_count
                 .with_label_values(&[
                     &request_input.to_string(),
