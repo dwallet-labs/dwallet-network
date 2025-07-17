@@ -235,7 +235,7 @@ impl DWalletMPCMetrics {
                     &request_input.get_hash_scheme(),
                     &request_input.get_signature_algorithm(),
                 ])
-                .inc();    
+                .inc();
         }
         self.advance_calls
             .with_label_values(&[
