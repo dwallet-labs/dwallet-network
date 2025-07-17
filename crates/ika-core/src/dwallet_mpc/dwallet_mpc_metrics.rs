@@ -323,9 +323,13 @@ impl DWalletMPCMetrics {
                     &mpc_event_data.get_signature_algorithm(),
                 ])
                 .get();
-            let new_variance = (current_variance * (advance_completions_count - 1)
-                + (duration_ms - new_avg).pow(2))
-                / (advance_completions_count - 1);
+            let new_variance = update_variance(
+                current_avg,
+                new_avg,
+                current_variance,
+                duration_ms,
+                advance_completions_count,
+            );
             self.computation_duration_variance
                 .with_label_values(&[
                     &mpc_event_data.to_string(),
@@ -373,4 +377,24 @@ impl DWalletMPCMetrics {
             ])
             .set(duration_ms);
     }
+}
+
+fn update_variance(
+    old_mean: i64,
+    new_mean: i64,
+    old_variance: i64,
+    new_value: i64,
+    n: i64, // number of values before adding new_value
+) -> i64 {
+    let old_mean_f = old_mean as f64;
+    let new_mean_f = new_mean as f64;
+    let old_var_f = old_variance as f64;
+    let new_value_f = new_value as f64;
+    let n_f = n as f64;
+
+    let delta = new_value_f - old_mean_f;
+    let delta2 = new_value_f - new_mean_f;
+
+    let new_var_f = (old_var_f * n_f + delta * delta2) / (n_f + 1.0);
+    new_var_f.round() as i64
 }
