@@ -25,13 +25,8 @@ WORKDIR ${WORKDIR}/ika
 COPY Cargo.toml Cargo.lock ./
 COPY crates crates
 
-# Build dependencies first for better layer caching
-# --locked ensures you never accidentally change dependencies during a build.
-# Build dependencies first for better layer caching
-RUN cargo fetch --locked
-
 # Conditionally compile with the network DKG feature
-RUN cargo build --no-default-features --profile ${PROFILE} --locked --bin ika-node
+RUN cargo build --no-default-features --profile ${PROFILE} --locked --bin ika-core
 
 # ==========================
 # Runtime stage
@@ -57,8 +52,9 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
 WORKDIR ${WORKDIR}/ika
 
 # Copy the built binary from the builder stage.
-COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /opt/ika/bin/ika-node
-COPY --from=builder /opt/ika/target/${PROFILE}/ika-node /usr/local/bin/ika-node
+COPY --from=builder /opt/ika/target/${PROFILE}/ika-core /opt/ika/bin/ika-core
+COPY --from=builder /opt/ika/target/${PROFILE}/ika-core /usr/local/bin/ika-core
+CMD ["/usr/local/bin/ika-core"]
 
 # Add build metadata.
 LABEL build-date=$BUILD_DATE
