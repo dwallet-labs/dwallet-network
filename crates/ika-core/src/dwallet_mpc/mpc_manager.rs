@@ -234,9 +234,10 @@ impl DWalletMPCManager {
         &mut self,
         consensus_round: u64,
         outputs: Vec<DWalletMPCOutput>,
-    ) -> Vec<DWalletCheckpointMessageKind> {
+    ) -> (Vec<DWalletCheckpointMessageKind>, Vec<SessionIdentifier>) {
         // Not let's move to process MPC outputs for the current round.
         let mut checkpoint_messages = vec![];
+        let mut completed_sessions = vec![];
         for output in &outputs {
             let session_identifier = output.session_identifier;
 
@@ -246,6 +247,7 @@ impl DWalletMPCManager {
                     self.complete_mpc_session(&session_identifier);
                     let output_digest = output_result.iter().map(|m| m.digest()).collect_vec();
                     checkpoint_messages.extend(output_result);
+                    completed_sessions.push(session_identifier);
                     info!(
                         ?output_digest,
                         consensus_round,
@@ -264,7 +266,8 @@ impl DWalletMPCManager {
                 }
             };
         }
-        checkpoint_messages
+
+        (checkpoint_messages, completed_sessions)
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.

@@ -228,8 +228,6 @@ impl DWalletMPCService {
                             error=?e,
                             "Could not read from the DB if the session was completed, got error"
                         );
-
-                        // TODO: continue?
                     }
                 }
             }
@@ -340,7 +338,7 @@ impl DWalletMPCService {
 
             // Now we have the MPC messages for the current round, we can
             // process the MPC outputs for the current round.
-            let mut checkpoint_messages = self
+            let (mut checkpoint_messages, completed_sessions) = self
                 .dwallet_mpc_manager
                 .handle_consensus_round_outputs(consensus_round, mpc_outputs);
 
@@ -396,6 +394,20 @@ impl DWalletMPCService {
                     return false;
                 }
             }
+
+            if let Err(e) = self
+                .state
+                .perpetual_tables
+                .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
+            {
+                error!(
+                    err=?e,
+                    ?consensus_round,
+                    ?completed_sessions,
+                    "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
+                );
+            }
+
             self.last_read_consensus_round = Some(consensus_round);
         }
 
