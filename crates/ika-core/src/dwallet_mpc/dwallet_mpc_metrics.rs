@@ -396,7 +396,7 @@ fn update_variance(old_mean: i64, new_mean: i64, old_variance: i64, new_value: i
 }
 
 mod tests {
-    use super::update_variance;
+    
 
     // test the update variance function
     #[test]
