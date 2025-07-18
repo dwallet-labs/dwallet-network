@@ -60,11 +60,10 @@ async function createConf(
 	);
 	const address = keypair.getPublicKey().toSuiAddress();
 	console.log(`Address: ${address}`);
-	// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+
 	const suiClient = new SuiClient({ url: 'https://ikafn-on-sui-testnet.ika-network.net/' });
 	await requestSuiFromFaucetWithRetry(
-		// host: getFaucetHost('localnet'),
-		'https://faucet.sui.beta.devnet.ika-network.net',
+		getFaucetHost('testnet'),
 		address,
 	);
 
