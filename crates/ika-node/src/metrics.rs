@@ -1,9 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-use prometheus::{
-    IntGauge, Registry, register_int_gauge_with_registry,
-};
-
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 
 pub struct IkaNodeMetrics {
     pub current_protocol_version: IntGauge,
