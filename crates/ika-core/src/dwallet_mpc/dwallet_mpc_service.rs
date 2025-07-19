@@ -202,18 +202,24 @@ impl DWalletMPCService {
             };
 
             let events = self.dwallet_mpc_manager.parse_sui_events(events);
-            for event in &events {
-                let session_identifier = event.session_request.session_identifier;
-                match self
-                    .state
-                    .perpetual_tables
-                    .is_dwallet_mpc_session_completed(&session_identifier)
-                {
-                    Ok(session_completed) => {
-                        if session_completed {
+            let events_session_identifiers = events
+                .iter()
+                .map(|e| e.session_request.session_identifier)
+                .collect_vec();
+            match self
+                .state
+                .perpetual_tables
+                .is_dwallet_mpc_sessions_completed(&events_session_identifiers)
+            {
+                Ok(completed_sessions) => {
+                    for (session_identifier, session_completed) in events_session_identifiers
+                        .iter()
+                        .zip(completed_sessions.iter())
+                    {
+                        if *session_completed {
                             self.dwallet_mpc_manager
                                 .complete_computation_mpc_session_and_create_if_not_exists(
-                                    &session_identifier,
+                                    session_identifier,
                                 );
 
                             info!(
@@ -222,13 +228,13 @@ impl DWalletMPCService {
                             );
                         }
                     }
-                    Err(e) => {
-                        error!(
-                            ?session_identifier,
-                            error=?e,
-                            "Could not read from the DB if the session was completed, got error"
-                        );
-                    }
+                }
+                Err(e) => {
+                    error!(
+                        ?events_session_identifiers,
+                        error=?e,
+                        "Could not read from the DB completed sessions, got error"
+                    );
                 }
             }
 

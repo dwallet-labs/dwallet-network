@@ -84,15 +84,15 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn is_dwallet_mpc_session_completed(
+    pub fn is_dwallet_mpc_sessions_completed(
         &self,
-        session_identifier: &SessionIdentifier,
-    ) -> IkaResult<bool> {
+        session_identifiers: &[SessionIdentifier],
+    ) -> IkaResult<Vec<bool>> {
         let entry = self
             .dwallet_mpc_computation_completed_sessions
-            .get(session_identifier)?;
+            .multi_get(session_identifiers)?;
 
-        Ok(entry.is_some())
+        Ok(entry.into_iter().map(|s| s.is_some()).collect())
     }
 
     pub fn insert_dwallet_mpc_computation_completed_sessions(
