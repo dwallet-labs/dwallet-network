@@ -66,10 +66,6 @@ async function createConf(
 	console.log(`Address: ${address}`);
 
 	const suiClient = new SuiClient({ url: 'https://ikafn-on-sui-testnet.ika-network.net/' });
-	// await requestSuiFromFaucetWithRetry(
-	// 	getFaucetHost('testnet'),
-	// 	address,
-	// );
 
 	return {
 		suiClientKeypair: keypair,
@@ -142,12 +138,15 @@ describe('Test dWallet MPC', () => {
 			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 0;
 			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 
+			console.log(`1`);
+
 			// Create a new configuration for each iteration
 			const configs = await Promise.all(
 				Array.from({ length: iterations }, (_, k) =>
 					createConf(new Uint8Array(32).fill(10 + k), (k + 3).toString()),
 				),
 			);
+			console.log(`2`);
 
 			// -----------------------------
 			// Phase 1: DKG Initialization
@@ -160,8 +159,10 @@ describe('Test dWallet MPC', () => {
 				const tx = await prepareDKGFirstRoundTransaction(cfg);
 				dkgFirstTasks.push(
 					(async () => {
+						console.log(`waiting to start DKG for Address #${i}: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						await dkgFirstStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						console.log(`starting DKG for Address #${i}: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
+						// await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						console.time(`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const dkgFirstRoundOutput = await executeDKGFirstRoundTransaction(cfg, tx);
 						console.timeEnd(
@@ -175,9 +176,13 @@ describe('Test dWallet MPC', () => {
 				);
 			}
 
+			console.log(`3`);
+
 			dkgFirstStartSignal.resolve();
 
 			const dkgFirsts = await Promise.all(dkgFirstTasks);
+
+			console.log(`4`);
 
 			const centralizedSecretKeySharesTsks = [];
 			for (let i = 0; i < iterations; i++) {
@@ -189,6 +194,8 @@ describe('Test dWallet MPC', () => {
 					})(),
 				);
 			}
+
+			console.log(`5`);
 
 			const centralizedPartyOutputs = await Promise.all(centralizedSecretKeySharesTsks);
 			const dWalletStateData = await getDWalletSecpState(conf);
