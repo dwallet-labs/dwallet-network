@@ -1,6 +1,9 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import path from 'path';
 import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
@@ -47,6 +50,7 @@ import {
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
+const SUI_DISTRIBUTION_OBJECT_ID = '0x04b421774ed31161b74a0248d7f08d818cb87cfb34f57b341485b60f7c0f53f1';
 async function createConf(
 	dWalletSeed: Uint8Array<ArrayBuffer>,
 	keypairSeed: string | null,
@@ -62,10 +66,10 @@ async function createConf(
 	console.log(`Address: ${address}`);
 
 	const suiClient = new SuiClient({ url: 'https://ikafn-on-sui-testnet.ika-network.net/' });
-	await requestSuiFromFaucetWithRetry(
-		getFaucetHost('testnet'),
-		address,
-	);
+	// await requestSuiFromFaucetWithRetry(
+	// 	getFaucetHost('testnet'),
+	// 	address,
+	// );
 
 	return {
 		suiClientKeypair: keypair,
@@ -140,8 +144,8 @@ describe('Test dWallet MPC', () => {
 
 			// Create a new configuration for each iteration
 			const configs = await Promise.all(
-				Array.from({ length: iterations }, () =>
-					createConf(crypto.getRandomValues(new Uint8Array(32)), null),
+				Array.from({ length: iterations }, (_, k) =>
+					createConf(new Uint8Array(32).fill(10 + k), (k + 3).toString()),
 				),
 			);
 
@@ -308,6 +312,38 @@ describe('Test dWallet MPC', () => {
 		},
 		70 * 1000 * 60,
 	);
+
+	it('faucet for parallel test', async () => {
+		const max_parallel = 100;
+
+		for (let i = 0; i < max_parallel; i++) {
+			const recipient = Ed25519Keypair.deriveKeypairFromSeed((i + 3).toString());
+			const tx = new Transaction();
+			tx.setSender(conf.suiClientKeypair.toSuiAddress());
+
+			tx.transferObjects(
+				[
+					coinWithBalance({ balance: 1_000_000_000 }),
+				],
+				recipient.toSuiAddress(),
+			);
+
+			// Sign and send the transaction
+			const result = await conf.client.signAndExecuteTransaction({
+				signer: conf.suiClientKeypair,
+				transaction: tx,
+				options: {
+					showInput: true,
+					showEffects: true,
+				},
+			});
+
+			console.log(`:white_check_mark: Done ${i}`);
+			console.log(`  Tx Digest: ${result.digest}`);
+
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+	});
 
 	it('read the network decryption key', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
