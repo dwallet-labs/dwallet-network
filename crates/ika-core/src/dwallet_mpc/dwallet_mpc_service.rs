@@ -36,7 +36,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyData, MPCRequestInput, SessionIdentifier,
 };
 use ika_types::sui::DWalletCoordinatorInner;
-use itertools::{Itertools, izip};
+use itertools::Itertools;
 use mpc::AsynchronousRoundGODResult;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -234,7 +234,7 @@ impl DWalletMPCService {
 
             self.dwallet_mpc_manager.handle_mpc_event_batch(events);
 
-            if !self.process_consensus_rounds_from_storage() {
+            if !self.process_consensus_rounds_from_storage().await {
                 // If we failed to process consensus rounds from storage
                 // we should try again in the next iteration.
                 info!(
@@ -257,53 +257,89 @@ impl DWalletMPCService {
         }
     }
 
-    fn process_consensus_rounds_from_storage(&mut self) -> bool {
+    async fn process_consensus_rounds_from_storage(&mut self) -> bool {
         let Ok(tables) = self.epoch_store.tables() else {
             warn!("failed to load DB tables from the epoch store");
             return false;
         };
 
-        let next_consensus_round = self
-            .last_read_consensus_round
-            .map(|round| round + 1)
-            .unwrap_or_default();
-        let mpc_messages_iter = tables.get_dwallet_mpc_messages_iter(next_consensus_round);
-        let mpc_outputs_iter = tables.get_dwallet_mpc_outputs_iter(next_consensus_round);
-        let verified_dwallet_checkpoint_messages_iter =
-            tables.get_verified_dwallet_checkpoint_messages_iter(next_consensus_round);
-
-        let zipped_consensus_rounds_iter = izip!(
-            mpc_messages_iter,
-            mpc_outputs_iter,
-            verified_dwallet_checkpoint_messages_iter
-        );
-
-        for (
-            mpc_messages_iteration_result,
-            mpc_outputs_iteration_result,
-            verified_dwallet_checkpoint_messages_iteration_result,
-        ) in zipped_consensus_rounds_iter
-        {
-            let Ok((mpc_messages_consensus_round, mpc_messages)) = mpc_messages_iteration_result
-            else {
-                error!("failed to load DWallet MPC messages from the local DB");
-
+        let last_consensus_round =
+            if let Ok(last_consensus_round) = tables.last_dwallet_mpc_message_round() {
+                if let Some(last_consensus_round) = last_consensus_round {
+                    last_consensus_round
+                } else {
+                    info!("Not consensus round from DB from DB yet, retry in 2 seconds.");
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    return true;
+                }
+            } else {
+                error!("failed to get last consensus round from DB");
                 return false;
             };
-            let Ok((mpc_outputs_consensus_round, mpc_outputs)) = mpc_outputs_iteration_result
-            else {
-                error!("failed to load DWallet MPC outputs from the local DB");
 
-                return false;
+        while Some(last_consensus_round) > self.last_read_consensus_round {
+            let mpc_messages = tables.next_dwallet_mpc_message(self.last_read_consensus_round);
+            let mpc_outputs = tables.next_dwallet_mpc_output(self.last_read_consensus_round);
+            let verified_dwallet_checkpoint_messages =
+                tables.next_verified_dwallet_checkpoint_message(self.last_read_consensus_round);
+            let (mpc_messages_consensus_round, mpc_messages) = match mpc_messages {
+                Ok(mpc_messages) => {
+                    if let Some(mpc_messages) = mpc_messages {
+                        mpc_messages
+                    } else {
+                        error!("failed to get mpc messages, None value");
+                        return false;
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        error=?e,
+                        last_read_consensus_round=self.last_read_consensus_round,
+                        "failed to load DWallet MPC messages from the local DB"
+                    );
+                    return false;
+                }
             };
-            let Ok((
+            let (mpc_outputs_consensus_round, mpc_outputs) = match mpc_outputs {
+                Ok(mpc_outputs) => {
+                    if let Some(mpc_outputs) = mpc_outputs {
+                        mpc_outputs
+                    } else {
+                        error!("failed to get mpc outputs, None value");
+                        return false;
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        error=?e,
+                        last_read_consensus_round=self.last_read_consensus_round,
+                        "failed to load DWallet MPC outputs from the local DB"
+                    );
+                    return false;
+                }
+            };
+            let (
                 verified_dwallet_checkpoint_messages_consensus_round,
                 verified_dwallet_checkpoint_messages,
-            )) = verified_dwallet_checkpoint_messages_iteration_result
-            else {
-                error!("Failed to load verified DWallet checkpoint messages from the local DB");
-
-                return false;
+            ) = match verified_dwallet_checkpoint_messages {
+                Ok(verified_dwallet_checkpoint_messages) => {
+                    if let Some(verified_dwallet_checkpoint_messages) =
+                        verified_dwallet_checkpoint_messages
+                    {
+                        verified_dwallet_checkpoint_messages
+                    } else {
+                        error!("failed to get verified dwallet checkpoint messages, None value");
+                        return false;
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        error=?e,
+                        last_read_consensus_round=self.last_read_consensus_round,
+                        "failed to load verified dwallet checkpoint messages from the local DB"
+                    );
+                    return false;
+                }
             };
             if mpc_messages_consensus_round != mpc_outputs_consensus_round
                 || mpc_messages_consensus_round
@@ -409,6 +445,7 @@ impl DWalletMPCService {
             }
 
             self.last_read_consensus_round = Some(consensus_round);
+            tokio::task::yield_now().await;
         }
 
         true
