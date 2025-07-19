@@ -316,10 +316,11 @@ describe('Test dWallet MPC', () => {
 	it('faucet for parallel test', async () => {
 		const max_parallel = 100;
 
+		const tx = new Transaction();
+		tx.setSender(conf.suiClientKeypair.toSuiAddress());
+
 		for (let i = 0; i < max_parallel; i++) {
 			const recipient = Ed25519Keypair.deriveKeypairFromSeed((i + 3).toString());
-			const tx = new Transaction();
-			tx.setSender(conf.suiClientKeypair.toSuiAddress());
 
 			tx.transferObjects(
 				[
@@ -327,22 +328,20 @@ describe('Test dWallet MPC', () => {
 				],
 				recipient.toSuiAddress(),
 			);
-
-			// Sign and send the transaction
-			const result = await conf.client.signAndExecuteTransaction({
-				signer: conf.suiClientKeypair,
-				transaction: tx,
-				options: {
-					showInput: true,
-					showEffects: true,
-				},
-			});
-
-			console.log(`:white_check_mark: Done ${i}`);
-			console.log(`  Tx Digest: ${result.digest}`);
-
-			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
+
+		// Sign and send the transaction
+		const result = await conf.client.signAndExecuteTransaction({
+			signer: conf.suiClientKeypair,
+			transaction: tx,
+			options: {
+				showInput: true,
+				showEffects: true,
+			},
+		});
+
+		console.log(`:white_check_mark: Funded ${max_parallel} addresses in one tx`);
+		console.log(`  Tx Digest: ${result.digest}`);
 	});
 
 	it('read the network decryption key', async () => {
