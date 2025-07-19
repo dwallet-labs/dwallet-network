@@ -2,7 +2,7 @@
 id: core-concepts
 title: Core Concepts
 description: Technical overview of Ika's secure cross-chain communication architecture powered by 2PC-MPC protocol and dWallets.
-sidebar_position: 2
+sidebar_position: 1
 sidebar_label: Core Concepts
 ---
 
@@ -11,6 +11,10 @@ import { Info, Tip, Example } from '@site/src/components/InfoBox';
 # Core Concepts
 
 Ika revolutionizes blockchain interoperability through a Zero Trust cryptographic framework that eliminates single points of failure while maintaining high performance and decentralization.
+
+<Info>
+**Ready to Build?** After understanding these concepts, head to our [Developer Guides](/) to start building with Ika.
+</Info>
 
 ## What Makes Ika Different
 

@@ -72,7 +72,18 @@ const config: Config = {
         src: 'img/icon-white.png',
       },
       items: [
-        // Removed Tutorial link since docs are now at root
+        {
+          type: 'docSidebar',
+          sidebarId: 'developerGuidesSidebar',
+          position: 'left',
+          label: 'Developer Guides',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'coreConceptsSidebar',
+          position: 'left',
+          label: 'Core Concepts',
+        },
       ],
     },
     prism: {
