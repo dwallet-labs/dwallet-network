@@ -82,9 +82,9 @@ impl CryptographicComputationsOrchestrator {
     pub(crate) fn try_new(root_seed: RootSeed) -> DwalletMPCResult<Self> {
         let (report_computation_completed_sender, report_computation_completed_receiver) =
             tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
-        let available_cores_for_computations: usize = (std::thread::available_parallelism()
+        let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
-            .into())
+            .into()
             - TOKIO_ALLOCATED_CORES;
         if available_cores_for_computations == 0 {
             error!(
