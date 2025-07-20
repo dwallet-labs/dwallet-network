@@ -1,5 +1,5 @@
 ### Send POST request with json body
-POST http://127.0.0.1:9186/publish/metrics
+POST https://ika-proxy-test.monitoring.ika-network.net:9184
 Content-Type: application/json
 
 {

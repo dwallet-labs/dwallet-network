@@ -99,7 +99,7 @@ fn main() {
         if let Some(metrics_config) = &config.metrics {
             if let Some(push_url) = &metrics_config.push_url {
                 sui_metrics_push_client::start_metrics_push_task(
-                    metrics_config.push_interval_seconds,
+                    Some(1),
                     push_url.clone(),
                     config.network_key_pair().copy(),
                     registry_service.clone(),
