@@ -34,6 +34,7 @@ use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::table::Table;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::VecSet;
+use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -547,15 +548,15 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut SystemInner,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
-) {
+): Option<TableVec<vector<u8>>> {
     self
         .validator_set
         .set_next_epoch_class_groups_pubkey_and_proof_bytes(
             class_groups_pubkey_and_proof_bytes,
             cap,
-        );
+        )
 }
 
 public(package) fun is_mid_epoch_time(self: &SystemInner, clock: &Clock): bool {

@@ -16,6 +16,7 @@ use std::string::String;
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::table::{Self, Table};
+use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -613,14 +614,14 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     validator: &mut Validator,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
-) {
+): Option<TableVec<vector<u8>>> {
     validator.verify_operation_cap(cap);
 
     validator
         .validator_info
-        .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes);
+        .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes)
 }
 
 /// Destroy the validator if it is empty.

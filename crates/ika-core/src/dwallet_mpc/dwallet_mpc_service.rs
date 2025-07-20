@@ -259,9 +259,8 @@ impl DWalletMPCService {
 
     async fn process_consensus_rounds_from_storage(&mut self) {
         let Ok(tables) = self.epoch_store.tables() else {
-            warn!("failed to load DB tables from the epoch store");
-
-            panic!("failed to load DB tables from the epoch store");
+            // This signifies an epoch switch, nothing to do.
+            return;
         };
 
         // The last consensus round for MPC messages is also the last one for MPC outputs and verified dWallet checkpoint messages,
