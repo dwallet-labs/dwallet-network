@@ -290,8 +290,11 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
         self.next_epoch_consensus_pubkey_bytes = option::none();
     };
 
+    // `previous_class_groups_pubkey_and_proof_bytes` cannot be set if `next_epoch_class_groups_pubkey_and_proof_bytes` is already set.
+    // This situation should never occur. If it does, it is considered an error,
+    // so we ignore `next_epoch_class_groups_pubkey_and_proof_bytes` and retain the current one.
     if (self.next_epoch_class_groups_pubkey_and_proof_bytes.is_some() 
-        && self.class_groups_pubkey_and_proof_bytes.is_none()
+        && self.previous_class_groups_pubkey_and_proof_bytes.is_none()
     ) {
         let next_epoch_class_groups_pubkey_and_proof_bytes =
             self.next_epoch_class_groups_pubkey_and_proof_bytes.extract();
