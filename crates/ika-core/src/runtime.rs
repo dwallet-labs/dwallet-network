@@ -58,12 +58,9 @@ impl IkaRuntimes {
                 "Validator must have at least 16 CPU cores"
             );
         }
-        if total_cores_available < TOKIO_ALLOCATED_CORES {
-            error!(
-                ?total_cores_available,
-                "available cores are less than TOKIO_ALLOCATED_CORES, using default value"
-            );
-            return 0;
+        #[cfg(not(feature = "enforce-minimum-cpu"))]
+        {
+           return total_cores_available; 
         }
         total_cores_available - TOKIO_ALLOCATED_CORES
     }
