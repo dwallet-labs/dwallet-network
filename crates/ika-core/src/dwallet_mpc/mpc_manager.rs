@@ -474,7 +474,7 @@ impl DWalletMPCManager {
 
         let completed_computation_results = self
             .cryptographic_computations_orchestrator
-            .receive_completed_computations();
+            .receive_completed_computations(self.dwallet_mpc_metrics.clone());
         for (computation_id, computation_request) in computation_requests {
             let computation_executing = self
                 .cryptographic_computations_orchestrator
