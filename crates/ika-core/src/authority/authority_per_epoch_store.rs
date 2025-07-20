@@ -72,8 +72,8 @@ use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use tap::TapOptional;
 use tokio::time::Instant;
+use typed_store::DBMapUtils;
 use typed_store::Map;
-use typed_store::{DBMapUtils, DbIterator};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -436,28 +436,55 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_dwallet_mpc_messages_iter(
-        &self,
-        next_consensus_round: Round,
-    ) -> DbIterator<(Round, Vec<DWalletMPCMessage>)> {
-        self.dwallet_mpc_messages
-            .safe_iter_with_bounds(Some(next_consensus_round), None)
+    pub fn last_dwallet_mpc_message_round(&self) -> IkaResult<Option<Round>> {
+        Ok(self
+            .dwallet_mpc_messages
+            .reversed_safe_iter_with_bounds(None, None)?
+            .next()
+            .transpose()?
+            .map(|(r, _)| r))
     }
 
-    pub fn get_dwallet_mpc_outputs_iter(
+    pub fn next_dwallet_mpc_message(
         &self,
-        next_consensus_round: Round,
-    ) -> DbIterator<(Round, Vec<DWalletMPCOutput>)> {
-        self.dwallet_mpc_outputs
-            .safe_iter_with_bounds(Some(next_consensus_round), None)
+        last_consensus_round: Option<Round>,
+    ) -> IkaResult<Option<(Round, Vec<DWalletMPCMessage>)>> {
+        let mut iter = self
+            .dwallet_mpc_messages
+            .safe_iter_with_bounds(last_consensus_round, None);
+        if last_consensus_round.is_none() {
+            Ok(iter.next().transpose()?)
+        } else {
+            Ok(iter.nth(1).transpose()?)
+        }
     }
 
-    pub fn get_verified_dwallet_checkpoint_messages_iter(
+    pub fn next_dwallet_mpc_output(
         &self,
-        next_consensus_round: Round,
-    ) -> DbIterator<(Round, Vec<DWalletCheckpointMessageKind>)> {
-        self.verified_dwallet_checkpoint_messages
-            .safe_iter_with_bounds(Some(next_consensus_round), None)
+        last_consensus_round: Option<Round>,
+    ) -> IkaResult<Option<(Round, Vec<DWalletMPCOutput>)>> {
+        let mut iter = self
+            .dwallet_mpc_outputs
+            .safe_iter_with_bounds(last_consensus_round, None);
+        if last_consensus_round.is_none() {
+            Ok(iter.next().transpose()?)
+        } else {
+            Ok(iter.nth(1).transpose()?)
+        }
+    }
+
+    pub fn next_verified_dwallet_checkpoint_message(
+        &self,
+        last_consensus_round: Option<Round>,
+    ) -> IkaResult<Option<(Round, Vec<DWalletCheckpointMessageKind>)>> {
+        let mut iter = self
+            .verified_dwallet_checkpoint_messages
+            .safe_iter_with_bounds(last_consensus_round, None);
+        if last_consensus_round.is_none() {
+            Ok(iter.next().transpose()?)
+        } else {
+            Ok(iter.nth(1).transpose()?)
+        }
     }
 }
 
@@ -1675,6 +1702,10 @@ impl ConsensusCommitOutput {
         self.pending_system_checkpoints.push(checkpoint);
     }
 
+    /// This function writes a batch of consensus commit outputs,
+    /// which includes the MPC messages, outputs and verified checkpoint messages.
+    ///
+    /// We depend upon this batch writing logic, in `last_dwallet_mpc_message_round()` which should be the same for the outputs and verified checkpoint messages as well.
     pub fn write_to_batch(
         self,
         epoch_store: &AuthorityPerEpochStore,
