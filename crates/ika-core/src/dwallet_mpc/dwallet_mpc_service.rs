@@ -232,7 +232,9 @@ impl DWalletMPCService {
                 }
             }
 
-            self.dwallet_mpc_manager.handle_mpc_event_batch(events);
+            self.dwallet_mpc_manager
+                .handle_mpc_event_batch(events)
+                .await;
 
             if !self.process_consensus_rounds_from_storage() {
                 // If we failed to process consensus rounds from storage
