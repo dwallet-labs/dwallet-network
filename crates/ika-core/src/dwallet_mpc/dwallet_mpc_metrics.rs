@@ -91,6 +91,8 @@ pub struct DWalletMPCMetrics {
     pub number_of_expected_sign_sessions: IntGauge,
     /// The number of sign sessions in which less than a quorum of the expected decrypters has participated.
     pub number_of_unexpected_sign_sessions: IntGauge,
+    /// The last process MPC consensus round.
+    pub last_process_mpc_consensus_round: IntGauge,
 }
 
 impl DWalletMPCMetrics {
@@ -185,6 +187,12 @@ impl DWalletMPCMetrics {
             number_of_expected_sign_sessions: register_int_gauge_with_registry!(
                 "dwallet_mpc_number_of_expected_sign_sessions",
                 "Number of expected sign sessions",
+                registry
+            )
+            .unwrap(),
+            last_process_mpc_consensus_round: register_int_gauge_with_registry!(
+                "last_process_mpc_consensus_round",
+                "Last process mpc consensus round",
                 registry
             )
             .unwrap(),
