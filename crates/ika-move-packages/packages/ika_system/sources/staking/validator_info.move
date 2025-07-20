@@ -231,7 +231,17 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self.validate();
 }
 
-/// Sets class groups public key and proof for next epoch.
+/// Sets the class groups public key and proof for the next epoch.
+/// 
+/// - If `next_epoch_class_groups_pubkey_and_proof_bytes` is already set, 
+///   this function returns its stored value and replaces it with the new value.
+/// - If it is not set, but `previous_class_groups_pubkey_and_proof_bytes` is set, 
+///   this function returns the value from the previous field and replaces it with the new value.
+/// - If neither is set, the new value is simply stored, and the function returns `None`.
+/// 
+/// The validator must drop the returned value if it is not `None`.
+/// 
+/// Using `Option` for the MPC data helps avoid latency issues due to large data sizes.
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut ValidatorInfo,
     class_groups_pubkey_and_proof: TableVec<vector<u8>>,
