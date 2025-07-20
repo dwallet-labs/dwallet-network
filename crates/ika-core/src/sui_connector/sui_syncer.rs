@@ -119,6 +119,7 @@ where
                 system_inner.epoch() + 1,
                 new_next_bls_committee.quorum_threshold,
                 new_next_bls_committee.validity_threshold,
+                true,
             )
             .await
             {
@@ -143,6 +144,7 @@ where
         epoch: u64,
         quorum_threshold: u64,
         validity_threshold: u64,
+        read_next_epoch_class_groups_keys: bool,
     ) -> DwalletMPCResult<Committee> {
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
@@ -152,7 +154,7 @@ where
             .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = sui_client
-            .get_class_groups_public_keys_and_proofs(&validators)
+            .get_class_groups_public_keys_and_proofs(&validators, read_next_epoch_class_groups_keys)
             .await
             .map_err(DwalletMPCError::IkaError)?;
 

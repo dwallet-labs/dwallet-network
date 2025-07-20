@@ -290,7 +290,9 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
         self.next_epoch_consensus_pubkey_bytes = option::none();
     };
 
-    if (self.next_epoch_class_groups_pubkey_and_proof_bytes.is_some()) {
+    if (self.next_epoch_class_groups_pubkey_and_proof_bytes.is_some() 
+        && self.class_groups_pubkey_and_proof_bytes.is_none()
+    ) {
         let next_epoch_class_groups_pubkey_and_proof_bytes =
             self.next_epoch_class_groups_pubkey_and_proof_bytes.extract();
 
