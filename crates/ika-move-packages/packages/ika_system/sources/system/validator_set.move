@@ -23,6 +23,7 @@ use sui::object_table::{Self, ObjectTable};
 use sui::table::Table;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::{Self, VecSet};
+use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -58,6 +59,8 @@ const EInvalidCap: u64 = 10;
 const EProcessMidEpochOnlyAfterAdvanceEpoch: u64 = 11;
 /// Advance epoch can be called only after process mid epoch.
 const EAdvanceEpochOnlyAfterProcessMidEpoch: u64 = 12;
+/// Cannot set validator new info before next epoch if validator is in next epoch committee.
+const ECannotSetBeforeNextEpoch: u64 = 13;
 
 // === Structs ===
 
@@ -293,6 +296,16 @@ public(package) fun assert_no_pending_or_active_duplicates(
     self.validators.add(validator_id, validator);
 }
 
+public(package) fun assert_validator_can_set_for_next_epoch(
+    self: &ValidatorSet,
+    validator_id: ID,
+) {
+    assert!(
+        !self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id)),
+        ECannotSetBeforeNextEpoch
+    );
+}
+
 /// Called by `ika_system`, to remove a validator.
 /// The index of the validator is added to `pending_removals` and
 /// will be processed at the end of epoch.
@@ -469,6 +482,7 @@ public(package) fun set_next_commission(
     current_epoch: u64,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_commission(new_commission_rate, current_epoch, cap);
 }
@@ -479,6 +493,7 @@ public(package) fun set_next_epoch_network_address(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_network_address(network_address, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -490,6 +505,7 @@ public(package) fun set_next_epoch_p2p_address(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_p2p_address(p2p_address, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -501,6 +517,7 @@ public(package) fun set_next_epoch_consensus_address(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_consensus_address(consensus_address, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -514,6 +531,7 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
     ctx: &TxContext,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_protocol_pubkey_bytes(
         protocol_pubkey_bytes,
@@ -530,6 +548,7 @@ public(package) fun set_next_epoch_network_pubkey_bytes(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -541,6 +560,7 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
@@ -548,16 +568,19 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut ValidatorSet,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
-) {
+): Option<TableVec<vector<u8>>> {
     let validator_id = cap.validator_id();
+    self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
-    validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(
+    let previous_class_groups_key = validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(
         class_groups_pubkey_and_proof_bytes,
         cap,
     );
     self.assert_no_pending_or_active_duplicates(validator_id);
+    previous_class_groups_key
+
 }
 
 // ==== epoch change functions ====
