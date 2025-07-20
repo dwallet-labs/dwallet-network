@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use ika_config::NodeConfig;
+use ika_types::dwallet_mpc_error::DwalletMPCError;
 use tokio::runtime::Runtime;
 use tracing::error;
 
@@ -18,6 +19,7 @@ impl IkaRuntimes {
         if let Err(err) = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
             .stack_size(SIXTEEN_MEGA_BYTES)
+            .num_threads(Self::calculate_num_of_computations_cores())
             .build_global()
         {
             error!(?err, "failed to create rayon thread pool");
@@ -38,4 +40,23 @@ impl IkaRuntimes {
 
         Self { ika_node, metrics }
     }
+
+    fn calculate_num_of_computations_cores() -> usize {
+        let Ok(total_cores_available) = std::thread::available_parallelism() else {
+            error!("failed to get available parallelism, using default value");
+            return 0;
+        };
+        let total_cores_available: usize = total_cores_available.into();
+        if total_cores_available < TOKIO_ALLOCATED_CORES {
+            error!(
+                ?total_cores_available,
+                "available cores are less than TOKIO_ALLOCATED_CORES, using default value"
+            );
+            return 0;
+        }
+        total_cores_available - TOKIO_ALLOCATED_CORES
+    }
 }
+
+/// Number of cores unavailable to cryptographic computation, reserved solely for `tokio` i.e. consensus and network services use.
+pub const TOKIO_ALLOCATED_CORES: usize = 3;

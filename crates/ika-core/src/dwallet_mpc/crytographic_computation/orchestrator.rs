@@ -19,6 +19,7 @@
 
 use crate::dwallet_mpc::crytographic_computation::{ComputationId, ComputationRequest};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
+use crate::runtime::TOKIO_ALLOCATED_CORES;
 use dwallet_rng::RootSeed;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::collections::{HashMap, HashSet};
@@ -33,9 +34,6 @@ use tracing::{debug, error, info};
 /// But since this is critical to keep the computations running,
 /// we are using a big buffer (this size of the data is small).
 const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
-
-/// Number of cores unavailable to cryptographic computation, reserved solely for `tokio` i.e. consensus and network services use.
-const TOKIO_ALLOCATED_CORES: usize = 3;
 
 struct ComputationCompletionUpdate {
     computation_id: ComputationId,
