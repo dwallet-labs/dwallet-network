@@ -34,6 +34,7 @@ use tracing::{debug, error, info};
 /// we are using a big buffer (this size of the data is small).
 const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 
+/// Number of cores unavailable to cryptographic computation, reserved solely for `tokio` i.e. consensus and network services use.
 const TOKIO_ALLOCATED_CORES: usize = 3;
 
 struct ComputationCompletionUpdate {
