@@ -167,6 +167,9 @@ pub enum DwalletMPCError {
     },
     #[error("invalid session public input")]
     InvalidSessionPublicInput,
+
+    #[error("tokio recv error")]
+    TokioRecv,
 }
 
 /// A wrapper type for the result of a runtime operation.
