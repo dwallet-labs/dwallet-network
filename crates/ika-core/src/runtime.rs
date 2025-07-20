@@ -61,4 +61,4 @@ impl IkaRuntimes {
 }
 
 /// Number of cores unavailable to cryptographic computation, reserved solely for `tokio` i.e. consensus and network services use.
-pub const TOKIO_ALLOCATED_CORES: usize = 3;
+pub const TOKIO_ALLOCATED_CORES: usize = 4;
