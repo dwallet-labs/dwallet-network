@@ -1,0 +1,17 @@
+[package]
+name = "large_size_utils"
+edition = "2024"
+license = "BSD-3-Clause-Clear"
+authors = ["dWallet Labs Ltd. <dev@dwalletlabs.com>"]
+
+[dependencies]
+
+[addresses]
+large_size_utils = "0x0"
+
+
+[dev-dependencies]
+
+[dev-addresses]
+
+
