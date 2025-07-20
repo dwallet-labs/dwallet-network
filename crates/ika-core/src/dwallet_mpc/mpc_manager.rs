@@ -303,7 +303,7 @@ impl DWalletMPCManager {
             sender_authority=?sender_authority,
             receiver_authority=?self.validator_name,
             mpc_round_number=?mpc_round_number,
-            message=?message.message,
+            message_bytes=?message.message,
             "Received an MPC message for session with contents",
         );
 
