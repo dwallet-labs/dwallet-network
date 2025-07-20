@@ -3,33 +3,10 @@ use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
-use ika_types::sui::{
-    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, COLLECT_COMMISSION_FUNCTION_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
-    ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REPORT_VALIDATOR_FUNCTION_NAME,
-    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME,
-    ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME,
-    SET_NEXT_COMMISSION_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
-    SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
-    SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
-    SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_VALIDATOR_METADATA_FUNCTION_NAME,
-    SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME,
-    VALIDATOR_METADATA_FUNCTION_NAME, VALIDATOR_METADATA_MODULE_NAME,
-    VALIDATOR_OPERATION_STRUCT_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME,
-    VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
-    WITHDRAW_STAKE_FUNCTION_NAME,
-};
-use jsonrpsee::core::Serialize;
+use ika_types::sui::{ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, COLLECT_COMMISSION_FUNCTION_NAME, CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME, REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME, SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME, SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_VALIDATOR_METADATA_FUNCTION_NAME, SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME, VALIDATOR_METADATA_FUNCTION_NAME, VALIDATOR_METADATA_MODULE_NAME, VALIDATOR_OPERATION_STRUCT_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME};
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
+use serde::Serialize;
 use shared_crypto::intent::Intent;
 use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
@@ -1558,6 +1535,92 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
         &mut ptb,
     )
     .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+/// Set pricing vote for DWallet operations
+pub async fn set_pricing_vote(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
+    validator_operation_cap_id: ObjectID,
+    pricing_info: String,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    // let client = context.get_client().await?;
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let pricing_info = ptb.input(CallArg::Pure(bcs::to_bytes(&pricing_info)?))?;
+
+    let client = context.get_client().await?;
+    let validator_operation_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(validator_operation_cap_id)
+        .await?;
+
+    let call_args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        validator_operation_cap_ref,
+    )))?];
+
+    // let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
+        context,
+        VERIFY_OPERATION_CAP_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+        .await?;
+
+    // let validator_verified_opration_cap_ref = ptb.obj();
+
+    let call_args = vec![
+        Argument::Result(0),
+        pricing_info,
+    ];
+
+    let sender = context.active_address()?;
+
+    let Some(Owner::Shared {
+                 initial_shared_version,
+             }) = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
+        .await?
+        .data
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
+        .owner
+    else {
+        bail!("Failed to get owner of object")
+    };
+
+    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_dwallet_2pc_mpc_coordinator_object_id,
+        initial_shared_version,
+        mutable: true,
+    }))?];
+
+    args.extend(call_args);
+
+    ptb.command(sui_types::transaction::Command::move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
+        vec![],
+        args,
+    ));
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 

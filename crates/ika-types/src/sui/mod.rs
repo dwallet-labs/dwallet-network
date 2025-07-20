@@ -97,6 +97,7 @@ pub const ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_encryption_key_dkg_by_cap");
 pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_pricing");
+pub const SET_PRICING_VOTE_FUNCTION_NAME: &IdentStr = ident_str!("set_pricing_vote");
 pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
     ident_str!("set_paused_curves_and_signature_algorithms");
 pub const SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME: &IdentStr =

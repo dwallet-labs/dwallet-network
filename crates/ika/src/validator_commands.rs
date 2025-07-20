@@ -23,7 +23,7 @@ use ika_sui_client::ika_validator_transactions::{
     set_next_epoch_class_groups_pubkey_and_proof_bytes, set_next_epoch_consensus_address,
     set_next_epoch_consensus_pubkey_bytes, set_next_epoch_network_address,
     set_next_epoch_network_pubkey_bytes, set_next_epoch_p2p_address,
-    set_next_epoch_protocol_pubkey_bytes, set_validator_metadata, set_validator_name, stake_ika,
+    set_next_epoch_protocol_pubkey_bytes, set_pricing_vote, set_validator_metadata, set_validator_name, stake_ika,
     undo_report_validator, validator_metadata, verify_commission_cap, verify_operation_cap,
     verify_validator_cap, withdraw_stake,
 };
@@ -335,6 +335,17 @@ pub enum IkaValidatorCommand {
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
+    #[clap(name = "set-pricing-vote")]
+    SetPricingVote {
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "validator-operation-cap-id", long)]
+        validator_operation_cap_id: ObjectID,
+        #[clap(name = "pricing-info", long)]
+        pricing_info: String,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
+    },
 }
 
 #[derive(Serialize)]
@@ -368,6 +379,7 @@ pub enum IkaValidatorCommandResponse {
     VerifyValidatorCap(SuiTransactionBlockResponse),
     VerifyOperationCap(SuiTransactionBlockResponse),
     VerifyCommissionCap(SuiTransactionBlockResponse),
+    SetPricingVote(SuiTransactionBlockResponse),
 }
 
 impl IkaValidatorCommand {
@@ -1129,6 +1141,33 @@ impl IkaValidatorCommand {
                 .await?;
                 IkaValidatorCommandResponse::VerifyCommissionCap(response)
             }
+            IkaValidatorCommand::SetPricingVote {
+                gas_budget,
+                validator_operation_cap_id,
+                pricing_info,
+                ika_sui_config,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {config_path:?}"
+                        ))
+                    })?;
+                let response = set_pricing_vote(
+                    context,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    config.ika_dwallet_2pc_mpc_package_id,
+                    config.ika_dwallet_coordinator_object_id,
+                    validator_operation_cap_id,
+                    pricing_info,
+                    gas_budget,
+                )
+                .await?;
+                IkaValidatorCommandResponse::SetPricingVote(response)
+            }
         })
     }
 }
@@ -1183,7 +1222,8 @@ impl Display for IkaValidatorCommandResponse {
             | IkaValidatorCommandResponse::SetNextEpochClassGroupsPubkey(response)
             | IkaValidatorCommandResponse::VerifyValidatorCap(response)
             | IkaValidatorCommandResponse::VerifyOperationCap(response)
-            | IkaValidatorCommandResponse::VerifyCommissionCap(response) => {
+            | IkaValidatorCommandResponse::VerifyCommissionCap(response)
+            | IkaValidatorCommandResponse::SetPricingVote(response) => {
                 write!(writer, "{}", write_transaction_response(response)?)?;
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
