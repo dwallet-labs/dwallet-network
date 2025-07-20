@@ -65,7 +65,7 @@ impl DWalletMPCManager {
         }
 
         // First, try to update the network keys.
-        let newly_updated_network_keys_ids = self.maybe_update_network_keys();
+        let newly_updated_network_keys_ids = self.maybe_update_network_keys().await;
 
         // Now handle events for which we've just received the corresponding public data.
         // Since events are only queued in `events_pending_for_network_key` within this function,

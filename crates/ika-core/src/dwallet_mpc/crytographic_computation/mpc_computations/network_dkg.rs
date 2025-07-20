@@ -37,6 +37,8 @@ use mpc::{AsynchronousRoundGODResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
+use tokio::runtime::Handle;
+use tokio::sync::oneshot;
 use tracing::error;
 use twopc_mpc::ProtocolPublicParameters;
 use twopc_mpc::secp256k1::class_groups::{
@@ -370,30 +372,44 @@ pub(crate) fn generate_secp256k1_dkg_party_public_input(
     Ok(public_input)
 }
 
-pub(crate) fn instantiate_dwallet_mpc_network_encryption_key_public_data_from_public_output(
+pub(crate) async fn instantiate_dwallet_mpc_network_encryption_key_public_data_from_public_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
-    access_structure: &WeightedThresholdAccessStructure,
+    access_structure: WeightedThresholdAccessStructure,
     key_data: DWalletNetworkEncryptionKeyData,
 ) -> DwalletMPCResult<NetworkEncryptionKeyPublicData> {
-    if key_data.current_reconfiguration_public_output.is_empty() {
-        if key_data.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {
-            return Err(DwalletMPCError::WaitingForNetworkKey(key_data.id));
+    let (key_public_data_sender, key_public_data_receiver) = oneshot::channel();
+
+    rayon::spawn_fifo(move || {
+        let res = if key_data.current_reconfiguration_public_output.is_empty() {
+            if key_data.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {
+                Err(DwalletMPCError::WaitingForNetworkKey(key_data.id))
+            }
+            else {
+                instantiate_dwallet_mpc_network_encryption_key_public_data_from_dkg_public_output(
+                    epoch,
+                    key_scheme,
+                    &access_structure,
+                    &key_data.network_dkg_public_output,
+                )
+            }
+        } else {
+            instantiate_dwallet_mpc_network_encryption_key_public_data_from_reconfiguration_public_output(
+                epoch,
+                &access_structure,
+                &key_data.current_reconfiguration_public_output,
+                &key_data.network_dkg_public_output,
+            )
+        };
+
+        if let Err(err) = key_public_data_sender
+            .send(res)
+        {
+            error!(?err, "failed to send a network encryption key ");
         }
-        instantiate_dwallet_mpc_network_encryption_key_public_data_from_dkg_public_output(
-            epoch,
-            key_scheme,
-            access_structure,
-            &key_data.network_dkg_public_output,
-        )
-    } else {
-        instantiate_dwallet_mpc_network_encryption_key_public_data_from_reconfiguration_public_output(
-            epoch,
-            access_structure,
-            &key_data.current_reconfiguration_public_output,
-            &key_data.network_dkg_public_output,
-        )
-    }
+    });
+
+    key_public_data_receiver.await.map_err(|_| DwalletMPCError::TokioRecv)?
 }
 
 fn instantiate_dwallet_mpc_network_encryption_key_public_data_from_dkg_public_output(
