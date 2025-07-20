@@ -1901,6 +1901,8 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
             );
     } else {
         let state = if (is_last_chunk) {
+            self.epoch_dwallet_network_encryption_keys_reconfiguration_completed =
+                self.epoch_dwallet_network_encryption_keys_reconfiguration_completed + 1;
             let status = sessions_manager::create_success_status_event<
                 CompletedDWalletEncryptionKeyReconfigurationEvent,
                 RejectedDWalletEncryptionKeyReconfigurationEvent,
@@ -1974,9 +1976,6 @@ public(package) fun request_network_encryption_key_mid_epoch_reconfiguration(
     );
 
     let next_epoch = self.current_epoch + 1;
-
-    self.epoch_dwallet_network_encryption_keys_reconfiguration_completed =
-        self.epoch_dwallet_network_encryption_keys_reconfiguration_completed + 1;
 
     let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(
         dwallet_network_encryption_key_id,
