@@ -16,14 +16,16 @@ const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
 
 impl IkaRuntimes {
     pub fn new(_config: &NodeConfig) -> Self {
-        if let Err(err) = rayon::ThreadPoolBuilder::new()
+        let mut builder = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
-            .stack_size(SIXTEEN_MEGA_BYTES)
+            .stack_size(SIXTEEN_MEGA_BYTES);
+        #[cfg(feature = "enforce-minimum-cpu")]
+        {
             // When passing 0, Rayon will use the default number of threads, which is the number of available cores
             // on the machine
-            .num_threads(Self::calculate_num_of_computations_cores())
-            .build_global()
-        {
+            builder = builder.num_threads(Self::calculate_num_of_computations_cores());
+        }
+        if let Err(err) = builder.build_global() {
             error!(?err, "failed to create rayon thread pool");
             panic!("Failed to create rayon thread pool");
         }
