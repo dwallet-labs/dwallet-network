@@ -7,11 +7,12 @@ use ika::ika::IKA;
 use ika_common::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member};
 use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_common::extended_field::{Self, ExtendedField};
+use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::pending_active_set::{Self, PendingActiveSet};
 use ika_system::staked_ika::StakedIka;
 use ika_system::token_exchange_rate::TokenExchangeRate;
 use ika_system::validator::{Self, Validator};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::validator_metadata::ValidatorMetadata;
 use std::string::String;
 use sui::bag::{Self, Bag};
@@ -172,6 +173,7 @@ public(package) fun request_add_validator_candidate(
     consensus_address: String,
     commission_rate: u16,
     metadata: ValidatorMetadata,
+    system_object_cap: &SystemObjectCap,
     ctx: &mut TxContext,
 ): (ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
     let (validator, cap, operation_cap, commission_cap) = validator::new(
@@ -187,6 +189,7 @@ public(package) fun request_add_validator_candidate(
         consensus_address,
         commission_rate,
         metadata,
+        system_object_cap,
         ctx,
     );
 
@@ -404,10 +407,11 @@ public(package) fun withdraw_stake(
 public(package) fun rotate_operation_cap(
     self: &mut ValidatorSet,
     cap: &ValidatorCap,
+    system_object_cap: &SystemObjectCap,
     ctx: &mut TxContext,
 ): ValidatorOperationCap {
     let validator = self.get_validator_mut(cap.validator_id());
-    validator.rotate_operation_cap(cap, ctx)
+    validator.rotate_operation_cap(cap, system_object_cap, ctx)
 }
 
 /// Create a new `ValidatorCommissionCap` and registers it.
@@ -415,10 +419,11 @@ public(package) fun rotate_operation_cap(
 public(package) fun rotate_commission_cap(
     self: &mut ValidatorSet,
     cap: &ValidatorCap,
+    system_object_cap: &SystemObjectCap,
     ctx: &mut TxContext,
 ): ValidatorCommissionCap {
     let validator = self.get_validator_mut(cap.validator_id());
-    validator.rotate_commission_cap(cap, ctx)
+    validator.rotate_commission_cap(cap, system_object_cap, ctx)
 }
 
 public(package) fun collect_commission(
