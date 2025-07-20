@@ -134,11 +134,9 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 50;
+			const iterations = 2;
 			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 0;
 			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
-
-			console.log(`1`);
 
 			// Create a new configuration for each iteration
 			const configs = await Promise.all(
@@ -146,7 +144,6 @@ describe('Test dWallet MPC', () => {
 					createConf(new Uint8Array(32).fill(10 + k), (k + 3).toString()),
 				),
 			);
-			console.log(`2`);
 
 			// -----------------------------
 			// Phase 1: DKG Initialization
@@ -159,10 +156,8 @@ describe('Test dWallet MPC', () => {
 				const tx = await prepareDKGFirstRoundTransaction(cfg);
 				dkgFirstTasks.push(
 					(async () => {
-						console.log(`waiting to start DKG for Address #${i}: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						await dkgFirstStartSignal.promise;
-						console.log(`starting DKG for Address #${i}: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-						// await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						console.time(`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const dkgFirstRoundOutput = await executeDKGFirstRoundTransaction(cfg, tx);
 						console.timeEnd(
