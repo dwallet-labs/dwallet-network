@@ -1,4 +1,4 @@
-use anyhow::{Error, bail};
+use anyhow::{bail};
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -1607,22 +1607,22 @@ pub async fn set_pricing_vote(
 
     let sender = context.active_address()?;
 
-    let dwallet_2pc_mpc_coordinator_call_arg = get_dwallet_2pc_mpc_coordinator_call_arg(
+    let dwallet_2pc_mpc_coordinator = ptb.input(get_dwallet_2pc_mpc_coordinator_call_arg(
         context,
         ika_dwallet_2pc_mpc_coordinator_object_id,
     )
-    .await?;
+    .await?)?;
 
     let pricing_info = ptb.command(Command::move_call(
         ika_dwallet_2pc_mpc_coordinator_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         move_core_types::ident_str!("current_pricing").to_owned(),
         vec![],
-        vec![ptb.input(dwallet_2pc_mpc_coordinator_call_arg)?],
+        vec![dwallet_2pc_mpc_coordinator],
     ));
 
     let args = vec![
-        ptb.input(dwallet_2pc_mpc_coordinator_call_arg)?,
+        dwallet_2pc_mpc_coordinator,
         pricing_info,
         verified_validator_operation_cap,
     ];

@@ -341,8 +341,6 @@ pub enum IkaValidatorCommand {
         gas_budget: Option<u64>,
         #[clap(name = "validator-operation-cap-id", long)]
         validator_operation_cap_id: ObjectID,
-        #[clap(name = "pricing-info", long)]
-        pricing_info: String,
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
@@ -1145,7 +1143,6 @@ impl IkaValidatorCommand {
             IkaValidatorCommand::SetPricingVote {
                 gas_budget,
                 validator_operation_cap_id,
-                pricing_info,
                 ika_sui_config,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
