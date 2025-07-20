@@ -37,7 +37,6 @@ use mpc::{AsynchronousRoundGODResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tokio::runtime::Handle;
 use tokio::sync::oneshot;
 use tracing::error;
 use twopc_mpc::ProtocolPublicParameters;
