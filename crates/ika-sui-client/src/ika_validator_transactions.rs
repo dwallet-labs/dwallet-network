@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{Error, bail};
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -7,7 +7,8 @@ use ika_types::sui::{
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, COLLECT_COMMISSION_FUNCTION_NAME,
     CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
-    ClassGroupsPublicKeyAndProofBuilder, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
+    ClassGroupsPublicKeyAndProofBuilder, DROP_OPRIONAL_TABLE_VEC_FUNC_NAME,
+    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
     FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
     REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
@@ -38,7 +39,6 @@ use sui_keys::keystore::AccountKeystore;
 use sui_sdk::SuiClient;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
-use sui_types::collection_types::TableVec;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
@@ -1551,7 +1551,7 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
 
     let sender = context.active_address()?;
 
-    let table_to_delete = add_ika_system_command_to_ptb(
+    let optional_tablevec_to_delete = add_ika_system_command_to_ptb(
         context,
         SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
         call_args,
@@ -1561,20 +1561,15 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
     )
     .await?;
 
-    // Argument::NestedResult(1, 0)
-
-    // drop table vec
-    ptb.command(sui_types::transaction::Command::move_call(
+    ptb.command(Command::move_call(
         ika_common_package_id,
-        TABLE_VEC_MODULE_NAME.into(),
-        TABLE_VEC_DROP_FUNCTION_NAME.to_owned(),
+        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
+        DROP_OPRIONAL_TABLE_VEC_FUNC_NAME.to_owned(),
         vec![],
-        vec![table_to_delete],
+        vec![optional_tablevec_to_delete],
     ));
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    println!("tx_data: {:?}", tx_data);
 
     execute_transaction(context, tx_data).await
 }
@@ -1600,7 +1595,7 @@ pub async fn set_pricing_vote(
         validator_operation_cap_ref,
     )))?];
 
-    let verified_oer_ref = add_ika_system_command_to_ptb(
+    let verified_validator_operation_cap = add_ika_system_command_to_ptb(
         context,
         VERIFY_OPERATION_CAP_FUNCTION_NAME,
         call_args,
@@ -1610,50 +1605,44 @@ pub async fn set_pricing_vote(
     )
     .await?;
 
-    // Argument::NestedResult(0, 0)
-
-
-    // println!("call_args: {:?}", call_args);
-
     let sender = context.active_address()?;
 
-    let Some(Owner::Shared {
-                 initial_shared_version,
-             }) = context
-        .get_client()
-        .await?
-        .read_api()
-        .get_object_with_options(
-            ika_dwallet_2pc_mpc_coordinator_object_id,
-            SuiObjectDataOptions::new().with_owner(),
-        )
-        .await?
-        .data
-        .ok_or(anyhow::Error::msg("failed to get object data"))?
-        .owner
-    else {
-        bail!("Failed to get owner of object")
-    };
+    let dwallet_2pc_mpc_coordinator_call_arg = get_dwallet_2pc_mpc_coordinator_call_arg(
+        context,
+        ika_dwallet_2pc_mpc_coordinator_object_id,
+    )
+    .await?;
 
-    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: ika_dwallet_2pc_mpc_coordinator_object_id,
-        initial_shared_version,
-        mutable: true,
-    }))?];
-
-
-
-    let pricing_info_arg = ptb.command(sui_types::transaction::Command::move_call(
+    let pricing_info = ptb.command(Command::move_call(
         ika_dwallet_2pc_mpc_coordinator_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         move_core_types::ident_str!("current_pricing").to_owned(),
         vec![],
+        vec![ptb.input(dwallet_2pc_mpc_coordinator_call_arg)?],
+    ));
+
+    let args = vec![
+        ptb.input(dwallet_2pc_mpc_coordinator_call_arg)?,
+        pricing_info,
+        verified_validator_operation_cap,
+    ];
+    ptb.command(Command::move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
+        vec![],
         args,
     ));
 
-    let call_args = vec![pricing_info_arg, verified_oer_ref];
-    // args.extend(call_args);
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
+    execute_transaction(context, tx_data).await
+}
+
+async fn get_dwallet_2pc_mpc_coordinator_call_arg(
+    context: &mut WalletContext,
+    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
+) -> anyhow::Result<CallArg> {
     let Some(Owner::Shared {
         initial_shared_version,
     }) = context
@@ -1672,31 +1661,9 @@ pub async fn set_pricing_vote(
         bail!("Failed to get owner of object")
     };
 
-    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
+    Ok(CallArg::Object(ObjectArg::SharedObject {
         id: ika_dwallet_2pc_mpc_coordinator_object_id,
         initial_shared_version,
         mutable: true,
-    }))?];
-
-    args.extend(call_args);
-
-    ptb.command(sui_types::transaction::Command::move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-        SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
-        vec![],
-        args,
-    ));
-
-
-    // println!("yael: {:?}", ptb);
-
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    println!("tx_data: {:?}", tx_data);
-
-    execute_transaction(context, tx_data).await
+    }))
 }
-
-pub const TABLE_VEC_MODULE_NAME: &IdentStr = move_core_types::ident_str!("class_groups_public_key_and_proof");
-pub const TABLE_VEC_DROP_FUNCTION_NAME: &IdentStr = move_core_types::ident_str!("drop_option_table_vec");
