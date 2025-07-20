@@ -206,20 +206,20 @@ impl DWalletMPCService {
                 .iter()
                 .map(|e| e.session_request.session_identifier)
                 .collect_vec();
+
             match self
                 .state
                 .perpetual_tables
-                .is_dwallet_mpc_sessions_completed(&events_session_identifiers)
+                .get_dwallet_mpc_sessions_completed_status(events_session_identifiers.clone())
             {
-                Ok(completed_sessions) => {
-                    for (session_identifier, session_completed) in events_session_identifiers
-                        .iter()
-                        .zip(completed_sessions.iter())
+                Ok(mpc_session_identifier_to_computation_completed) => {
+                    for (session_identifier, session_completed) in
+                        mpc_session_identifier_to_computation_completed
                     {
-                        if *session_completed {
+                        if session_completed {
                             self.dwallet_mpc_manager
                                 .complete_computation_mpc_session_and_create_if_not_exists(
-                                    session_identifier,
+                                    &session_identifier,
                                 );
 
                             info!(
