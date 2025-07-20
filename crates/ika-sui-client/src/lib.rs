@@ -975,19 +975,19 @@ impl SuiClientInner for SuiSdkClient {
                     .contents
                     .id
             } else {
+                if info
+                    .next_epoch_class_groups_pubkey_and_proof_bytes
+                    .is_some()
+                    && info.previous_class_groups_pubkey_and_proof_bytes.is_some()
+                {
+                    error!(
+                        validator_id=?validator.id,
+                        "This should never happen, validator has both previous and next epoch class groups public key and proof bytes, using current epoch",
+                    );
+                }
+
                 info.class_groups_pubkey_and_proof_bytes.contents.id
             };
-
-            if info
-                .next_epoch_class_groups_pubkey_and_proof_bytes
-                .is_some()
-                && info.previous_class_groups_pubkey_and_proof_bytes.is_some()
-            {
-                error!(
-                    validator_id=?validator.id,
-                    "This should never happen, validator has both previous and next epoch class groups public key and proof bytes, using current epoch",
-                );
-            }
 
             let dynamic_fields = self
                 .read_api()
