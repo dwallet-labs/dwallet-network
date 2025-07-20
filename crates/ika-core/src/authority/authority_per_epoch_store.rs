@@ -1059,7 +1059,6 @@ impl AuthorityPerEpochStore {
         // Only after batch is written, notify checkpoint service to start building any new
         // pending checkpoints.
         if make_checkpoint && !verified_system_checkpoint_messages.is_empty() {
-
             debug!(
                 ?consensus_commit_info.round,
                 "Notifying system_checkpoint service about new pending checkpoint(s)",

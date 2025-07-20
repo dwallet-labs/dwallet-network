@@ -409,12 +409,13 @@ impl DWalletMPCService {
                     );
                 }
                 if !checkpoint_messages.is_empty() {
-                    let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
-                        messages: checkpoint_messages.clone(),
-                        details: PendingDWalletCheckpointInfo {
-                            checkpoint_height: consensus_round,
-                        },
-                    });
+                    let pending_checkpoint =
+                        PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
+                            messages: checkpoint_messages.clone(),
+                            details: PendingDWalletCheckpointInfo {
+                                checkpoint_height: consensus_round,
+                            },
+                        });
                     if let Err(e) = self
                         .epoch_store
                         .insert_pending_dwallet_checkpoint(pending_checkpoint)
@@ -442,7 +443,9 @@ impl DWalletMPCService {
                             "failed to notify checkpoint service about new pending checkpoint(s)"
                         );
 
-                        panic!("failed to notify checkpoint service about new pending checkpoint(s)");
+                        panic!(
+                            "failed to notify checkpoint service about new pending checkpoint(s)"
+                        );
                     }
                 }
 
