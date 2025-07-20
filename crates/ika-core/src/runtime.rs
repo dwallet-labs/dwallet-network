@@ -43,12 +43,19 @@ impl IkaRuntimes {
         Self { ika_node, metrics }
     }
 
-    fn calculate_num_of_computations_cores() -> usize {
+    pub(crate) fn calculate_num_of_computations_cores() -> usize {
         let Ok(total_cores_available) = std::thread::available_parallelism() else {
             error!("failed to get available parallelism, using default value");
             return 0;
         };
         let total_cores_available: usize = total_cores_available.into();
+        #[cfg(feature = "enforce-minimum-cpu")]
+        {
+            assert!(
+                total_cores_available >= 16,
+                "Validator must have at least 16 CPU cores"
+            );
+        }
         if total_cores_available < TOKIO_ALLOCATED_CORES {
             error!(
                 ?total_cores_available,

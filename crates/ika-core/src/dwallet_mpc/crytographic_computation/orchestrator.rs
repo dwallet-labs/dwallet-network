@@ -19,7 +19,7 @@
 
 use crate::dwallet_mpc::crytographic_computation::{ComputationId, ComputationRequest};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::runtime::TOKIO_ALLOCATED_CORES;
+use crate::runtime::{IkaRuntimes, TOKIO_ALLOCATED_CORES};
 use dwallet_rng::RootSeed;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::collections::{HashMap, HashSet};
@@ -81,22 +81,14 @@ impl CryptographicComputationsOrchestrator {
     pub(crate) fn try_new(root_seed: RootSeed) -> DwalletMPCResult<Self> {
         let (report_computation_completed_sender, report_computation_completed_receiver) =
             tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
-        let total_cores_available: usize = std::thread::available_parallelism()
-            .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
-            .into();
-        let available_cores_for_computations: usize = total_cores_available - TOKIO_ALLOCATED_CORES;
+        let mut available_cores_for_computations =
+            IkaRuntimes::calculate_num_of_computations_cores();
         if available_cores_for_computations == 0 {
-            error!(
-                "failed to get available parallelism, no CPU cores available for cryptographic computations"
-            );
-            return Err(DwalletMPCError::InsufficientCPUCores);
-        }
-        #[cfg(feature = "enforce-minimum-cpu")]
-        {
-            assert!(
-                available_cores_for_computations >= 16,
-                "Validator must have at least 16 CPU cores"
-            );
+            // When `IkaRuntimes::calculate_num_of_computations_cores` returns 0,
+            // Rayon will use the default number of threads, which is the number of available cores on the machine
+            available_cores_for_computations = std::thread::available_parallelism()
+                .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
+                .into();
         }
         info!(
             available_cores_for_computations =? available_cores_for_computations,
