@@ -19,6 +19,8 @@ impl IkaRuntimes {
         if let Err(err) = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
             .stack_size(SIXTEEN_MEGA_BYTES)
+            // When passing 0, Rayon will use the default number of threads, which is the number of available cores
+            // on the machine
             .num_threads(Self::calculate_num_of_computations_cores())
             .build_global()
         {
