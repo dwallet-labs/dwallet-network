@@ -1,9 +1,10 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module ika_system::advance_epoch_approver;
+module ika_common::advance_epoch_approver;
 
 use ika::ika::IKA;
+use ika_common::system_object_cap::SystemObjectCap;
 use std::string::String;
 use std::type_name;
 use sui::balance::Balance;
@@ -23,9 +24,10 @@ const EWitnessIsNotInApprover: u64 = 0;
 
 // === Package Functions ===
 
-public(package) fun create(
+public fun create(
     remaining_witnesses_to_approve: vector<String>,
     balance_ika: Balance<IKA>,
+    _: &SystemObjectCap,
 ): AdvanceEpochApprover {
     AdvanceEpochApprover {
         remaining_witnesses_to_approve,
@@ -33,11 +35,11 @@ public(package) fun create(
     }
 }
 
-public(package) fun assert_all_witnesses_approved(self: &AdvanceEpochApprover) {
+public fun assert_all_witnesses_approved(self: &AdvanceEpochApprover) {
     assert!(self.remaining_witnesses_to_approve.is_empty(), EWitnessIsNotInApprover);
 }
 
-public(package) fun destroy(self: AdvanceEpochApprover): Balance<IKA> {
+public fun destroy(self: AdvanceEpochApprover, _: &SystemObjectCap): Balance<IKA> {
     let AdvanceEpochApprover {
         balance_ika,
         ..,
