@@ -537,17 +537,14 @@ impl DWalletMPCManager {
 
                     let mut new_key_ids = vec![];
                     for (key_id, res) in results {
-                        match res
-                        {
+                        match res {
                             Ok(key) => {
                                 info!(key_id=?key_id, "Updating (decrypting new shares) network key for key_id");
                                 if let Err(e) = self
                                     .network_keys
-                                    .update_network_key(
-                                        key_id,
-                                        &key,
-                                        &self.access_structure,
-                                    ) {
+                                    .update_network_key(key_id, &key, &self.access_structure)
+                                    .await
+                                {
                                     error!(error=?e, key_id=?key_id, "failed to update the network key");
                                 } else {
                                     new_key_ids.push(key_id);
@@ -577,11 +574,13 @@ impl DWalletMPCManager {
     }
 
     // This has to be a function to solve compilation errors with async.
-    fn borrow_and_update_network_keys(&mut self) -> HashMap<ObjectID, DWalletNetworkEncryptionKeyData> {
-        let new_keys = self.network_keys_receiver
-            .borrow_and_update();
+    fn borrow_and_update_network_keys(
+        &mut self,
+    ) -> HashMap<ObjectID, DWalletNetworkEncryptionKeyData> {
+        let new_keys = self.network_keys_receiver.borrow_and_update();
 
-        new_keys.iter()
+        new_keys
+            .iter()
             .map(|(&key_id, key_data)| (key_id, key_data.clone()))
             .collect()
     }
