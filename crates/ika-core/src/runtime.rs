@@ -15,7 +15,7 @@ const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
 
 impl IkaRuntimes {
     pub fn new(_config: &NodeConfig) -> Self {
-        let builder = rayon::ThreadPoolBuilder::new()
+        let mut builder = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
             .stack_size(SIXTEEN_MEGA_BYTES);
         #[cfg(feature = "enforce-minimum-cpu")]
