@@ -1041,7 +1041,7 @@ impl AuthorityPerEpochStore {
             .last()
             .is_some_and(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
         let make_checkpoint = should_accept_tx || final_round;
-        if make_checkpoint {
+        if make_checkpoint && !verified_system_checkpoint_messages.is_empty() {
             let checkpoint_height = consensus_commit_info.round;
 
             let pending_system_checkpoint =
@@ -1058,11 +1058,14 @@ impl AuthorityPerEpochStore {
 
         // Only after batch is written, notify checkpoint service to start building any new
         // pending checkpoints.
-        debug!(
-            ?consensus_commit_info.round,
-            "Notifying system_checkpoint service about new pending checkpoint(s)",
-        );
-        system_checkpoint_service.notify_checkpoint()?;
+        if make_checkpoint && !verified_system_checkpoint_messages.is_empty() {
+
+            debug!(
+                ?consensus_commit_info.round,
+                "Notifying system_checkpoint service about new pending checkpoint(s)",
+            );
+            system_checkpoint_service.notify_checkpoint()?;
+        }
 
         self.process_notifications(&notifications);
 

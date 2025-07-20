@@ -408,58 +408,60 @@ impl DWalletMPCService {
                         "End of publish reached, no more dwallet checkpoints will be processed for this epoch"
                     );
                 }
-                let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
-                    messages: checkpoint_messages.clone(),
-                    details: PendingDWalletCheckpointInfo {
-                        checkpoint_height: consensus_round,
-                    },
-                });
-                if let Err(e) = self
-                    .epoch_store
-                    .insert_pending_dwallet_checkpoint(pending_checkpoint)
-                {
-                    error!(
+                if !checkpoint_messages.is_empty() {
+                    let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
+                        messages: checkpoint_messages.clone(),
+                        details: PendingDWalletCheckpointInfo {
+                            checkpoint_height: consensus_round,
+                        },
+                    });
+                    if let Err(e) = self
+                        .epoch_store
+                        .insert_pending_dwallet_checkpoint(pending_checkpoint)
+                    {
+                        error!(
+                                err=?e,
+                                ?consensus_round,
+                                ?checkpoint_messages,
+                                "failed to insert pending checkpoint into the local DB"
+                        );
+
+                        panic!("failed to insert pending checkpoint into the local DB");
+                    };
+
+                    debug!(
+                        ?consensus_round,
+                        "Notifying checkpoint service about new pending checkpoint(s)",
+                    );
+                    // Only after batch is written, notify checkpoint service to start building any new
+                    // pending checkpoints.
+                    if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
+                        error!(
                             err=?e,
                             ?consensus_round,
-                            ?checkpoint_messages,
-                            "failed to insert pending checkpoint into the local DB"
-                    );
+                            "failed to notify checkpoint service about new pending checkpoint(s)"
+                        );
 
-                    panic!("failed to insert pending checkpoint into the local DB");
-                };
+                        panic!("failed to notify checkpoint service about new pending checkpoint(s)");
+                    }
+                }
 
-                debug!(
-                    ?consensus_round,
-                    "Notifying checkpoint service about new pending checkpoint(s)",
-                );
-                // Only after batch is written, notify checkpoint service to start building any new
-                // pending checkpoints.
-                if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
+                if let Err(e) = self
+                    .state
+                    .perpetual_tables
+                    .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
+                {
                     error!(
                         err=?e,
                         ?consensus_round,
-                        "failed to notify checkpoint service about new pending checkpoint(s)"
+                        ?completed_sessions,
+                        "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
                     );
 
-                    panic!("failed to notify checkpoint service about new pending checkpoint(s)");
+                    panic!(
+                        "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
+                    );
                 }
-            }
-
-            if let Err(e) = self
-                .state
-                .perpetual_tables
-                .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
-            {
-                error!(
-                    err=?e,
-                    ?consensus_round,
-                    ?completed_sessions,
-                    "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
-                );
-
-                panic!(
-                    "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
-                );
             }
 
             self.last_read_consensus_round = Some(consensus_round);
