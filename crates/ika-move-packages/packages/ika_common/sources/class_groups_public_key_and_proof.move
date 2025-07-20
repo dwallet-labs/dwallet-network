@@ -84,3 +84,10 @@ public fun destroy(self: ClassGroupsPublicKeyAndProof): table_vec::TableVec<vect
     id.delete();
     public_keys_and_proofs
 }
+
+/// Drops the `Option<TableVec<vector<u8>>>` object, removing all public keys and proofs before deletion.
+public fun drop_option_table_vec(self: Option<sui::table_vec::TableVec<vector<u8>>>) {
+    self.do!(|t| {
+        t.drop();
+    });
+}

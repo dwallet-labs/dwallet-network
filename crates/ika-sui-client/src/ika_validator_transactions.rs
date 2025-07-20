@@ -38,6 +38,7 @@ use sui_keys::keystore::AccountKeystore;
 use sui_sdk::SuiClient;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
+use sui_types::collection_types::TableVec;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
@@ -845,7 +846,7 @@ async fn add_ika_system_command_to_ptb(
     ika_system_object_id: ObjectID,
     ika_system_package_id: ObjectID,
     ptb: &mut ProgrammableTransactionBuilder,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Argument> {
     let Some(Owner::Shared {
         initial_shared_version,
     }) = context
@@ -872,14 +873,14 @@ async fn add_ika_system_command_to_ptb(
 
     args.extend(call_args);
 
-    ptb.command(sui_types::transaction::Command::move_call(
+    let return_arg = ptb.command(sui_types::transaction::Command::move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
         function.to_owned(),
         vec![],
         args,
     ));
-    Ok(())
+    Ok(return_arg)
 }
 
 async fn construct_unsigned_txn(
@@ -1527,6 +1528,7 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
+    ika_common_package_id: ObjectID,
     validator_operation_cap_id: ObjectID,
     class_groups_pubkey_and_proof_obj_ref: ObjectRef,
     gas_budget: u64,
@@ -1549,7 +1551,7 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
 
     let sender = context.active_address()?;
 
-    add_ika_system_command_to_ptb(
+    let table_to_delete = add_ika_system_command_to_ptb(
         context,
         SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
         call_args,
@@ -1559,7 +1561,20 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
     )
     .await?;
 
+    // Argument::NestedResult(1, 0)
+
+    // drop table vec
+    ptb.command(sui_types::transaction::Command::move_call(
+        ika_common_package_id,
+        TABLE_VEC_MODULE_NAME.into(),
+        TABLE_VEC_DROP_FUNCTION_NAME.to_owned(),
+        vec![],
+        vec![table_to_delete],
+    ));
+
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    println!("tx_data: {:?}", tx_data);
 
     execute_transaction(context, tx_data).await
 }
@@ -1572,14 +1587,9 @@ pub async fn set_pricing_vote(
     ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
     validator_operation_cap_id: ObjectID,
-    pricing_info: String,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    // let client = context.get_client().await?;
-
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let pricing_info = ptb.input(CallArg::Pure(bcs::to_bytes(&pricing_info)?))?;
-
     let client = context.get_client().await?;
     let validator_operation_cap_ref = client
         .transaction_builder()
@@ -1590,9 +1600,7 @@ pub async fn set_pricing_vote(
         validator_operation_cap_ref,
     )))?];
 
-    // let sender = context.active_address()?;
-
-    add_ika_system_command_to_ptb(
+    let verified_oer_ref = add_ika_system_command_to_ptb(
         context,
         VERIFY_OPERATION_CAP_FUNCTION_NAME,
         call_args,
@@ -1602,11 +1610,49 @@ pub async fn set_pricing_vote(
     )
     .await?;
 
-    // let validator_verified_opration_cap_ref = ptb.obj();
+    // Argument::NestedResult(0, 0)
 
-    let call_args = vec![Argument::Result(0), pricing_info];
+
+    // println!("call_args: {:?}", call_args);
 
     let sender = context.active_address()?;
+
+    let Some(Owner::Shared {
+                 initial_shared_version,
+             }) = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
+        .await?
+        .data
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
+        .owner
+    else {
+        bail!("Failed to get owner of object")
+    };
+
+    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_dwallet_2pc_mpc_coordinator_object_id,
+        initial_shared_version,
+        mutable: true,
+    }))?];
+
+
+
+    let pricing_info_arg = ptb.command(sui_types::transaction::Command::move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        move_core_types::ident_str!("current_pricing").to_owned(),
+        vec![],
+        args,
+    ));
+
+    let call_args = vec![pricing_info_arg, verified_oer_ref];
+    // args.extend(call_args);
 
     let Some(Owner::Shared {
         initial_shared_version,
@@ -1642,7 +1688,15 @@ pub async fn set_pricing_vote(
         args,
     ));
 
+
+    // println!("yael: {:?}", ptb);
+
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    println!("tx_data: {:?}", tx_data);
 
     execute_transaction(context, tx_data).await
 }
+
+pub const TABLE_VEC_MODULE_NAME: &IdentStr = move_core_types::ident_str!("class_groups_public_key_and_proof");
+pub const TABLE_VEC_DROP_FUNCTION_NAME: &IdentStr = move_core_types::ident_str!("drop_option_table_vec");

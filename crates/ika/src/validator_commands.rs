@@ -1056,6 +1056,7 @@ impl IkaValidatorCommand {
                     context,
                     config.ika_system_package_id,
                     config.ika_system_object_id,
+                    config.ika_common_package_id,
                     validator_operation_cap_id,
                     class_groups_keypair_and_proof_obj_ref,
                     gas_budget,
@@ -1162,7 +1163,6 @@ impl IkaValidatorCommand {
                     config.ika_dwallet_2pc_mpc_package_id,
                     config.ika_dwallet_coordinator_object_id,
                     validator_operation_cap_id,
-                    pricing_info,
                     gas_budget,
                 )
                 .await?;
