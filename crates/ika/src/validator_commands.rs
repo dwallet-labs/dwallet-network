@@ -23,9 +23,9 @@ use ika_sui_client::ika_validator_transactions::{
     set_next_epoch_class_groups_pubkey_and_proof_bytes, set_next_epoch_consensus_address,
     set_next_epoch_consensus_pubkey_bytes, set_next_epoch_network_address,
     set_next_epoch_network_pubkey_bytes, set_next_epoch_p2p_address,
-    set_next_epoch_protocol_pubkey_bytes, set_pricing_vote, set_validator_metadata, set_validator_name, stake_ika,
-    undo_report_validator, validator_metadata, verify_commission_cap, verify_operation_cap,
-    verify_validator_cap, withdraw_stake,
+    set_next_epoch_protocol_pubkey_bytes, set_pricing_vote, set_validator_metadata,
+    set_validator_name, stake_ika, undo_report_validator, validator_metadata,
+    verify_commission_cap, verify_operation_cap, verify_validator_cap, withdraw_stake,
 };
 use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
