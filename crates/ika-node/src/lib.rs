@@ -1127,28 +1127,31 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            if let Some(supported_versions) = self.config.supported_protocol_versions {
-                let transaction = ConsensusTransaction::new_capability_notification_v1(
-                    AuthorityCapabilitiesV1::new(
-                        self.state.name,
-                        cur_epoch_store.get_chain_identifier().chain(),
-                        supported_versions,
-                        vec![],
-                        // Note: this is a temp fix, we will handle package upgrades later.
-                        // sui_client
-                        // .get_available_move_packages()
-                        //     .await
-                        //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
-                    ),
-                );
+            let config = cur_epoch_store.protocol_config();
 
-                if let Some(components) = &*self.validator_components.lock().await {
-                    info!(?transaction, "submitting capabilities to consensus");
-                    components
-                        .consensus_adapter
-                        .submit_to_consensus(&[transaction], &cur_epoch_store)
-                        .await?;
-                }
+            let transaction =
+                ConsensusTransaction::new_capability_notification_v1(AuthorityCapabilitiesV1::new(
+                    self.state.name,
+                    cur_epoch_store.get_chain_identifier().chain(),
+                    self.config
+                        .supported_protocol_versions
+                        .expect("Supported versions should be populated")
+                        // no need to send digests of versions less than the current version
+                        .truncate_below(config.version),
+                    vec![],
+                    // Note: this is a temp fix, we will handle package upgrades later.
+                    // sui_client
+                    // .get_available_move_packages()
+                    //     .await
+                    //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                ));
+
+            if let Some(components) = &*self.validator_components.lock().await {
+                info!(?transaction, "submitting capabilities to consensus");
+                components
+                    .consensus_adapter
+                    .submit_to_consensus(&[transaction], &cur_epoch_store)
+                    .await?;
             }
 
             let end_of_publish_sender_handle =
@@ -1174,6 +1177,10 @@ impl IkaNode {
 
             let (latest_system_state, epoch_start_system_state) = match stop_condition {
                 StopReason::EpochComplete(latest_system_state, epoch_start_system_state) => {
+                    info!(
+                        epoch_number=?latest_system_state.epoch(),
+                        "Epoch completed, switching to the next epoch"
+                    );
                     (latest_system_state, epoch_start_system_state)
                 }
                 StopReason::RunWithRangeCondition => {

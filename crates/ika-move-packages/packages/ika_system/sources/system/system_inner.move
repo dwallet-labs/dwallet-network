@@ -974,12 +974,12 @@ public(package) fun process_checkpoint_message_by_cap(
 /// Set approved upgrade for a package id.
 /// If `digest` is `some`, it will be inserted into the `approved_upgrades` map.
 /// If `digest` is `none`, it will be removed from the `approved_upgrades` map.
-fun set_approved_upgrade(self: &mut SystemInner, package_id: ID, mut digest: Option<vector<u8>>) {
+fun set_approved_upgrade(self: &mut SystemInner, package_id: ID, digest: Option<vector<u8>>) {
     if (digest.is_some()) {
         if (self.approved_upgrades.contains(&package_id)) {
-            *self.approved_upgrades.get_mut(&package_id) = digest.extract();
+            *self.approved_upgrades.get_mut(&package_id) = *digest.borrow();
         } else {
-            self.approved_upgrades.insert(package_id, digest.extract());
+            self.approved_upgrades.insert(package_id, *digest.borrow());
         }
     } else {
         if (self.approved_upgrades.contains(&package_id)) {

@@ -7,7 +7,7 @@ use crate::dwallet_mpc::crytographic_computation::{
 };
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, DWalletMPCSessionOutput, MPCEventData};
-use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_encryption_key_public_data_from_public_output;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
@@ -418,8 +418,7 @@ impl DWalletMPCManager {
             .collect();
 
         ready_to_advance_sessions.sort_by(|(_, mpc_event_data), (_, other_mpc_event_data)| {
-            // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
-            other_mpc_event_data.cmp(mpc_event_data)
+            mpc_event_data.cmp(other_mpc_event_data)
         });
 
         let computation_requests: Vec<_> = ready_to_advance_sessions
@@ -523,7 +522,7 @@ impl DWalletMPCManager {
 
                     let mut new_key_ids = vec![];
                     for (key_id, key_data) in new_keys.iter() {
-                        match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
+                        match instantiate_dwallet_mpc_network_encryption_key_public_data_from_public_output(
                             key_data.current_epoch,
                             DWalletMPCNetworkKeyScheme::Secp256k1,
                             access_structure,

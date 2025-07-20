@@ -42,7 +42,7 @@ pub(super) mod native_computations;
 mod orchestrator;
 
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-pub(crate) use mpc_computations::advance_and_serialize;
+pub(crate) use mpc_computations::advance;
 pub(crate) use orchestrator::CryptographicComputationsOrchestrator;
 
 const MPC_SIGN_SECOND_ROUND: u64 = 2;
@@ -145,7 +145,7 @@ impl ComputationRequest {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = advance_and_serialize::<DWalletImportedKeyVerificationParty>(
+                let result = advance::<DWalletImportedKeyVerificationParty>(
                     session_id,
                     self.party_id,
                     &self.access_structure,
@@ -228,7 +228,7 @@ impl ComputationRequest {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = advance_and_serialize::<DWalletDKGFirstParty>(
+                let result = advance::<DWalletDKGFirstParty>(
                     session_id,
                     self.party_id,
                     &self.access_structure,
@@ -277,7 +277,7 @@ impl ComputationRequest {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = advance_and_serialize::<DWalletDKGSecondParty>(
+                let result = advance::<DWalletDKGSecondParty>(
                     session_id,
                     self.party_id,
                     &self.access_structure,
@@ -358,7 +358,7 @@ impl ComputationRequest {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = advance_and_serialize::<PresignParty>(
+                let result = advance::<PresignParty>(
                     session_id,
                     self.party_id,
                     &self.access_structure,
@@ -425,7 +425,7 @@ impl ComputationRequest {
                         }
                     }
 
-                    let result = advance_and_serialize::<SignFirstParty>(
+                    let result = advance::<SignFirstParty>(
                         session_id,
                         self.party_id,
                         &self.access_structure,
@@ -535,6 +535,7 @@ impl ComputationRequest {
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
+
                 verify_partial_signature(
                     &hashed_message,
                     &event_data.event_data.dkg_output,
@@ -576,7 +577,7 @@ impl ComputationRequest {
                     let logger =
                         base_logger.with_decryption_key_shares(decryption_key_shares.clone());
 
-                    let result = advance_and_serialize::<ReconfigurationSecp256k1Party>(
+                    let result = advance::<ReconfigurationSecp256k1Party>(
                         session_id,
                         self.party_id,
                         &self.access_structure,
