@@ -477,6 +477,10 @@ impl SystemCheckpointBuilder {
                 checkpoint_commit_height = height,
                 "Making system checkpoint at commit height"
             );
+            self.metrics
+                .last_system_checkpoint_pending_height
+                .set(height as i64);
+
             if let Err(e) = self.make_checkpoint(vec![pending.clone()]).await {
                 error!(
                     ?e,
