@@ -10,7 +10,7 @@ use ika_system::{
     validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
     validator_metadata::{Self, ValidatorMetadata},
     validator_info,
-    class_groups_public_key_and_proof::{Self, ClassGroupsPublicKeyAndProof},
+    mpc_data::{Self, TableVecBuilder},
     staked_ika::StakedIka,
 };
 
@@ -48,11 +48,11 @@ public fun consensus_pubkey_bytes(self: &TestValidator): vector<u8> {
     self.consensus_pubkey_bytes
 }
 
-public fun class_groups_public_key_and_proof(_self: &TestValidator, ctx: &mut TxContext): ClassGroupsPublicKeyAndProof {
-    let class_groups_pubkey_and_proof_bytes = x"0e2b273530a00de66c9727c40f48be985da684286983f398ef7695b8a44677ab";
-    let mut class_groups_public_key_and_proof = class_groups_public_key_and_proof::empty(ctx);
-    class_groups_public_key_and_proof.add_public_key_and_proof(class_groups_pubkey_and_proof_bytes, class_groups_pubkey_and_proof_bytes);
-    class_groups_public_key_and_proof.finish(ctx)
+public fun mpc_data(_self: &TestValidator, ctx: &mut TxContext): TableVecBuilder {
+    let mpc_date_bytes = x"0e2b273530a00de66c9727c40f48be985da684286983f398ef7695b8a44677ab";
+    let mut mpc_data = mpc_data::empty(ctx);
+    mpc_data.add_public_key_and_proof(mpc_date_bytes, mpc_date_bytes);
+    mpc_data.finish(ctx)
 }
 
 public fun create_proof_of_possession(self: &TestValidator): vector<u8> {

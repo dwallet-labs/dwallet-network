@@ -6,7 +6,7 @@ module ika_system::system_inner;
 use ika::ika::IKA;
 use ika_common::advance_epoch_approver::{Self, AdvanceEpochApprover};
 use ika_common::bls_committee::BlsCommittee;
-use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
 use ika_common::system_current_status_info::{Self, SystemCurrentStatusInfo};
 use ika_common::system_object_cap::SystemObjectCap;
@@ -311,7 +311,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    mpc_date_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -328,7 +328,7 @@ public(package) fun request_add_validator_candidate(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
-            class_groups_pubkey_and_proof_bytes,
+            mpc_date_bytes,
             proof_of_possession_bytes,
             network_address,
             p2p_address,
@@ -544,17 +544,17 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self.validator_set.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap);
 }
 
-/// Sets a validator's public key and its associated proof of class groups key.
+/// Sets a validator's MPC public data.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+public(package) fun set_next_epoch_mpc_date_bytes(
     self: &mut SystemInner,
-    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
+    mpc_date_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
     self
         .validator_set
-        .set_next_epoch_class_groups_pubkey_and_proof_bytes(
-            class_groups_pubkey_and_proof_bytes,
+        .set_next_epoch_mpc_date_bytes(
+            mpc_date_bytes,
             cap,
         )
 }

@@ -112,7 +112,7 @@ module ika_system::system;
 use ika::ika::IKA;
 use ika_common::advance_epoch_approver::AdvanceEpochApprover;
 use ika_common::bls_committee::BlsCommittee;
-use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
 use ika_common::system_current_status_info::SystemCurrentStatusInfo;
 use ika_common::system_object_cap::SystemObjectCap;
@@ -254,7 +254,7 @@ public fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    mpc_date_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -270,7 +270,7 @@ public fun request_add_validator_candidate(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
-            class_groups_pubkey_and_proof_bytes,
+            mpc_date_bytes,
             proof_of_possession_bytes,
             network_address,
             p2p_address,
@@ -471,17 +471,17 @@ public fun set_next_epoch_consensus_pubkey_bytes(
     self.inner_mut().set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
 }
 
-/// Sets a validator's public key of class groups key and its associated proof.
+/// Sets a validator's MPC public data.
 /// The change will only take effects starting from the next epoch.
-public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+public fun set_next_epoch_mpc_date_bytes(
     self: &mut System,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    mpc_date: TableVecBuilder,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
-    let class_groups_pubkey_and_proof = class_groups_pubkey_and_proof.destroy();
+    let mpc_date = mpc_date.destroy();
     self
         .inner_mut()
-        .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
+        .set_next_epoch_mpc_date_bytes(mpc_date, cap)
 }
 
 /// Get the pool token exchange rate of a validator. Works for both active and inactive pools.

@@ -6,7 +6,7 @@
 /// The full Class Groups public key consists of 13 public keys, each with a corresponding proof.
 /// Due to Sui's limitations on object size (≤ 250KB) and transaction size (≤ 128KB),
 /// the full key must be split into parts and stored dynamically using `table_vec`.
-module ika_common::class_groups_public_key_and_proof;
+module ika_common::mpc_data;
 
 use sui::table_vec;
 

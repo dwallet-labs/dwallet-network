@@ -5,7 +5,7 @@ module ika_system::validator_set;
 
 use ika::ika::IKA;
 use ika_common::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member};
-use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::extended_field::{Self, ExtendedField};
 use ika_common::system_object_cap::SystemObjectCap;
 use ika_common::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
@@ -169,7 +169,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    mpc_date_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -185,7 +185,7 @@ public(package) fun request_add_validator_candidate(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
-        class_groups_pubkey_and_proof_bytes,
+        mpc_date_bytes,
         proof_of_possession_bytes,
         network_address,
         p2p_address,
@@ -566,20 +566,20 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self.assert_no_pending_or_active_duplicates(validator_id);
 }
 
-public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+public(package) fun set_next_epoch_mpc_date_bytes(
     self: &mut ValidatorSet,
-    class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
+    mpc_date_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
     let validator_id = cap.validator_id();
     self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
-    let previous_class_groups_key = validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(
-        class_groups_pubkey_and_proof_bytes,
+    let previous_mpc_data_key = validator.set_next_epoch_mpc_date_bytes(
+        mpc_date_bytes,
         cap,
     );
     self.assert_no_pending_or_active_duplicates(validator_id);
-    previous_class_groups_key
+    previous_mpc_data_key
 
 }
 
