@@ -34,6 +34,9 @@ use tracing::{debug, error, info};
 /// we are using a big buffer (this size of the data is small).
 const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 
+/// Number of cores unavailable to cryptographic computation, reserved solely for `tokio` i.e. consensus and network services use.
+const TOKIO_ALLOCATED_CORES: usize = 3;
+
 struct ComputationCompletionUpdate {
     computation_id: ComputationId,
     computation_result: DwalletMPCResult<mpc::AsynchronousRoundGODResult>,
@@ -80,9 +83,10 @@ impl CryptographicComputationsOrchestrator {
     pub(crate) fn try_new(root_seed: RootSeed) -> DwalletMPCResult<Self> {
         let (report_computation_completed_sender, report_computation_completed_receiver) =
             tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
-        let available_cores_for_computations: usize = std::thread::available_parallelism()
+        let total_cores_available: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
+        let available_cores_for_computations: usize = total_cores_available - TOKIO_ALLOCATED_CORES;
         if available_cores_for_computations == 0 {
             error!(
                 "failed to get available parallelism, no CPU cores available for cryptographic computations"
