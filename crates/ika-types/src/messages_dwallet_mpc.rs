@@ -670,6 +670,8 @@ impl DWalletSessionEventTrait for PresignRequestEvent {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct IkaPackagesConfig {
+    /// The move package id of for large size utils on sui.
+    pub large_size_utils_package_id: ObjectID,
     /// The move package id of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
     /// The move package id of ika_common on sui.

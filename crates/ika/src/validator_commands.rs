@@ -53,6 +53,8 @@ pub enum IkaValidatorCommand {
     },
     #[clap(name = "config-env")]
     ConfigEnv {
+        #[clap(name = "large-size-utils-package-id", long)]
+        large_size_utils_package_id: ObjectID,
         #[clap(name = "ika-package-id", long)]
         ika_package_id: ObjectID,
         #[clap(name = "ika-common-package-id", long)]
@@ -185,6 +187,7 @@ impl IkaValidatorCommand {
                 IkaValidatorCommandResponse::MakeValidatorInfo
             }
             IkaValidatorCommand::ConfigEnv {
+                large_size_utils_package_id,
                 ika_package_id,
                 ika_common_package_id,
                 ika_dwallet_2pc_mpc_package_id,
@@ -192,6 +195,7 @@ impl IkaValidatorCommand {
                 ika_system_object_id,
             } => {
                 let config = IkaPackagesConfig {
+                    large_size_utils_package_id,
                     ika_package_id,
                     ika_common_package_id,
                     ika_dwallet_2pc_mpc_package_id,

@@ -75,6 +75,7 @@ const VERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL: &str = "data:image/svg+xml;
 pub struct ContractPaths {
     pub current_working_dir: PathBuf,
     pub contracts_dir: TempDir,
+    pub large_size_utils_contract_path: PathBuf,
     pub ika_contract_path: PathBuf,
     pub ika_common_contract_path: PathBuf,
     pub ika_system_contract_path: PathBuf,
@@ -85,6 +86,7 @@ pub fn setup_contract_paths() -> Result<ContractPaths, anyhow::Error> {
     let current_working_dir = std::env::current_dir()?;
     let contracts_dir = save_contracts_to_temp_dir()?;
     let contracts_path = contracts_dir.path();
+    let large_size_utils_contract_path = contracts_path.join("large_size_utils");
     let ika_contract_path = contracts_path.join("ika");
     let ika_common_contract_path = contracts_path.join("ika_common");
     let ika_system_contract_path = contracts_path.join("ika_system");
@@ -93,6 +95,7 @@ pub fn setup_contract_paths() -> Result<ContractPaths, anyhow::Error> {
     Ok(ContractPaths {
         current_working_dir,
         contracts_dir,
+        large_size_utils_contract_path,
         ika_contract_path,
         ika_common_contract_path,
         ika_system_contract_path,
@@ -107,6 +110,7 @@ pub async fn init_ika_on_sui(
     initiation_parameters: InitiationParameters,
 ) -> Result<
     (
+        ObjectID,
         ObjectID,
         ObjectID,
         ObjectID,
@@ -201,6 +205,12 @@ pub async fn init_ika_on_sui(
         publish_ika_package_to_sui(&mut context, contract_paths.ika_contract_path).await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
+    let (large_size_utils_package_id, large_size_utils_package_upgrade_cap_id) =
+        publish_large_size_utils_package_to_sui(&mut context, contract_paths.large_size_utils_contract_path)
+            .await?;
+
+    println!("Package `large_size_utils` published: large_size_utils_package_id: {large_size_utils_package_id}");
+
     println!(
         "Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}"
     );
@@ -280,6 +290,7 @@ pub async fn init_ika_on_sui(
         protocol_cap_id,
         ika_common_package_upgrade_cap_id,
         ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+        large_size_utils_package_upgrade_cap_id,
     )
     .await?;
 
@@ -372,6 +383,7 @@ pub async fn init_ika_on_sui(
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     let ika_config = IkaPackagesConfig {
+        large_size_utils_package_id,
         ika_package_id,
         ika_common_package_id,
         ika_dwallet_2pc_mpc_package_id,
@@ -385,6 +397,7 @@ pub async fn init_ika_on_sui(
     file.write_all(json.as_bytes())?;
 
     Ok((
+        large_size_utils_package_id,
         ika_package_id,
         ika_common_package_id,
         ika_dwallet_2pc_mpc_package_id,
@@ -918,6 +931,7 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
     protocol_cap_id: ObjectID,
     ika_common_package_upgrade_cap_id: ObjectID,
     ika_dwallet_2pc_mpc_package_upgrade_cap_id: ObjectID,
+    large_size_utils_package_upgrade_cap_id: ObjectID,
 ) -> Result<(), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -954,6 +968,15 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         ObjectArg::ImmOrOwnedObject(ika_dwallet_2pc_mpc_package_upgrade_cap_ref),
     ))?;
 
+    let large_size_utils_package_upgrade_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(large_size_utils_package_upgrade_cap_id)
+        .await?;
+
+    let large_size_utils_package_upgrade_cap_arg = ptb.input(CallArg::Object(
+        ObjectArg::ImmOrOwnedObject(large_size_utils_package_upgrade_cap_ref),
+    ))?;
+
     ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
@@ -975,6 +998,18 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
             ika_system_arg,
             protocol_cap_arg,
             ika_dwallet_2pc_mpc_package_upgrade_cap_arg,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        ident_str!("add_upgrade_cap_by_cap").into(),
+        vec![],
+        vec![
+            ika_system_arg,
+            protocol_cap_arg,
+            large_size_utils_package_upgrade_cap_arg,
         ],
     );
 
@@ -1575,6 +1610,42 @@ pub async fn publish_ika_common_package_to_sui(
         ika_common_package_id,
         system_object_cap_id,
         ika_common_package_upgrade_cap_id,
+    ))
+}
+
+pub async fn publish_large_size_utils_package_to_sui(
+    context: &mut WalletContext,
+    contract_path: PathBuf,
+) -> Result<(ObjectID, ObjectID), anyhow::Error> {
+    let object_changes = publish_package_to_sui(context, contract_path).await?;
+
+    let large_size_utils_package_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Published { package_id, .. } => Some(*package_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    let large_size_utils_upgrade_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if UpgradeCap::type_() == *object_type => Some(*object_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    Ok((
+        large_size_utils_package_id,
+        large_size_utils_upgrade_cap_id,
     ))
 }
 
