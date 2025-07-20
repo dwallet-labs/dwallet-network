@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use ika_config::NodeConfig;
-use ika_types::dwallet_mpc_error::DwalletMPCError;
 use tokio::runtime::Runtime;
 use tracing::error;
 
@@ -60,7 +59,7 @@ impl IkaRuntimes {
         }
         #[cfg(not(feature = "enforce-minimum-cpu"))]
         {
-           return total_cores_available; 
+            return total_cores_available;
         }
         total_cores_available - TOKIO_ALLOCATED_CORES
     }

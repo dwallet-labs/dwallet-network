@@ -19,7 +19,7 @@
 
 use crate::dwallet_mpc::crytographic_computation::{ComputationId, ComputationRequest};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::runtime::{IkaRuntimes, TOKIO_ALLOCATED_CORES};
+use crate::runtime::{IkaRuntimes};
 use dwallet_rng::RootSeed;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::collections::{HashMap, HashSet};
