@@ -1702,6 +1702,10 @@ impl ConsensusCommitOutput {
         self.pending_system_checkpoints.push(checkpoint);
     }
 
+    /// This function writes a batch of consensus commit outputs,
+    /// which includes the MPC messages, outputs and verified checkpoint messages.
+    ///
+    /// We depend upon this batch writing logic, in `last_dwallet_mpc_message_round()` which should be the same for the outputs and verified checkpoint messages as well.
     pub fn write_to_batch(
         self,
         epoch_store: &AuthorityPerEpochStore,
