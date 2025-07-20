@@ -510,6 +510,7 @@ impl SystemCheckpointBuilder {
             //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
             //     .await?;
             sorted_tx_effects_included_in_checkpoint.extend(pending.messages);
+            tokio::task::yield_now().await;
         }
         let new_checkpoint = self
             .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
@@ -691,6 +692,7 @@ impl SystemCheckpointBuilder {
             let checkpoint_message = SystemCheckpointMessage::new(epoch, sequence_number, messages);
 
             checkpoints.push(checkpoint_message);
+            tokio::task::yield_now().await;
         }
 
         Ok(checkpoints)
@@ -830,7 +832,7 @@ impl SystemCheckpointAggregator {
     }
 
     async fn run_and_notify(&mut self) -> IkaResult {
-        let checkpoint_messages = self.run_inner()?;
+        let checkpoint_messages = self.run_inner().await?;
         for checkpoint_message in checkpoint_messages {
             self.output
                 .certified_system_checkpoint_message_created(&checkpoint_message)
@@ -839,7 +841,7 @@ impl SystemCheckpointAggregator {
         Ok(())
     }
 
-    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedSystemCheckpointMessage>> {
+    async fn run_inner(&mut self) -> IkaResult<Vec<CertifiedSystemCheckpointMessage>> {
         let _scope = monitored_scope("SystemCheckpointAggregator");
         let mut result = vec![];
         'outer: loop {
@@ -931,6 +933,7 @@ impl SystemCheckpointAggregator {
                     current.next_index = index + 1;
                 }
             }
+            tokio::task::yield_now().await;
             break;
         }
         Ok(result)
