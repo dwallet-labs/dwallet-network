@@ -62,6 +62,7 @@ pub struct DWalletMPCService {
     pub exit: Receiver<()>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
     end_of_publish: bool,
+    dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 impl DWalletMPCService {
@@ -101,7 +102,7 @@ impl DWalletMPCService {
             node_config,
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
-            dwallet_mpc_metrics,
+            dwallet_mpc_metrics.clone(),
         );
 
         Self {
@@ -115,6 +116,7 @@ impl DWalletMPCService {
             new_events_receiver,
             exit,
             end_of_publish: false,
+            dwallet_mpc_metrics,
         }
     }
 
@@ -461,6 +463,10 @@ impl DWalletMPCService {
             }
 
             self.last_read_consensus_round = Some(consensus_round);
+
+            self.dwallet_mpc_metrics
+                .last_process_mpc_consensus_round
+                .set(consensus_round as i64);
             tokio::task::yield_now().await;
         }
     }
