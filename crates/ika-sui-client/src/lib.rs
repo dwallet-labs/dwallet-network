@@ -963,20 +963,31 @@ impl SuiClientInner for SuiSdkClient {
         > = HashMap::new();
         for validator in validators {
             let info = validator.verified_validator_info();
-            let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys {
-                if let Some(next_epoch_class_groups_pubkey_and_proof) =
-                    &info.next_epoch_class_groups_pubkey_and_proof_bytes
-                {
-                    next_epoch_class_groups_pubkey_and_proof
-                        .public_keys_and_proofs
-                        .contents
-                        .id
-                } else {
-                    info.class_groups_pubkey_and_proof_bytes.contents.id
-                }
+            let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys
+                && info
+                    .next_epoch_class_groups_pubkey_and_proof_bytes
+                    .is_some()
+                && info.previous_class_groups_pubkey_and_proof_bytes.is_none()
+            {
+                info.next_epoch_class_groups_pubkey_and_proof_bytes
+                    .as_ref()
+                    .unwrap()
+                    .contents
+                    .id
             } else {
                 info.class_groups_pubkey_and_proof_bytes.contents.id
             };
+
+            if info
+                .next_epoch_class_groups_pubkey_and_proof_bytes
+                .is_some()
+                && info.previous_class_groups_pubkey_and_proof_bytes.is_some()
+            {
+                error!(
+                    validator_id=?validator.id,
+                    "This should never happen, validator has both previous and next epoch class groups public key and proof bytes, using current epoch",
+                );
+            }
 
             let dynamic_fields = self
                 .read_api()

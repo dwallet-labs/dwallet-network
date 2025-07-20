@@ -78,7 +78,7 @@ public struct ValidatorInfo has store {
     consensus_pubkey_bytes: vector<u8>,
     /// The validator's Class Groups public key and its associated proof.
     /// This key is used for the network DKG process and for resharing the network MPC key
-    /// Must always contain value 
+    /// Must always contain value
     class_groups_pubkey_and_proof_bytes: Option<TableVec<vector<u8>>>,
     /// Next epoch configurations - only take effect in the next epoch
     /// If none, current value will stay unchanged.
@@ -290,7 +290,9 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
         self.next_epoch_consensus_pubkey_bytes = option::none();
     };
 
-    if (self.next_epoch_class_groups_pubkey_and_proof_bytes.is_some()) {
+    if (self.next_epoch_class_groups_pubkey_and_proof_bytes.is_some()
+        && self.class_groups_pubkey_and_proof_bytes.is_none()
+    ) {
         let next_epoch_class_groups_pubkey_and_proof_bytes =
             self.next_epoch_class_groups_pubkey_and_proof_bytes.extract();
 
@@ -301,7 +303,7 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
                 next_epoch_class_groups_pubkey_and_proof_bytes
             );
 
-        // At this point, we can assume that the previous class groups pubkey and proof bytes 
+        // At this point, we can assume that the previous class groups pubkey and proof bytes
         // are not set, so we can safely fill them.
         self.previous_class_groups_pubkey_and_proof_bytes.fill(previous_class_groups_pubkey_and_proof_bytes);
     };
