@@ -870,7 +870,6 @@ impl DWalletCheckpointAggregator {
                 // the current signature aggregator to the next checkpoint to
                 // be certified.
                 if current.checkpoint_message.sequence_number < next_to_certify {
-                    self.current = None;
                     debug!(
                         next_index = current.next_index,
                         digest = ?current.digest,
@@ -879,6 +878,7 @@ impl DWalletCheckpointAggregator {
                         next_to_certify,
                         "Resetting current dwallet checkpoint signature aggregator",
                     );
+                    self.current = None;
                     continue;
                 }
                 debug!(
