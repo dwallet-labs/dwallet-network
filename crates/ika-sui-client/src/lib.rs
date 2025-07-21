@@ -5,8 +5,8 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
+use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
 use ika_move_packages::BuiltInIkaMovePackages;
-use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
@@ -345,17 +345,17 @@ where
         })
     }
 
-    pub async fn get_class_groups_public_keys_and_proofs(
+    pub async fn get_mpc_data_from_validators_pool(
         &self,
         validators: &Vec<StakingPool>,
-        read_next_epoch_class_groups_keys: bool,
-    ) -> IkaResult<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>> {
+        read_next_mpc_data: bool,
+    ) -> IkaResult<HashMap<ObjectID, VersionedMPCData>> {
         self.inner
-            .get_class_groups_public_keys_and_proofs(validators, read_next_epoch_class_groups_keys)
+            .get_mpc_data_from_validators_pool(validators, read_next_mpc_data)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
-                    "Can't get_class_groups_public_keys_and_proofs: {e}"
+                    "Can't get_mpc_data_from_validators_pool: {e}"
                 ))
             })
     }
@@ -394,13 +394,13 @@ where
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                let validators_class_groups_public_key_and_proof = self
+                let validators_mpc_data = self
                     .inner
-                    .get_class_groups_public_keys_and_proofs(&validators, false)
+                    .get_mpc_data_from_validators_pool(&validators, false)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
-                            "can't get_class_groups_public_keys_and_proofs: {e}"
+                            "can't get_mpc_data_from_validators_pool: {e}"
                         ))
                     })?;
 
@@ -423,10 +423,7 @@ where
                             protocol_pubkey: info.protocol_pubkey.clone(),
                             network_pubkey: info.network_pubkey.clone(),
                             consensus_pubkey: info.consensus_pubkey.clone(),
-                            class_groups_public_key_and_proof:
-                                validators_class_groups_public_key_and_proof
-                                    .get(&validator.id)
-                                    .cloned(),
+                            mpc_data: validators_mpc_data.get(&validator.id).cloned(),
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),
@@ -771,11 +768,11 @@ pub trait SuiClientInner: Send + Sync {
     ) -> Result<Vec<u8>, Self::Error>;
 
     #[allow(clippy::ptr_arg)]
-    async fn get_class_groups_public_keys_and_proofs(
+    async fn get_mpc_data_from_validators_pool(
         &self,
         validators: &Vec<StakingPool>,
-        read_next_epoch_class_groups_keys: bool,
-    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
+        read_next_epoch_mpc_data: bool,
+    ) -> Result<HashMap<ObjectID, VersionedMPCData>, self::Error>;
 
     #[allow(clippy::ptr_arg)]
     async fn get_network_encryption_keys(
@@ -951,18 +948,15 @@ impl SuiClientInner for SuiSdkClient {
         Ok(events)
     }
 
-    async fn get_class_groups_public_keys_and_proofs(
+    async fn get_mpc_data_from_validators_pool(
         &self,
         validators: &Vec<StakingPool>,
-        read_next_epoch_class_groups_keys: bool,
-    ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error> {
-        let mut class_groups_public_keys_and_proofs: HashMap<
-            ObjectID,
-            ClassGroupsEncryptionKeyAndProof,
-        > = HashMap::new();
+        read_next_mpc_data: bool,
+    ) -> Result<HashMap<ObjectID, VersionedMPCData>, self::Error> {
+        let mut mpc_data_from_all_validators: HashMap<ObjectID, VersionedMPCData> = HashMap::new();
         for validator in validators {
             let info = validator.verified_validator_info();
-            let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys
+            let mpc_data_id = if read_next_mpc_data
                 && info.next_epoch_mpc_data_bytes.is_some()
                 && info.previous_mpc_data_bytes.is_none()
             {
@@ -973,37 +967,33 @@ impl SuiClientInner for SuiSdkClient {
                 {
                     error!(
                         validator_id=?validator.id,
-                        "This should never happen, validator has both previous and next epoch class groups public key and proof bytes, using current epoch",
+                        "This should never happen, validator can't have both previous and next epoch MPC data bytes, using current data from epoch",
                     );
                 }
 
                 info.mpc_data_bytes.contents.id
             };
 
-            let validator_class_groups_public_key_and_proof_bytes = self
-                .read_table_vec_as_raw_bytes(class_groups_pubkey_and_proof_bytes_id)
-                .await?;
+            let mpc_data_bytes = self.read_table_vec_as_raw_bytes(mpc_data_id).await?;
 
-            let validator_class_groups_public_key_and_proof: bcs::Result<
-                ClassGroupsEncryptionKeyAndProof,
-            > = bcs::from_bytes(&validator_class_groups_public_key_and_proof_bytes);
+            let validator_mpc_data: bcs::Result<VersionedMPCData> =
+                bcs::from_bytes(&mpc_data_bytes);
 
-            match validator_class_groups_public_key_and_proof {
-                Ok(validator_class_groups_public_key_and_proof) => {
-                    class_groups_public_keys_and_proofs
-                        .insert(validator.id, validator_class_groups_public_key_and_proof);
+            match validator_mpc_data {
+                Ok(validator_mpc_data) => {
+                    mpc_data_from_all_validators.insert(validator.id, validator_mpc_data);
                 }
                 Err(e) => {
                     warn!(
                         validator_id=?validator.id,
                         error=?e,
-                        "Failed to deserialize class groups public key and proof for a validator"
+                        "Failed to deserialize MPC data for a validator"
                     );
                     continue;
                 }
             }
         }
-        Ok(class_groups_public_keys_and_proofs)
+        Ok(mpc_data_from_all_validators)
     }
 
     async fn get_network_encryption_keys(

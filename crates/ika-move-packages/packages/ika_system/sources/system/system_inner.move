@@ -6,7 +6,6 @@ module ika_system::system_inner;
 use ika::ika::IKA;
 use ika_common::advance_epoch_approver::{Self, AdvanceEpochApprover};
 use ika_common::bls_committee::BlsCommittee;
-use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
 use ika_common::system_current_status_info::{Self, SystemCurrentStatusInfo};
 use ika_common::system_object_cap::SystemObjectCap;
@@ -311,7 +310,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_data_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVec<vector<u8>>,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,

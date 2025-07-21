@@ -112,7 +112,6 @@ module ika_system::system;
 use ika::ika::IKA;
 use ika_common::advance_epoch_approver::AdvanceEpochApprover;
 use ika_common::bls_committee::BlsCommittee;
-use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
 use ika_common::system_current_status_info::SystemCurrentStatusInfo;
 use ika_common::system_object_cap::SystemObjectCap;
@@ -254,7 +253,7 @@ public fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_data_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVec<vector<u8>>,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -475,10 +474,9 @@ public fun set_next_epoch_consensus_pubkey_bytes(
 /// The change will only take effects starting from the next epoch.
 public fun set_next_epoch_mpc_data_bytes(
     self: &mut System,
-    mpc_data: TableVecBuilder,
+    mpc_data: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
-    let mpc_data = mpc_data.destroy();
     self
         .inner_mut()
         .set_next_epoch_mpc_data_bytes(mpc_data, cap)

@@ -72,7 +72,7 @@ pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
 
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
-pub const BYTES_TABLE_VEC_BUILDER_MODULE_NAME: &IdentStr = ident_str!("bytes_table_vec_builder");
+pub const TABLE_VEC_MODULE_NAME: &IdentStr = ident_str!("table_vec");
 pub const CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("empty");
 pub const PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("push_back");
 
@@ -195,7 +195,7 @@ impl TableVecBuilder {
         StructTag {
             address: ika_system_package_address,
             name: ident_str!("TableVecBuilder").to_owned(),
-            module: BYTES_TABLE_VEC_BUILDER_MODULE_NAME.to_owned(),
+            module: TABLE_VEC_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

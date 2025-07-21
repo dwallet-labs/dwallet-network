@@ -4,7 +4,6 @@
 module ika_system::validator;
 
 use ika::ika::IKA;
-use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::system_object_cap::SystemObjectCap;
 use ika_common::validator_cap::{Self, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::pending_values::{Self, PendingValues};
@@ -168,7 +167,7 @@ public(package) fun new(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_data_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVec<vector<u8>>,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,

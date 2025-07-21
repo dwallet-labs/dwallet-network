@@ -228,21 +228,12 @@ impl IkaValidatorCommand {
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
 
-                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
-                    context.active_address()?,
-                    context,
-                    config.large_size_utils_package_id,
-                    validator_info.class_groups_public_key_and_proof.clone(),
-                    gas_budget,
-                ).await?;
-
                 let (res, validator_id, validator_cap_id) = request_add_validator_candidate(
                     context,
                     &validator_info,
                     config.ika_system_package_id,
                     config.ika_system_object_id,
                     config.ika_common_package_id,
-                    class_groups_keypair_and_proof_obj_ref,
                     gas_budget,
                 )
                 .await?;

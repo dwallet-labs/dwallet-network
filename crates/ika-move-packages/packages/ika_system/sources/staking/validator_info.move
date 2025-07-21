@@ -3,7 +3,6 @@
 
 module ika_system::validator_info;
 
-use large_size_utils::bytes_table_vec_builder::TableVecBuilder;
 use ika_common::extended_field::{Self, ExtendedField};
 use ika_common::multiaddr;
 use ika_system::validator_metadata::ValidatorMetadata;
@@ -105,7 +104,7 @@ public(package) fun new(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_data_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVec<vector<u8>>,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -114,7 +113,6 @@ public(package) fun new(
     ctx: &mut TxContext,
 ): ValidatorInfo {
     let protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&protocol_pubkey_bytes));
-    let mpc_data_bytes = mpc_data_bytes.destroy();
 
     // Verify proof of possession for protocol public key
     assert!(
