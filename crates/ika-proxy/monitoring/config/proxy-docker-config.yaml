@@ -10,7 +10,7 @@ network: localnet
 # Format: IP:PORT or hostname:PORT
 # Use 0.0.0.0 to listen on all interfaces, 127.0.0.1 for localhost only
 # This field is required
-listen-address: 0.0.0.0:9186
+listen-address: 0.0.0.0:8444
 
 # Remote write configuration - where processed metrics are forwarded
 # This section is required for the proxy to function
@@ -42,16 +42,17 @@ dynamic-peers:
 #  url: http://127.0.0.1:9000
   url: https://fullnode.sui.beta.devnet.ika-network.net
   interval: 60
-  hostname: localhost
-  ika-package-id: 0x0a2c4b9f5057b4a8c10a7b15c84fbbe8897969af6fc3be13a486a403d086955d
-  ika-common-package-id: 0x6a7151ebec031513bf356f6ba162accb82594e6a3e1f88ba15597fd4824d0f16
-  ika-dwallet-2pc-mpc-package-id: 0xb8f5ce6d240e800750e3da0baac6fd2cda796ef6f4d622c9190dae21e49dbf1b
-  ika-system-package-id: 0x7c78e257263731cc27644b65a12d61321bb91ace0ec5173ada6dac92cdf13840
-  ika-system-object-id: 0xb14df12d3d73714665e0927a27523e3341e17f113ba4444ed28e950b21bf1c87
-  ika-dwallet-coordinator-object-id: 0x6346aaf41576e4ba6439b4da41873f035c0c82dd0333c2d41e38f69422274b2c
-  certificate-file: /Users/zeevmanilovich/Dev/infra/tf-sui-validators/modules/ika-proxy/keys/proxy.crt
+#  todo(zeev): check this
+#  hostname: localhost
+  ika-package-id: 0xf072acaf9052ad5697bd12f9c46e266df6bca67729562a53b581efc4f3d27e85
+  ika-common-package-id: 0xa88236a9ee6c0e45eaaa840b150f6de5d7281b0b7add542674f935b5110c7b14
+  ika-dwallet-2pc-mpc-package-id: 0x6285d1859304bb8630a5472e7ee988b8e9d97ffbcd623e68e1ad5eb95e8fe88c
+  ika-system-package-id: 0x6ea8ad06c1da7073253e57ba678032d86de692f550847863ab6153c9d3ef866b
+  ika-system-object-id: 0x77f91a4c43808619b9bdb3d65c988b5825d33febd9dbdcc8400b1d9b6bf18bca
+  ika-dwallet-coordinator-object-id: 0x784f3993a128a5935ef9c70878082d47df00eb91e6af589be3a435c0047df1e0
+  certificate-file: /Users/zeevmanilovich/Dev/infra/tf-sui-validators/modules/ika-proxy/local-keys/proxy.crt
 #    certificate-file: /Users/zeevmanilovich/cert/localhost.crt
-  private-key: /Users/zeevmanilovich/Dev/infra/tf-sui-validators/modules/ika-proxy/keys/proxy.key
+  private-key: /Users/zeevmanilovich/Dev/infra/tf-sui-validators/modules/ika-proxy/local-keys/proxy.key
 #  private-key: /Users/zeevmanilovich/cert/localhost.key
 
 #dynamic-peers:
