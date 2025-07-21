@@ -16,17 +16,16 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, ADVANCE_EPOCH_FUNCTION_NAME,
-    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
-    ClassGroupsPublicKeyAndProofBuilder, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
-    DWALLET_COORDINATOR_STRUCT_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, INITIALIZE_FUNCTION_NAME,
-    NEW_VALIDATOR_METADATA_FUNCTION_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, BYTES_TABLE_VEC_BUILDER_MODULE_NAME,
+    CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
+    DWALLET_COORDINATOR_STRUCT_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME,
+    INITIALIZE_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME, PROTOCOL_CAP_MODULE_NAME,
+    PROTOCOL_CAP_STRUCT_NAME, PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME,
     REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, System,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    TableVecBuilder, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -206,10 +205,15 @@ pub async fn init_ika_on_sui(
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     let (large_size_utils_package_id, large_size_utils_package_upgrade_cap_id) =
-        publish_large_size_utils_package_to_sui(&mut context, contract_paths.large_size_utils_contract_path)
-            .await?;
+        publish_large_size_utils_package_to_sui(
+            &mut context,
+            contract_paths.large_size_utils_contract_path,
+        )
+        .await?;
 
-    println!("Package `large_size_utils` published: large_size_utils_package_id: {large_size_utils_package_id}");
+    println!(
+        "Package `large_size_utils` published: large_size_utils_package_id: {large_size_utils_package_id}"
+    );
 
     println!(
         "Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}"
@@ -311,6 +315,7 @@ pub async fn init_ika_on_sui(
             ika_system_package_id,
             ika_common_package_id,
             ika_system_object_id,
+            large_size_utils_package_id,
             init_system_shared_version,
         )
         .await?;
@@ -1291,6 +1296,7 @@ async fn request_add_validator_candidate(
     ika_system_package_id: ObjectID,
     ika_common_package_id: ObjectID,
     ika_system_object_id: ObjectID,
+    large_size_utils_package_id: ObjectID,
     init_system_shared_version: SequenceNumber,
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1299,7 +1305,7 @@ async fn request_add_validator_candidate(
         validator_address,
         context,
         &client,
-        ika_common_package_id,
+        large_size_utils_package_id,
         validator_initialization_metadata
             .class_groups_public_key_and_proof
             .clone(),
@@ -1643,23 +1649,20 @@ pub async fn publish_large_size_utils_package_to_sui(
         .first()
         .unwrap();
 
-    Ok((
-        large_size_utils_package_id,
-        large_size_utils_upgrade_cap_id,
-    ))
+    Ok((large_size_utils_package_id, large_size_utils_upgrade_cap_id))
 }
 
-async fn create_class_groups_public_key_and_proof_builder_object(
+async fn new_bytes_table_vec_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_common_package_id: ObjectID,
+    ika_large_size_utils: ObjectID,
 ) -> anyhow::Result<ObjectRef> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
+        ika_large_size_utils,
+        BYTES_TABLE_VEC_BUILDER_MODULE_NAME.into(),
+        CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
@@ -1677,9 +1680,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
-                == *object_type =>
-            {
+            } if TableVecBuilder::type_(ika_large_size_utils.into()) == *object_type => {
                 Some(*object_id)
             }
             _ => None,
@@ -1700,111 +1701,50 @@ async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_common_package_id: ObjectID,
+    large_size_utils_package_id: ObjectID,
     class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
 ) -> anyhow::Result<ObjectRef> {
-    let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
+    let mut builder_object_ref = new_bytes_table_vec_builder_object(
         publisher_address,
         context,
         client,
-        ika_common_package_id,
+        large_size_utils_package_id,
     )
     .await?;
+    let builder_id = builder_object_ref.0;
 
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
         Box::new(class_groups_public_key_and_proof_bytes);
-
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_common_package_id,
-        (0, 3),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
-    let builder_object_ref = client
-        .transaction_builder()
-        .get_object_ref(builder_object_ref.0)
-        .await?;
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    ptb.move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
-        vec![],
-        vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            builder_object_ref,
-        ))],
-    )?;
-    ptb.transfer_arg(publisher_address, Argument::Result(0));
-    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
-
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-
-    let object_changes = response
-        .object_changes
-        .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-
-    let obj_id = *object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
-                == *object_type =>
-            {
-                Some(*object_id)
-            }
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap();
-
-    let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
-
-    Ok(pubkey_and_proof_obj_ref)
-}
-
-async fn add_public_keys_and_proofs_with_rng(
-    publisher_address: SuiAddress,
-    context: &mut WalletContext,
-    client: &SuiClient,
-    ika_system_package_id: ObjectID,
-    range: (u8, u8),
-    cg_builder_object_id: ObjectID,
-    class_groups_public_key_and_proof: &ClassGroupsEncryptionKeyAndProof,
-) -> anyhow::Result<()> {
-    let mut first_ptb = ProgrammableTransactionBuilder::new();
-    let builder_object_ref = client
-        .transaction_builder()
-        .get_object_ref(cg_builder_object_id)
-        .await?;
-    for i in range.0..range.1 {
-        let pubkey_and_proof = bcs::to_bytes(&class_groups_public_key_and_proof[i as usize])?;
-        let proof_builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref))?;
-        let first_proof_bytes_half = first_ptb.pure(pubkey_and_proof[0..10_000].to_vec())?;
-        let second_proof_bytes_half = first_ptb.pure(pubkey_and_proof[10_000..].to_vec())?;
-        first_ptb.programmable_move_call(
-            ika_system_package_id,
-            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
+    let ten_kb = 10 * 1024;
+    let class_groups_public_key_and_proof_bytes =
+        bcs::to_bytes(&class_groups_public_key_and_proof)?;
+    let mut i = 0;
+    while i < class_groups_public_key_and_proof_bytes.len() {
+        let mut ptb = ProgrammableTransactionBuilder::new();
+        let max_len = std::cmp::min(class_groups_public_key_and_proof_bytes.len(), i + ten_kb);
+        let slice = class_groups_public_key_and_proof_bytes[i..max_len].to_vec();
+        i += ten_kb;
+        ptb.move_call(
+            large_size_utils_package_id,
+            BYTES_TABLE_VEC_BUILDER_MODULE_NAME.into(),
+            PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
             vec![],
             vec![
-                proof_builder,
-                // Sui limits the size of a single call argument to 16KB.
-                first_proof_bytes_half,
-                second_proof_bytes_half,
+                CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)),
+                CallArg::Pure(bcs::to_bytes(&slice)?),
             ],
-        );
+        )?;
+
+        let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
+        execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+
+        builder_object_ref = client
+            .transaction_builder()
+            .get_object_ref(builder_id)
+            .await?;
     }
-    let tx_kind = TransactionKind::ProgrammableTransaction(first_ptb.finish());
-    execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-    Ok(())
+
+    Ok(builder_object_ref)
 }
 
 pub async fn publish_ika_package_to_sui(

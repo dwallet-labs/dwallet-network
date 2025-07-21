@@ -5,7 +5,6 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
-use dwallet_classgroups_types::{NUM_OF_CLASS_GROUPS_KEY_OBJECTS, SingleEncryptionKeyAndProof};
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
@@ -964,21 +963,13 @@ impl SuiClientInner for SuiSdkClient {
         for validator in validators {
             let info = validator.verified_validator_info();
             let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys
-                && info
-                    .next_epoch_class_groups_pubkey_and_proof_bytes
-                    .is_some()
-                && info.previous_class_groups_pubkey_and_proof_bytes.is_none()
+                && info.next_epoch_mpc_data_bytes.is_some()
+                && info.previous_mpc_data_bytes.is_none()
             {
-                info.next_epoch_class_groups_pubkey_and_proof_bytes
-                    .as_ref()
-                    .unwrap()
-                    .contents
-                    .id
+                info.next_epoch_mpc_data_bytes.as_ref().unwrap().contents.id
             } else {
-                if info
-                    .next_epoch_class_groups_pubkey_and_proof_bytes
-                    .is_some()
-                    && info.previous_class_groups_pubkey_and_proof_bytes.is_some()
+                if info.next_epoch_mpc_data_bytes.is_some()
+                    && info.previous_mpc_data_bytes.is_some()
                 {
                     error!(
                         validator_id=?validator.id,
@@ -986,63 +977,21 @@ impl SuiClientInner for SuiSdkClient {
                     );
                 }
 
-                info.class_groups_pubkey_and_proof_bytes.contents.id
+                info.mpc_data_bytes.contents.id
             };
 
-            let dynamic_fields = self
-                .read_api()
-                .get_dynamic_fields(class_groups_pubkey_and_proof_bytes_id, None, None)
+            let validator_class_groups_public_key_and_proof_bytes = self
+                .read_table_vec_as_raw_bytes(class_groups_pubkey_and_proof_bytes_id)
                 .await?;
-            let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
-                NUM_OF_CLASS_GROUPS_KEY_OBJECTS] = Default::default();
-            if dynamic_fields.data.len() != NUM_OF_CLASS_GROUPS_KEY_OBJECTS {
-                warn!(
-                    validator_id=?validator.id,
-                    expected_num_of_class_groups_keys=NUM_OF_CLASS_GROUPS_KEY_OBJECTS,
-                    dynamic_fields_count=dynamic_fields.data.len(),
-                    "Validator class groups public key and proof length mismatch",
-                );
-                continue;
-            }
-            for df in dynamic_fields.data.iter() {
-                let object_id = df.object_id;
-                let dynamic_field_response = self
-                    .read_api()
-                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
-                    .await?;
-                let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("can't get bcs of object {object_id:?}: {e:?}"))
-                })?;
-                let move_object = resp.bcs.ok_or(Error::DataError(format!(
-                    "object {object_id:?} has no bcs data"
-                )))?;
-                let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "object {object_id:?} is not a MoveObject"
-                )))?;
-                let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
-                validator_class_groups_public_key_and_proof_bytes[key_slice.name as usize] =
-                    key_slice.value.clone();
-            }
-            let validator_class_groups_public_key_and_proof: Result<
-                Vec<SingleEncryptionKeyAndProof>,
-                _,
-            > = validator_class_groups_public_key_and_proof_bytes
-                .into_iter()
-                .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
-                .collect();
+
+            let validator_class_groups_public_key_and_proof: bcs::Result<
+                ClassGroupsEncryptionKeyAndProof,
+            > = bcs::from_bytes(&validator_class_groups_public_key_and_proof_bytes);
 
             match validator_class_groups_public_key_and_proof {
                 Ok(validator_class_groups_public_key_and_proof) => {
-                    class_groups_public_keys_and_proofs.insert(
-                        validator.id,
-                        validator_class_groups_public_key_and_proof
-                            .try_into()
-                            .map_err(|e| {
-                                Error::DataError(format!(
-                                    "class groups key from Sui is invalid: {e:?}"
-                                ))
-                            })?,
-                    );
+                    class_groups_public_keys_and_proofs
+                        .insert(validator.id, validator_class_groups_public_key_and_proof);
                 }
                 Err(e) => {
                     warn!(

@@ -4,14 +4,12 @@ use ika_config::validator_info::ValidatorInfo;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
-    ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    BYTES_TABLE_VEC_BUILDER_MODULE_NAME, CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
+    SYSTEM_MODULE_NAME, TableVecBuilder, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
@@ -28,19 +26,18 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
 use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
 
-/// Create a ClassGroupsPublicKeyAndProofBuilder object
-async fn create_class_groups_public_key_and_proof_builder_object(
+async fn new_bytes_table_vec_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_common_package_id: ObjectID,
+    ika_large_size_utils: ObjectID,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
+        ika_large_size_utils,
+        BYTES_TABLE_VEC_BUILDER_MODULE_NAME.into(),
+        CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
         vec![],
         vec![],
     )?;
@@ -58,9 +55,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
-                == *object_type =>
-            {
+            } if TableVecBuilder::type_(ika_large_size_utils.into()) == *object_type => {
                 Some(*object_id)
             }
             _ => None,
@@ -88,7 +83,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let client = context.get_client().await?;
-    let mut builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
+    let mut builder_object_ref = new_bytes_table_vec_builder_object(
         publisher_address,
         context,
         &client,
@@ -97,50 +92,31 @@ pub async fn create_class_groups_public_key_and_proof_object(
     )
     .await?;
 
+    let builder_id = builder_object_ref.0;
+    let ten_kb = 10 * 1024;
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
         Box::new(class_groups_public_key_and_proof_bytes);
-    for pubkey_and_proof in class_groups_public_key_and_proof.iter() {
+    let class_groups_public_key_and_proof_bytes =
+        bcs::to_bytes(&class_groups_public_key_and_proof)?;
+    let mut i = 0;
+    while i < class_groups_public_key_and_proof_bytes.len() {
         let mut ptb = ProgrammableTransactionBuilder::new();
-        let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
-
+        let slice = class_groups_public_key_and_proof_bytes[i..i + ten_kb].to_vec();
+        i += ten_kb;
         ptb.move_call(
             ika_common_package_id,
-            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
+            BYTES_TABLE_VEC_BUILDER_MODULE_NAME.into(),
+            PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
             vec![],
             vec![
                 CallArg::Object(ObjectArg::ImmOrOwnedObject(builder_object_ref)),
-                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[0..10_000])?),
-                CallArg::Pure(bcs::to_bytes(&pubkey_and_proof[10_000..])?),
+                CallArg::Pure(bcs::to_bytes(&slice)?),
             ],
         )?;
 
         let tx_data = construct_unsigned_txn(context, publisher_address, gas_budget, ptb).await?;
 
-        let response = execute_transaction(context, tx_data).await?;
-        let object_changes = response
-            .object_changes
-            .clone()
-            .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-        let builder_id = *object_changes
-            .iter()
-            .filter_map(|o| match o {
-                ObjectChange::Mutated {
-                    object_id,
-                    object_type,
-                    ..
-                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
-                    == *object_type =>
-                {
-                    Some(*object_id)
-                }
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .first()
-            .ok_or(anyhow::Error::msg(
-                "failed to get ClassGroupsPublicKeyAndProofBuilder object id",
-            ))?;
+        execute_transaction(context, tx_data).await?;
 
         builder_object_ref = client
             .transaction_builder()
@@ -148,47 +124,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
             .await?;
     }
 
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    ptb.move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
-        vec![],
-        vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            builder_object_ref,
-        ))],
-    )?;
-    ptb.transfer_arg(publisher_address, Argument::Result(0));
-
-    let tx_data = construct_unsigned_txn(context, publisher_address, gas_budget, ptb).await?;
-    let response = execute_transaction(context, tx_data).await?;
-    let object_changes = response
-        .object_changes
-        .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-
-    let obj_id = *object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
-                == *object_type =>
-            {
-                Some(*object_id)
-            }
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .ok_or(anyhow::Error::msg(
-            "failed to get ClassGroupsPublicKeyAndProof object id",
-        ))?;
-
-    let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
-
-    Ok(pubkey_and_proof_obj_ref)
+    Ok(builder_object_ref)
 }
 
 /// Request to add a validator candidate transaction
