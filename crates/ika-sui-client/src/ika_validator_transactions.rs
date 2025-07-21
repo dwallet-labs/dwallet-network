@@ -163,7 +163,7 @@ pub async fn request_add_validator_candidate(
         vec![name, empty_str, empty_str],
     ));
 
-    ptb.command(Command::move_call(
+    let validator_caps = ptb.command(Command::move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
         REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME.into(),
@@ -185,13 +185,16 @@ pub async fn request_add_validator_candidate(
     ));
 
     let sender = context.active_address()?;
+    let Argument::Result(validator_caps_index) = validator_caps else {
+        panic!("Failed to get validator caps index");
+    };
 
     ptb.transfer_args(
         sender,
         vec![
-            Argument::NestedResult(1, 0),
-            Argument::NestedResult(1, 1),
-            Argument::NestedResult(1, 2),
+            Argument::NestedResult(validator_caps_index, 0),
+            Argument::NestedResult(validator_caps_index, 1),
+            Argument::NestedResult(validator_caps_index, 2),
         ],
     );
 
