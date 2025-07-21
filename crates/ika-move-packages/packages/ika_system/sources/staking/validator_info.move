@@ -79,18 +79,18 @@ public struct ValidatorInfo has store {
     /// The validator's MPC public data.
     /// This key is used for the network DKG process and for resharing the network MPC key
     /// Must always contain value 
-    mpc_date_bytes: Option<TableVec<vector<u8>>>,
+    mpc_data_bytes: Option<TableVec<vector<u8>>>,
     /// Next epoch configurations - only take effect in the next epoch
     /// If none, current value will stay unchanged.
     next_epoch_protocol_pubkey_bytes: Option<vector<u8>>,
     next_epoch_network_pubkey_bytes: Option<vector<u8>>,
     next_epoch_consensus_pubkey_bytes: Option<vector<u8>>,
-    next_epoch_mpc_date_bytes: Option<TableVec<vector<u8>>>,
+    next_epoch_mpc_data_bytes: Option<TableVec<vector<u8>>>,
     next_epoch_network_address: Option<String>,
     next_epoch_p2p_address: Option<String>,
     next_epoch_consensus_address: Option<String>,
 
-    previous_mpc_date_bytes: Option<TableVec<vector<u8>>>,
+    previous_mpc_data_bytes: Option<TableVec<vector<u8>>>,
     /// Extended metadata field for additional validator information
     metadata: ExtendedField<ValidatorMetadata>,
 }
@@ -105,7 +105,7 @@ public(package) fun new(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_date_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -114,7 +114,7 @@ public(package) fun new(
     ctx: &mut TxContext,
 ): ValidatorInfo {
     let protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&protocol_pubkey_bytes));
-    let mpc_date_bytes = mpc_date_bytes.destroy();
+    let mpc_data_bytes = mpc_data_bytes.destroy();
 
     // Verify proof of possession for protocol public key
     assert!(
@@ -134,18 +134,18 @@ public(package) fun new(
         protocol_pubkey,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
-        mpc_date_bytes: option::some(mpc_date_bytes),
+        mpc_data_bytes: option::some(mpc_data_bytes),
         network_address,
         p2p_address,
         consensus_address,
         next_epoch_protocol_pubkey_bytes: option::none(),
         next_epoch_network_pubkey_bytes: option::none(),
         next_epoch_consensus_pubkey_bytes: option::none(),
-        next_epoch_mpc_date_bytes: option::none(),
+        next_epoch_mpc_data_bytes: option::none(),
         next_epoch_network_address: option::none(),
         next_epoch_p2p_address: option::none(),
         next_epoch_consensus_address: option::none(),
-        previous_mpc_date_bytes: option::none(),
+        previous_mpc_data_bytes: option::none(),
         metadata: extended_field::new(metadata, ctx),
     };
     validator_info.validate();
@@ -233,33 +233,33 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 
 /// Sets the MPC public data for the next epoch.
 /// 
-/// - If `next_epoch_mpc_date_bytes` is already set, 
+/// - If `next_epoch_mpc_data_bytes` is already set, 
 ///   this function returns its stored value and replaces it with the new value.
-/// - If it is not set, but `previous_mpc_date_bytes` is set, 
+/// - If it is not set, but `previous_mpc_data_bytes` is set, 
 ///   this function returns the value from the previous field and replaces it with the new value.
 /// - If neither is set, the new value is simply stored, and the function returns `None`.
 /// 
 /// The validator must drop the returned value if it is not `None`.
 /// 
 /// Using `Option` for the MPC data helps avoid latency issues due to large data sizes.
-public(package) fun set_next_epoch_mpc_date_bytes(
+public(package) fun set_next_epoch_mpc_data_bytes(
     self: &mut ValidatorInfo,
-    mpc_date: TableVec<vector<u8>>,
+    mpc_data: TableVec<vector<u8>>,
 ): Option<TableVec<vector<u8>>> {
-    if (self.next_epoch_mpc_date_bytes.is_some()) {
-        let next_epoch_mpc_date_bytes =
-            self.next_epoch_mpc_date_bytes.extract();
-        self.next_epoch_mpc_date_bytes.fill(mpc_date);
+    if (self.next_epoch_mpc_data_bytes.is_some()) {
+        let next_epoch_mpc_data_bytes =
+            self.next_epoch_mpc_data_bytes.extract();
+        self.next_epoch_mpc_data_bytes.fill(mpc_data);
         self.validate();
-        option::some(next_epoch_mpc_date_bytes)
-    } else if (self.previous_mpc_date_bytes.is_some()) {
-        let previous_mpc_date_bytes =
-            self.previous_mpc_date_bytes.extract();
-        self.next_epoch_mpc_date_bytes.fill(mpc_date);
+        option::some(next_epoch_mpc_data_bytes)
+    } else if (self.previous_mpc_data_bytes.is_some()) {
+        let previous_mpc_data_bytes =
+            self.previous_mpc_data_bytes.extract();
+        self.next_epoch_mpc_data_bytes.fill(mpc_data);
         self.validate();
-        option::some(previous_mpc_date_bytes)
+        option::some(previous_mpc_data_bytes)
     } else {
-        self.next_epoch_mpc_date_bytes.fill(mpc_date);
+        self.next_epoch_mpc_data_bytes.fill(mpc_data);
         self.validate();
         option::none()
     }
@@ -300,25 +300,25 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
         self.next_epoch_consensus_pubkey_bytes = option::none();
     };
 
-    // `previous_mpc_date_bytes` cannot be set if `next_epoch_mpc_date_bytes` is already set.
+    // `previous_mpc_data_bytes` cannot be set if `next_epoch_mpc_data_bytes` is already set.
     // This situation should never occur. If it does, it is considered an error,
-    // so we ignore `next_epoch_mpc_date_bytes` and retain the current one.
-    if (self.next_epoch_mpc_date_bytes.is_some() 
-        && self.previous_mpc_date_bytes.is_none()
+    // so we ignore `next_epoch_mpc_data_bytes` and retain the current one.
+    if (self.next_epoch_mpc_data_bytes.is_some() 
+        && self.previous_mpc_data_bytes.is_none()
     ) {
-        let next_epoch_mpc_date_bytes =
-            self.next_epoch_mpc_date_bytes.extract();
+        let next_epoch_mpc_data_bytes =
+            self.next_epoch_mpc_data_bytes.extract();
 
         // At this point, we can assume that the current MPC public data bytes
         // are set set, so we can safely swap them.
-        let previous_mpc_date_bytes = self.mpc_date_bytes
+        let previous_mpc_data_bytes = self.mpc_data_bytes
             .swap(
-                next_epoch_mpc_date_bytes
+                next_epoch_mpc_data_bytes
             );
 
         // At this point, we can assume that the previous MPC public data bytes
         // are not set, so we can safely fill them.
-        self.previous_mpc_date_bytes.fill(previous_mpc_date_bytes);
+        self.previous_mpc_data_bytes.fill(previous_mpc_data_bytes);
     };
 }
 
@@ -435,31 +435,31 @@ public(package) fun validate(self: &ValidatorInfo) {
 public(package) fun destroy(self: ValidatorInfo) {
     let ValidatorInfo {
         metadata,
-        mpc_date_bytes,
-        next_epoch_mpc_date_bytes,
-        previous_mpc_date_bytes,
+        mpc_data_bytes,
+        next_epoch_mpc_data_bytes,
+        previous_mpc_data_bytes,
         ..,
     } = self;
     metadata.destroy();
-        mpc_date_bytes.destroy!(|mut mpc_date_bytes| {
-        while (mpc_date_bytes.length() != 0) {
-            mpc_date_bytes.pop_back();
+        mpc_data_bytes.destroy!(|mut mpc_data_bytes| {
+        while (mpc_data_bytes.length() != 0) {
+            mpc_data_bytes.pop_back();
         };
-        mpc_date_bytes.destroy_empty();
+        mpc_data_bytes.destroy_empty();
     });
 
-    next_epoch_mpc_date_bytes.destroy!(|mut next_epoch_mpc_date_bytes| {
-        while (next_epoch_mpc_date_bytes.length() != 0) {
-            next_epoch_mpc_date_bytes.pop_back();
+    next_epoch_mpc_data_bytes.destroy!(|mut next_epoch_mpc_data_bytes| {
+        while (next_epoch_mpc_data_bytes.length() != 0) {
+            next_epoch_mpc_data_bytes.pop_back();
         };
-        next_epoch_mpc_date_bytes.destroy_empty();
+        next_epoch_mpc_data_bytes.destroy_empty();
     });
 
-    previous_mpc_date_bytes.destroy!(|mut previous_mpc_date_bytes| {
-        while (previous_mpc_date_bytes.length() != 0) {
-            previous_mpc_date_bytes.pop_back();
+    previous_mpc_data_bytes.destroy!(|mut previous_mpc_data_bytes| {
+        while (previous_mpc_data_bytes.length() != 0) {
+            previous_mpc_data_bytes.pop_back();
         };
-        previous_mpc_date_bytes.destroy_empty();
+        previous_mpc_data_bytes.destroy_empty();
     });
 }
 
@@ -546,8 +546,8 @@ public fun consensus_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
 }
 
 /// Returns the MPC public data bytes
-public fun mpc_date_bytes(self: &ValidatorInfo): &Option<TableVec<vector<u8>>> {
-    &self.mpc_date_bytes
+public fun mpc_data_bytes(self: &ValidatorInfo): &Option<TableVec<vector<u8>>> {
+    &self.mpc_data_bytes
 }
 
 /// Returns the next epoch network address
@@ -581,18 +581,18 @@ public fun next_epoch_consensus_pubkey_bytes(self: &ValidatorInfo): &Option<vect
 }
 
 /// Returns the next epoch MPC public data
-public fun next_epoch_mpc_date_bytes(
+public fun next_epoch_mpc_data_bytes(
     self: &ValidatorInfo,
 ): &Option<TableVec<vector<u8>>> {
-    &self.next_epoch_mpc_date_bytes
+    &self.next_epoch_mpc_data_bytes
 }
 
 
 /// Returns the previous MPC public data
-public fun previous_mpc_date_bytes(
+public fun previous_mpc_data_bytes(
     self: &ValidatorInfo,
 ): &Option<TableVec<vector<u8>>> {
-    &self.previous_mpc_date_bytes
+    &self.previous_mpc_data_bytes
 }
 
 // === Private Functions ===
@@ -641,15 +641,15 @@ public fun new_for_testing(public_key: vector<u8>): ValidatorInfo {
         protocol_pubkey,
         network_pubkey_bytes: vector[],
         consensus_pubkey_bytes: vector[],
-        mpc_date_bytes: mpc_data_bytes,
+        mpc_data_bytes: mpc_data_bytes,
         next_epoch_protocol_pubkey_bytes: option::none(),
         next_epoch_network_pubkey_bytes: option::none(),
         next_epoch_consensus_pubkey_bytes: option::none(),
-        next_epoch_mpc_date_bytes: option::none(),
+        next_epoch_mpc_data_bytes: option::none(),
         next_epoch_network_address: option::none(),
         next_epoch_p2p_address: option::none(),
         next_epoch_consensus_address: option::none(),
-        previous_mpc_date_bytes: option::none(),
+        previous_mpc_data_bytes: option::none(),
         metadata: extended_field::new(validator_metadata::default(), ctx),
     }
 }

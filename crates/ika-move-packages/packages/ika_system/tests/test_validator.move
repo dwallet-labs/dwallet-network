@@ -49,9 +49,9 @@ public fun consensus_pubkey_bytes(self: &TestValidator): vector<u8> {
 }
 
 public fun mpc_data(_self: &TestValidator, ctx: &mut TxContext): TableVecBuilder {
-    let mpc_date_bytes = x"0e2b273530a00de66c9727c40f48be985da684286983f398ef7695b8a44677ab";
+    let mpc_data_bytes = x"0e2b273530a00de66c9727c40f48be985da684286983f398ef7695b8a44677ab";
     let mut mpc_data = mpc_data::empty(ctx);
-    mpc_data.add_public_key_and_proof(mpc_date_bytes, mpc_date_bytes);
+    mpc_data.add_public_key_and_proof(mpc_data_bytes, mpc_data_bytes);
     mpc_data.finish(ctx)
 }
 

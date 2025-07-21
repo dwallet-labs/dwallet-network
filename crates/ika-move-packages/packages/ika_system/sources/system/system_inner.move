@@ -311,7 +311,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_date_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -328,7 +328,7 @@ public(package) fun request_add_validator_candidate(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
-            mpc_date_bytes,
+            mpc_data_bytes,
             proof_of_possession_bytes,
             network_address,
             p2p_address,
@@ -546,15 +546,15 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 
 /// Sets a validator's MPC public data.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_mpc_date_bytes(
+public(package) fun set_next_epoch_mpc_data_bytes(
     self: &mut SystemInner,
-    mpc_date_bytes: TableVec<vector<u8>>,
+    mpc_data_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
     self
         .validator_set
-        .set_next_epoch_mpc_date_bytes(
-            mpc_date_bytes,
+        .set_next_epoch_mpc_data_bytes(
+            mpc_data_bytes,
             cap,
         )
 }

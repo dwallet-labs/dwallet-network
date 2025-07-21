@@ -254,7 +254,7 @@ public fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_date_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -270,7 +270,7 @@ public fun request_add_validator_candidate(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
-            mpc_date_bytes,
+            mpc_data_bytes,
             proof_of_possession_bytes,
             network_address,
             p2p_address,
@@ -473,15 +473,15 @@ public fun set_next_epoch_consensus_pubkey_bytes(
 
 /// Sets a validator's MPC public data.
 /// The change will only take effects starting from the next epoch.
-public fun set_next_epoch_mpc_date_bytes(
+public fun set_next_epoch_mpc_data_bytes(
     self: &mut System,
-    mpc_date: TableVecBuilder,
+    mpc_data: TableVecBuilder,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
-    let mpc_date = mpc_date.destroy();
+    let mpc_data = mpc_data.destroy();
     self
         .inner_mut()
-        .set_next_epoch_mpc_date_bytes(mpc_date, cap)
+        .set_next_epoch_mpc_data_bytes(mpc_data, cap)
 }
 
 /// Get the pool token exchange rate of a validator. Works for both active and inactive pools.

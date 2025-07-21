@@ -168,7 +168,7 @@ public(package) fun new(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_date_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -200,7 +200,7 @@ public(package) fun new(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
-            mpc_date_bytes,
+            mpc_data_bytes,
             proof_of_possession_bytes,
             network_address,
             p2p_address,
@@ -612,16 +612,16 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     validator.validator_info.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes);
 }
 
-public(package) fun set_next_epoch_mpc_date_bytes(
+public(package) fun set_next_epoch_mpc_data_bytes(
     validator: &mut Validator,
-    mpc_date_bytes: TableVec<vector<u8>>,
+    mpc_data_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
     validator.verify_operation_cap(cap);
 
     validator
         .validator_info
-        .set_next_epoch_mpc_date_bytes(mpc_date_bytes)
+        .set_next_epoch_mpc_data_bytes(mpc_data_bytes)
 }
 
 /// Destroy the validator if it is empty.

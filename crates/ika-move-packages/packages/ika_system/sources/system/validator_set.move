@@ -169,7 +169,7 @@ public(package) fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    mpc_date_bytes: TableVecBuilder,
+    mpc_data_bytes: TableVecBuilder,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -185,7 +185,7 @@ public(package) fun request_add_validator_candidate(
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
-        mpc_date_bytes,
+        mpc_data_bytes,
         proof_of_possession_bytes,
         network_address,
         p2p_address,
@@ -566,16 +566,16 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self.assert_no_pending_or_active_duplicates(validator_id);
 }
 
-public(package) fun set_next_epoch_mpc_date_bytes(
+public(package) fun set_next_epoch_mpc_data_bytes(
     self: &mut ValidatorSet,
-    mpc_date_bytes: TableVec<vector<u8>>,
+    mpc_data_bytes: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
 ): Option<TableVec<vector<u8>>> {
     let validator_id = cap.validator_id();
     self.assert_validator_can_set_for_next_epoch(validator_id);
     let validator = self.get_validator_mut(validator_id);
-    let previous_mpc_data_key = validator.set_next_epoch_mpc_date_bytes(
-        mpc_date_bytes,
+    let previous_mpc_data_key = validator.set_next_epoch_mpc_data_bytes(
+        mpc_data_bytes,
         cap,
     );
     self.assert_no_pending_or_active_duplicates(validator_id);

@@ -78,7 +78,7 @@ async fn new_bytes_table_vec_builder_object(
 pub async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
-    ika_common_package_id: ObjectID,
+    large_size_utils_package_id: ObjectID,
     class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
@@ -87,7 +87,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
         publisher_address,
         context,
         &client,
-        ika_common_package_id,
+        large_size_utils_package_id,
         gas_budget,
     )
     .await?;
@@ -100,11 +100,12 @@ pub async fn create_class_groups_public_key_and_proof_object(
         bcs::to_bytes(&class_groups_public_key_and_proof)?;
     let mut i = 0;
     while i < class_groups_public_key_and_proof_bytes.len() {
+        let max_len = std::cmp::min(class_groups_public_key_and_proof_bytes.len(), i + ten_kb);
         let mut ptb = ProgrammableTransactionBuilder::new();
-        let slice = class_groups_public_key_and_proof_bytes[i..i + ten_kb].to_vec();
+        let slice = class_groups_public_key_and_proof_bytes[i..max_len].to_vec();
         i += ten_kb;
         ptb.move_call(
-            ika_common_package_id,
+            large_size_utils_package_id,
             BYTES_TABLE_VEC_BUILDER_MODULE_NAME.into(),
             PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
             vec![],
@@ -133,6 +134,7 @@ pub async fn request_add_validator_candidate(
     validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
+    ika_common_package_id: ObjectID,
     class_groups_pubkey_and_proof_obj_ref: ObjectRef,
     gas_budget: u64,
 ) -> Result<(SuiTransactionBlockResponse, ObjectID, ObjectID), anyhow::Error> {
@@ -269,7 +271,7 @@ pub async fn request_add_validator_candidate(
     }
 
     let validator_cap_type = StructTag {
-        address: ika_system_package_id.into(),
+        address: ika_common_package_id.into(),
         module: VALIDATOR_CAP_MODULE_NAME.into(),
         name: VALIDATOR_CAP_STRUCT_NAME.into(),
         type_params: vec![],
