@@ -318,7 +318,6 @@ impl IkaNode {
 
         let epoch_options = default_db_options().optimize_db_for_write_throughput(4);
         let packages_config = IkaPackagesConfig {
-            large_size_utils_package_id: config.sui_connector_config.large_size_utils_package_id,
             ika_package_id: config.sui_connector_config.ika_package_id,
             ika_common_package_id: config.sui_connector_config.ika_common_package_id,
             ika_dwallet_2pc_mpc_package_id: config

@@ -325,7 +325,6 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             initiation_parameters.protocol_version = protocol_version.as_u64();
         }
         let (
-            large_size_utils_package_id,
             ika_package_id,
             ika_common_package_id,
             ika_dwallet_2pc_mpc_package_id,
@@ -380,7 +379,6 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 builder.build(
                     validator,
                     self.sui_fullnode_rpc_url.clone(),
-                    large_size_utils_package_id,
                     ika_package_id,
                     ika_common_package_id,
                     ika_dwallet_2pc_mpc_package_id,
@@ -417,7 +415,6 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     &mut OsRng,
                     &validator_initialization_configs,
                     self.sui_fullnode_rpc_url.clone(),
-                    large_size_utils_package_id,
                     ika_package_id,
                     ika_common_package_id,
                     ika_dwallet_2pc_mpc_package_id,

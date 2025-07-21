@@ -64,8 +64,6 @@ pub struct SuiConnectorConfig {
     pub sui_rpc_url: String,
     /// The expected sui chain identifier connecting to.
     pub sui_chain_identifier: SuiChainIdentifier,
-    /// The move package ID of large size utils on sui.
-    pub large_size_utils_package_id: ObjectID,
     /// The move package ID of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
     /// The move package id of `ika_common` on sui.

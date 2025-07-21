@@ -185,22 +185,6 @@ pub struct Validator {
     pub inner: Versioned,
 }
 
-/// Rust representation of the Move `large_size_utils::bytes_table_vec_builder::TableVecBuilder` type.
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct TableVecBuilder;
-
-impl TableVecBuilder {
-    /// Return the Move struct tag for this type
-    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
-        StructTag {
-            address: ika_system_package_address,
-            name: ident_str!("TableVecBuilder").to_owned(),
-            module: TABLE_VEC_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ExtendedField {
     pub id: ObjectID,

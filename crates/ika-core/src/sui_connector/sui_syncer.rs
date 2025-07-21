@@ -4,6 +4,7 @@
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::sui_connector::metrics::SuiConnectorMetrics;
+use dwallet_mpc_types::dwallet_mpc::MPCDataTrait;
 use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
@@ -25,7 +26,6 @@ use tokio::{
     time::{self, Duration},
 };
 use tracing::{debug, error, info, warn};
-use dwallet_mpc_types::dwallet_mpc::MPCDataTrait;
 
 pub struct SuiSyncer<C> {
     sui_client: Arc<SuiClient<C>>,
@@ -165,9 +165,10 @@ where
                 let mpc_data = committee_mpc_data.get(id);
 
                 mpc_data.clone().and_then(|mpc_data| {
-                    let class_groups_public_key_and_proof = bcs::from_bytes::<ClassGroupsEncryptionKeyAndProof>(
-                        &mpc_data.class_groups_public_key_and_proof(),
-                    );
+                    let class_groups_public_key_and_proof =
+                        bcs::from_bytes::<ClassGroupsEncryptionKeyAndProof>(
+                            &mpc_data.class_groups_public_key_and_proof(),
+                        );
 
                     match class_groups_public_key_and_proof {
                         Ok(key_and_proof) => Some((*name, key_and_proof)),
@@ -179,8 +180,7 @@ where
                             None
                         }
                     }
-                }
-                )
+                })
             })
             .collect::<HashMap<_, _>>();
 

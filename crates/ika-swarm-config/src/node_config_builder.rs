@@ -82,7 +82,6 @@ impl ValidatorConfigBuilder {
         self,
         validator: &ValidatorInitializationConfig,
         sui_rpc_url: String,
-        large_size_utils_package_id: ObjectID,
         ika_package_id: ObjectID,
         ika_common_package_id: ObjectID,
         ika_dwallet_2pc_mpc_package_id: ObjectID,
@@ -140,7 +139,6 @@ impl ValidatorConfigBuilder {
             sui_connector_config: SuiConnectorConfig {
                 sui_rpc_url: sui_rpc_url.to_string(),
                 sui_chain_identifier: SuiChainIdentifier::Custom,
-                large_size_utils_package_id,
                 ika_package_id,
                 ika_common_package_id,
                 ika_dwallet_2pc_mpc_package_id,
@@ -175,7 +173,6 @@ impl ValidatorConfigBuilder {
         self,
         rng: &mut R,
         sui_rpc_url: String,
-        large_size_utils_package_id: ObjectID,
         ika_package_id: ObjectID,
         ika_common_package_id: ObjectID,
         ika_dwallet_2pc_mpc_package_id: ObjectID,
@@ -188,7 +185,6 @@ impl ValidatorConfigBuilder {
         self.build(
             &validator_initialization_config,
             sui_rpc_url,
-            large_size_utils_package_id,
             ika_package_id,
             ika_common_package_id,
             ika_dwallet_2pc_mpc_package_id,
@@ -284,7 +280,6 @@ impl FullnodeConfigBuilder {
         rng: &mut R,
         validators: &[ValidatorInitializationConfig],
         sui_rpc_url: String,
-        large_size_utils_package_id: ObjectID,
         ika_package_id: ObjectID,
         ika_common_package_id: ObjectID,
         ika_dwallet_2pc_mpc_package_id: ObjectID,
@@ -360,7 +355,6 @@ impl FullnodeConfigBuilder {
             sui_connector_config: SuiConnectorConfig {
                 sui_rpc_url: sui_rpc_url.to_string(),
                 sui_chain_identifier: SuiChainIdentifier::Custom,
-                large_size_utils_package_id,
                 ika_package_id,
                 ika_common_package_id,
                 ika_dwallet_2pc_mpc_package_id,
