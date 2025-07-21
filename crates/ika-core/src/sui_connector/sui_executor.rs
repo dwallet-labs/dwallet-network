@@ -1014,8 +1014,6 @@ where
             signers_bitmap
         );
 
-        let message_arg =
-            Self::break_down_checkpoint_message_into_vector_arg(&mut ptb, message.clone());
         let args = vec![
             CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
@@ -1039,6 +1037,8 @@ where
             })
             .collect::<Result<Vec<_>, _>>()?;
 
+        let message_arg =
+            Self::break_down_checkpoint_message_into_vector_arg(&mut ptb, message.clone());
         args.push(message_arg?);
 
         let gas_fee_reimbursement_sui = ptb.programmable_move_call(
@@ -1109,25 +1109,28 @@ where
                     "can't serialize `signers_bitmap`: {e}"
                 ))
             })?),
-            CallArg::Pure(bcs::to_bytes(&message).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!(
-                    "can't serialize `signers_bitmap`: {e}"
-                ))
-            })?),
         ];
 
-        ptb.move_call(
+        let mut args = args
+            .into_iter()
+            .map(|arg| {
+                ptb.input(arg).map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!("can't serialize `arg`: {e}"))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let message_arg =
+            Self::break_down_checkpoint_message_into_vector_arg(&mut ptb, message.clone());
+        args.push(message_arg?);
+
+        ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+        );
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
