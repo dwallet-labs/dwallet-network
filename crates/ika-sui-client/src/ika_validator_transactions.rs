@@ -23,19 +23,19 @@ use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
-use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
+use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 
 fn store_mcp_data_in_table_vec(
     ptb: &mut ProgrammableTransactionBuilder,
     mpc_data: VersionedMPCData,
 ) -> anyhow::Result<Argument> {
-    let table_arg = ptb.command(Command::move_call(
+    let table_arg = ptb.programmable_move_call(
         SUI_FRAMEWORK_PACKAGE_ID,
         TABLE_VEC_MODULE_NAME.into(),
         CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
         vec![TypeTag::Vector(Box::new(TypeTag::U8))],
         vec![],
-    ));
+    );
 
     let mpc_data: Box<VersionedMPCData> = Box::new(mpc_data);
     let mpc_data_bytes = bcs::to_bytes(&mpc_data)?;
@@ -49,13 +49,13 @@ fn store_mcp_data_in_table_vec(
         let slice = ptb.input(CallArg::Pure(bcs::to_bytes(&slice)?))?;
         i += ten_kb;
 
-        ptb.command(Command::move_call(
+        ptb.programmable_move_call(
             SUI_FRAMEWORK_PACKAGE_ID,
             TABLE_VEC_MODULE_NAME.into(),
             PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
             vec![TypeTag::Vector(Box::new(TypeTag::U8))],
             vec![table_arg, slice],
-        ));
+        );
     }
 
     Ok(table_arg)
@@ -155,15 +155,15 @@ pub async fn request_add_validator_candidate(
         &validator_initialization_metadata.commission_rate,
     )?))?;
 
-    let metadata = ptb.command(Command::move_call(
+    let metadata = ptb.programmable_move_call(
         ika_system_package_id,
         VALIDATOR_METADATA_MODULE_NAME.into(),
         NEW_VALIDATOR_METADATA_FUNCTION_NAME.into(),
         vec![],
         vec![name, empty_str, empty_str],
-    ));
+    );
 
-    let validator_caps = ptb.command(Command::move_call(
+    let validator_caps = ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
         REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME.into(),
@@ -182,7 +182,7 @@ pub async fn request_add_validator_candidate(
             commission_rate,
             metadata,
         ],
-    ));
+    );
 
     let sender = context.active_address()?;
     let Argument::Result(validator_caps_index) = validator_caps else {

@@ -76,6 +76,10 @@ pub const TABLE_VEC_MODULE_NAME: &IdentStr = ident_str!("table_vec");
 pub const CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("empty");
 pub const PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("push_back");
 
+pub const VECTOR_MODULE_NAME: &IdentStr = ident_str!("vector");
+pub const APPEND_VECTOR_FUNCTION_NAME: &IdentStr = ident_str!("append");
+pub const NEW_VECTOR_FUNCTION_NAME: &IdentStr = ident_str!("empty");
+
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10
 #[cfg(msim)]

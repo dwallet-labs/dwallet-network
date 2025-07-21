@@ -27,20 +27,23 @@ use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
-    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME,
-    DWalletCoordinatorInner, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
-    INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
-    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, APPEND_VECTOR_FUNCTION_NAME,
+    CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, DWalletCoordinatorInner,
+    INITIATE_ADVANCE_EPOCH_FUNCTION_NAME, INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    NEW_VECTOR_FUNCTION_NAME, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME,
+    REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
     REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    SystemInner, SystemInnerTrait,
+    SystemInner, SystemInnerTrait, VECTOR_MODULE_NAME,
 };
 use itertools::Itertools;
 use move_core_types::ident_str;
+use move_core_types::language_storage::TypeTag;
 use roaring::RoaringBitmap;
 use std::collections::HashMap;
 use std::sync::Arc;
 use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
+use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
@@ -485,18 +488,52 @@ where
 
     /// Break down the message to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn break_down_checkpoint_message(message: Vec<u8>) -> Vec<CallArg> {
-        let mut slices = Vec::new();
+    fn break_down_checkpoint_message_into_vector_arg(
+        ptb: &mut ProgrammableTransactionBuilder,
+        message: Vec<u8>,
+    ) -> DwalletMPCResult<Argument> {
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
-        let empty: &[u8] = &[];
-        // `max_checkpoint_size_bytes` is 50KB, so we split the message into 4 slices.
-        for i in 0..4 {
-            // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
-            let message = messages.get(i).unwrap_or(&empty);
-            slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
+        if messages.len() == 1 {
+            return Ok(ptb
+                .input(CallArg::Pure(bcs::to_bytes(&messages.first().unwrap())?))
+                .map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!(
+                        "can't serialize ptb input: {e}"
+                    ))
+                })?);
         }
-        slices
+
+        let vector_arg = ptb.programmable_move_call(
+            SUI_FRAMEWORK_PACKAGE_ID,
+            VECTOR_MODULE_NAME.into(),
+            NEW_VECTOR_FUNCTION_NAME.into(),
+            vec![TypeTag::U8],
+            vec![],
+        );
+
+        messages
+            .iter()
+            .map(|message| {
+                let message_arg =
+                    ptb.input(CallArg::Pure(bcs::to_bytes(&message)?))
+                        .map_err(|e| {
+                            IkaError::SuiConnectorSerializationError(format!(
+                                "can't serialize ptb input: {e}"
+                            ))
+                        })?;
+                ptb.programmable_move_call(
+                    SUI_FRAMEWORK_PACKAGE_ID,
+                    VECTOR_MODULE_NAME.into(),
+                    APPEND_VECTOR_FUNCTION_NAME.into(),
+                    vec![TypeTag::U8],
+                    vec![vector_arg.clone(), message_arg],
+                );
+                Ok(())
+            })
+            .collect::<DwalletMPCResult<()>>()?;
+
+        Ok(vector_arg)
     }
 
     async fn request_mid_epoch_reconfiguration_and_calculate_protocols_pricing(
@@ -977,8 +1014,9 @@ where
             signers_bitmap
         );
 
-        let messages = Self::break_down_checkpoint_message(message);
-        let mut args = vec![
+        let message_arg =
+            Self::break_down_checkpoint_message_into_vector_arg(&mut ptb, message.clone());
+        let args = vec![
             CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
@@ -991,9 +1029,8 @@ where
                 ))
             })?),
         ];
-        args.extend(messages);
 
-        let args = args
+        let mut args = args
             .into_iter()
             .map(|arg| {
                 ptb.input(arg).map_err(|e| {
@@ -1001,6 +1038,8 @@ where
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
+
+        args.push(message_arg?);
 
         let gas_fee_reimbursement_sui = ptb.programmable_move_call(
             ika_dwallet_2pc_mpc_package_id,
