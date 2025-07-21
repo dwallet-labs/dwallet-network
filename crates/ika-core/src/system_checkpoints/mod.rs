@@ -448,6 +448,18 @@ impl SystemCheckpointBuilder {
     // overkill
     async fn run(mut self) {
         info!("Starting SystemCheckpointBuilder");
+
+        // Collect info about the most recently built system checkpoint for metrics.
+        let checkpoint_message = self
+            .epoch_store
+            .last_built_system_checkpoint_message_builder()
+            .expect("epoch should not have ended");
+        if let Some(last_height) = checkpoint_message.clone().and_then(|s| s.checkpoint_height) {
+            self.metrics
+                .last_system_checkpoint_pending_height
+                .set(last_height as i64);
+        }
+
         loop {
             self.maybe_build_system_checkpoints().await;
 
@@ -458,7 +470,7 @@ impl SystemCheckpointBuilder {
     async fn maybe_build_system_checkpoints(&mut self) {
         let _scope = monitored_scope("BuildSystemCheckpoints");
 
-        // Collect info about the most recently built system_checkpoint.
+        // Collect info about the most recently built system checkpoint.
         let checkpoint_message = self
             .epoch_store
             .last_built_system_checkpoint_message_builder()
@@ -594,7 +606,7 @@ impl SystemCheckpointBuilder {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
                     warn!(
-                        "Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system_checkpoint to go through.",
+                        "Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system checkpoint to go through.",
                         self.max_system_checkpoint_size_bytes
                     );
                 } else {

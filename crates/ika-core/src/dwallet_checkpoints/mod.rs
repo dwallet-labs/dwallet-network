@@ -450,6 +450,18 @@ impl DWalletCheckpointBuilder {
 
     async fn run(mut self) {
         info!("Starting DWalletCheckpointBuilder");
+
+        // Collect info about the most recently built dwallet checkpoint for metrics.
+        let checkpoint_message = self
+            .epoch_store
+            .last_built_dwallet_checkpoint_message_builder()
+            .expect("epoch should not have ended");
+        if let Some(last_height) = checkpoint_message.clone().and_then(|s| s.checkpoint_height) {
+            self.metrics
+                .last_dwallet_checkpoint_pending_height
+                .set(last_height as i64);
+        }
+
         loop {
             self.maybe_build_dwallet_checkpoints().await;
 
@@ -460,7 +472,7 @@ impl DWalletCheckpointBuilder {
     async fn maybe_build_dwallet_checkpoints(&mut self) {
         let _scope = monitored_scope("BuildDWalletCheckpoints");
 
-        // Collect info about the most recently built dwallet_checkpoint.
+        // Collect info about the most recently built dwallet checkpoint.
         let checkpoint_message = self
             .epoch_store
             .last_built_dwallet_checkpoint_message_builder()
@@ -858,15 +870,35 @@ impl DWalletCheckpointAggregator {
                 // the current signature aggregator to the next checkpoint to
                 // be certified.
                 if current.checkpoint_message.sequence_number < next_to_certify {
+                    debug!(
+                        next_index = current.next_index,
+                        digest = ?current.digest,
+                        checkpoint_message = ?current.checkpoint_message,
+                        signatures_by_digest = ?current.signatures_by_digest,
+                        next_to_certify,
+                        "Resetting current dwallet checkpoint signature aggregator",
+                    );
                     self.current = None;
                     continue;
                 }
+                debug!(
+                    next_index = current.next_index,
+                    digest = ?current.digest,
+                    checkpoint_message = ?current.checkpoint_message,
+                    signatures_by_digest = ?current.signatures_by_digest,
+                    next_to_certify,
+                    "Returned current dwallet checkpoint signature aggregator",
+                );
                 current
             } else {
                 let Some(checkpoint_message) = self
                     .epoch_store
                     .get_built_dwallet_checkpoint_message(next_to_certify)?
                 else {
+                    debug!(
+                        next_to_certify,
+                        "No built dwallet checkpoint message found for sequence number",
+                    );
                     return Ok(result);
                 };
                 self.current = Some(DWalletCheckpointSignatureAggregator {
@@ -879,6 +911,14 @@ impl DWalletCheckpointAggregator {
                     state: self.state.clone(),
                     metrics: self.metrics.clone(),
                 });
+                debug!(
+                    next_index = 0,
+                    digest = ?self.current.as_ref().unwrap().digest,
+                    checkpoint_message = ?self.current.as_ref().unwrap().checkpoint_message,
+                    signatures_by_digest = ?self.current.as_ref().unwrap().signatures_by_digest,
+                    next_to_certify,
+                    "Created new dwallet checkpoint signature aggregator",
+                );
                 self.current.as_mut().unwrap()
             };
 
