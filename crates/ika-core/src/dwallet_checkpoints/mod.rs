@@ -405,6 +405,7 @@ pub struct DWalletCheckpointAggregator {
     notify: Arc<Notify>,
     current: Option<DWalletCheckpointSignatureAggregator>,
     output: Box<dyn CertifiedDWalletCheckpointMessageOutput>,
+    previous_epoch_last_checkpoint_sequence_number: u64,
     state: Arc<AuthorityState>,
     metrics: Arc<DWalletCheckpointMetrics>,
 }
@@ -816,6 +817,7 @@ impl DWalletCheckpointAggregator {
         epoch_store: Arc<AuthorityPerEpochStore>,
         notify: Arc<Notify>,
         output: Box<dyn CertifiedDWalletCheckpointMessageOutput>,
+        previous_epoch_last_checkpoint_sequence_number: u64,
         state: Arc<AuthorityState>,
         metrics: Arc<DWalletCheckpointMetrics>,
     ) -> Self {
@@ -826,6 +828,7 @@ impl DWalletCheckpointAggregator {
             notify,
             current,
             output,
+            previous_epoch_last_checkpoint_sequence_number,
             state,
             metrics,
         }
@@ -876,7 +879,7 @@ impl DWalletCheckpointAggregator {
                         checkpoint_message = ?current.checkpoint_message,
                         signatures_by_digest = ?current.signatures_by_digest,
                         next_to_certify,
-                        "Resetting current dwallet checkpoint signature aggregator",
+                        "Resetting (current = None) current dwallet checkpoint signature aggregator",
                     );
                     self.current = None;
                     continue;
@@ -897,7 +900,7 @@ impl DWalletCheckpointAggregator {
                 else {
                     debug!(
                         next_to_certify,
-                        "No built dwallet checkpoint message found for sequence number",
+                        "No current and no built dwallet checkpoint message found for sequence number - returning empty",
                     );
                     return Ok(result);
                 };
@@ -989,6 +992,16 @@ impl DWalletCheckpointAggregator {
     }
 
     fn next_checkpoint_to_certify(&self) -> IkaResult<DWalletCheckpointSequenceNumber> {
+        let epoch = self.epoch_store.epoch();
+        let default_next_checkpoint_to_certify = if epoch != 1 {
+            self.previous_epoch_last_checkpoint_sequence_number + 1
+        } else {
+            1
+        };
+        debug!(
+            epoch,
+            default_next_checkpoint_to_certify, "Getting next checkpoint to certify",
+        );
         Ok(self
             .tables
             .certified_checkpoints
@@ -996,7 +1009,7 @@ impl DWalletCheckpointAggregator {
             .next()
             .transpose()?
             .map(|(seq, _)| seq + 1)
-            .unwrap_or(1))
+            .unwrap_or(default_next_checkpoint_to_certify))
     }
 }
 
@@ -1167,6 +1180,7 @@ impl DWalletCheckpointService {
             epoch_store.clone(),
             notify_aggregator.clone(),
             certified_checkpoint_output,
+            previous_epoch_last_checkpoint_sequence_number,
             state.clone(),
             metrics.clone(),
         );
