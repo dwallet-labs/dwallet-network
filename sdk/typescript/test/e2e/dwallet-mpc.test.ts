@@ -134,8 +134,8 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 2;
-			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 0;
+			const iterations = 50;
+			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 1;
 			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 
 			// Create a new configuration for each iteration
@@ -171,13 +171,9 @@ describe('Test dWallet MPC', () => {
 				);
 			}
 
-			console.log(`3`);
-
 			dkgFirstStartSignal.resolve();
 
 			const dkgFirsts = await Promise.all(dkgFirstTasks);
-
-			console.log(`4`);
 
 			const centralizedSecretKeySharesTsks = [];
 			for (let i = 0; i < iterations; i++) {
@@ -189,8 +185,6 @@ describe('Test dWallet MPC', () => {
 					})(),
 				);
 			}
-
-			console.log(`5`);
 
 			const centralizedPartyOutputs = await Promise.all(centralizedSecretKeySharesTsks);
 			const dWalletStateData = await getDWalletSecpState(conf);
@@ -316,7 +310,7 @@ describe('Test dWallet MPC', () => {
 	);
 
 	it('faucet for parallel test', async () => {
-		const max_parallel = 100;
+		const max_parallel = 105;
 
 		const tx = new Transaction();
 		tx.setSender(conf.suiClientKeypair.toSuiAddress());
