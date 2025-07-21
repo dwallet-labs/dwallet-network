@@ -303,7 +303,7 @@ impl DWalletMPCManager {
             sender_authority=?sender_authority,
             receiver_authority=?self.validator_name,
             mpc_round_number=?mpc_round_number,
-            message=?message.message,
+            message_bytes=?message.message,
             "Received an MPC message for session with contents",
         );
 
@@ -474,7 +474,7 @@ impl DWalletMPCManager {
 
         let completed_computation_results = self
             .cryptographic_computations_orchestrator
-            .receive_completed_computations();
+            .receive_completed_computations(self.dwallet_mpc_metrics.clone());
         for (computation_id, computation_request) in computation_requests {
             let computation_executing = self
                 .cryptographic_computations_orchestrator
@@ -517,33 +517,37 @@ impl DWalletMPCManager {
         false
     }
 
-    pub(crate) fn maybe_update_network_keys(&mut self) -> Vec<ObjectID> {
+    pub(crate) async fn maybe_update_network_keys(&mut self) -> Vec<ObjectID> {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
-                    let access_structure = &self.access_structure;
-                    let new_keys = self.network_keys_receiver.borrow_and_update();
+                    let new_keys = self.borrow_and_update_network_keys();
 
-                    let mut new_key_ids = vec![];
-                    for (key_id, key_data) in new_keys.iter() {
-                        match instantiate_dwallet_mpc_network_encryption_key_public_data_from_public_output(
+                    let mut results = vec![];
+                    for (key_id, key_data) in new_keys {
+                        let res = instantiate_dwallet_mpc_network_encryption_key_public_data_from_public_output(
                             key_data.current_epoch,
                             DWalletMPCNetworkKeyScheme::Secp256k1,
-                            access_structure,
-                            key_data.clone(),
-                        ) {
+                            self.access_structure.clone(),
+                            key_data,
+                        ).await;
+
+                        results.push((key_id, res))
+                    }
+
+                    let mut new_key_ids = vec![];
+                    for (key_id, res) in results {
+                        match res {
                             Ok(key) => {
                                 info!(key_id=?key_id, "Updating (decrypting new shares) network key for key_id");
                                 if let Err(e) = self
                                     .network_keys
-                                    .update_network_key(
-                                        *key_id,
-                                        &key,
-                                        &self.access_structure,
-                                    ) {
+                                    .update_network_key(key_id, &key, &self.access_structure)
+                                    .await
+                                {
                                     error!(error=?e, key_id=?key_id, "failed to update the network key");
                                 } else {
-                                    new_key_ids.push(*key_id);
+                                    new_key_ids.push(key_id);
                                 }
                             }
                             Err(err) => {
@@ -567,6 +571,18 @@ impl DWalletMPCManager {
                 vec![]
             }
         }
+    }
+
+    // This has to be a function to solve compilation errors with async.
+    fn borrow_and_update_network_keys(
+        &mut self,
+    ) -> HashMap<ObjectID, DWalletNetworkEncryptionKeyData> {
+        let new_keys = self.network_keys_receiver.borrow_and_update();
+
+        new_keys
+            .iter()
+            .map(|(&key_id, key_data)| (key_id, key_data.clone()))
+            .collect()
     }
 
     pub(crate) fn handle_output(

@@ -36,7 +36,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyData, MPCRequestInput, SessionIdentifier,
 };
 use ika_types::sui::DWalletCoordinatorInner;
-use itertools::{Itertools, izip};
+use itertools::Itertools;
 use mpc::AsynchronousRoundGODResult;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -47,6 +47,7 @@ use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
 
+const DELAY_NO_ROUNDS_SEC: u64 = 2;
 const READ_INTERVAL_MS: u64 = 20;
 const FIVE_KILO_BYTES: usize = 5 * 1024;
 
@@ -61,6 +62,7 @@ pub struct DWalletMPCService {
     pub exit: Receiver<()>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
     end_of_publish: bool,
+    dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 impl DWalletMPCService {
@@ -100,7 +102,7 @@ impl DWalletMPCService {
             node_config,
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
-            dwallet_mpc_metrics,
+            dwallet_mpc_metrics.clone(),
         );
 
         Self {
@@ -114,6 +116,7 @@ impl DWalletMPCService {
             new_events_receiver,
             exit,
             end_of_publish: false,
+            dwallet_mpc_metrics,
         }
     }
 
@@ -202,14 +205,20 @@ impl DWalletMPCService {
             };
 
             let events = self.dwallet_mpc_manager.parse_sui_events(events);
-            for event in &events {
-                let session_identifier = event.session_request.session_identifier;
-                match self
-                    .state
-                    .perpetual_tables
-                    .is_dwallet_mpc_session_completed(&session_identifier)
-                {
-                    Ok(session_completed) => {
+            let events_session_identifiers = events
+                .iter()
+                .map(|e| e.session_request.session_identifier)
+                .collect_vec();
+
+            match self
+                .state
+                .perpetual_tables
+                .get_dwallet_mpc_sessions_completed_status(events_session_identifiers.clone())
+            {
+                Ok(mpc_session_identifier_to_computation_completed) => {
+                    for (session_identifier, session_completed) in
+                        mpc_session_identifier_to_computation_completed
+                    {
                         if session_completed {
                             self.dwallet_mpc_manager
                                 .complete_computation_mpc_session_and_create_if_not_exists(
@@ -222,28 +231,21 @@ impl DWalletMPCService {
                             );
                         }
                     }
-                    Err(e) => {
-                        error!(
-                            ?session_identifier,
-                            error=?e,
-                            "Could not read from the DB if the session was completed, got error"
-                        );
-                    }
+                }
+                Err(e) => {
+                    error!(
+                        ?events_session_identifiers,
+                        error=?e,
+                        "Could not read from the DB completed sessions, got error"
+                    );
                 }
             }
 
-            self.dwallet_mpc_manager.handle_mpc_event_batch(events);
+            self.dwallet_mpc_manager
+                .handle_mpc_event_batch(events)
+                .await;
 
-            if !self.process_consensus_rounds_from_storage() {
-                // If we failed to process consensus rounds from storage
-                // we should try again in the next iteration.
-                info!(
-                    last_read_consensus_round=?self.last_read_consensus_round,
-                    "Retrying in the next iteration to process consensus rounds from storage"
-                );
-
-                continue;
-            }
+            self.process_consensus_rounds_from_storage().await;
 
             let completed_computation_results = self
                 .dwallet_mpc_manager
@@ -257,54 +259,97 @@ impl DWalletMPCService {
         }
     }
 
-    fn process_consensus_rounds_from_storage(&mut self) -> bool {
+    async fn process_consensus_rounds_from_storage(&mut self) {
         let Ok(tables) = self.epoch_store.tables() else {
-            warn!("failed to load DB tables from the epoch store");
-            return false;
+            // This signifies an epoch switch, nothing to do.
+            return;
         };
 
-        let next_consensus_round = self
-            .last_read_consensus_round
-            .map(|round| round + 1)
-            .unwrap_or_default();
-        let mpc_messages_iter = tables.get_dwallet_mpc_messages_iter(next_consensus_round);
-        let mpc_outputs_iter = tables.get_dwallet_mpc_outputs_iter(next_consensus_round);
-        let verified_dwallet_checkpoint_messages_iter =
-            tables.get_verified_dwallet_checkpoint_messages_iter(next_consensus_round);
-
-        let zipped_consensus_rounds_iter = izip!(
-            mpc_messages_iter,
-            mpc_outputs_iter,
-            verified_dwallet_checkpoint_messages_iter
-        );
-
-        for (
-            mpc_messages_iteration_result,
-            mpc_outputs_iteration_result,
-            verified_dwallet_checkpoint_messages_iteration_result,
-        ) in zipped_consensus_rounds_iter
+        // The last consensus round for MPC messages is also the last one for MPC outputs and verified dWallet checkpoint messages,
+        // as they are all written in an atomic batch manner as part of committing the consensus commit outputs.
+        let last_consensus_round = if let Ok(last_consensus_round) =
+            tables.last_dwallet_mpc_message_round()
         {
-            let Ok((mpc_messages_consensus_round, mpc_messages)) = mpc_messages_iteration_result
-            else {
-                error!("failed to load DWallet MPC messages from the local DB");
+            if let Some(last_consensus_round) = last_consensus_round {
+                last_consensus_round
+            } else {
+                info!("No consensus round from DB yet, retrying in {DELAY_NO_ROUNDS_SEC} seconds.");
+                tokio::time::sleep(Duration::from_secs(DELAY_NO_ROUNDS_SEC)).await;
+                return;
+            }
+        } else {
+            error!("failed to get last consensus round from DB");
+            panic!("failed to get last consensus round from DB");
+        };
 
-                return false;
-            };
-            let Ok((mpc_outputs_consensus_round, mpc_outputs)) = mpc_outputs_iteration_result
-            else {
-                error!("failed to load DWallet MPC outputs from the local DB");
+        while Some(last_consensus_round) > self.last_read_consensus_round {
+            let mpc_messages = tables.next_dwallet_mpc_message(self.last_read_consensus_round);
+            let (mpc_messages_consensus_round, mpc_messages) = match mpc_messages {
+                Ok(mpc_messages) => {
+                    if let Some(mpc_messages) = mpc_messages {
+                        mpc_messages
+                    } else {
+                        error!("failed to get mpc messages, None value");
+                        panic!("failed to get mpc messages, None value");
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        error=?e,
+                        last_read_consensus_round=self.last_read_consensus_round,
+                        "failed to load DWallet MPC messages from the local DB"
+                    );
 
-                return false;
+                    panic!("failed to load DWallet MPC messages from the local DB");
+                }
             };
-            let Ok((
+
+            let mpc_outputs = tables.next_dwallet_mpc_output(self.last_read_consensus_round);
+            let (mpc_outputs_consensus_round, mpc_outputs) = match mpc_outputs {
+                Ok(mpc_outputs) => {
+                    if let Some(mpc_outputs) = mpc_outputs {
+                        mpc_outputs
+                    } else {
+                        error!("failed to get mpc outputs, None value");
+                        panic!("failed to get mpc outputs, None value");
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        error=?e,
+                        last_read_consensus_round=self.last_read_consensus_round,
+                        "failed to load DWallet MPC outputs from the local DB"
+                    );
+                    panic!("failed to load DWallet MPC outputs from the local DB");
+                }
+            };
+
+            let verified_dwallet_checkpoint_messages =
+                tables.next_verified_dwallet_checkpoint_message(self.last_read_consensus_round);
+            let (
                 verified_dwallet_checkpoint_messages_consensus_round,
                 verified_dwallet_checkpoint_messages,
-            )) = verified_dwallet_checkpoint_messages_iteration_result
-            else {
-                error!("Failed to load verified DWallet checkpoint messages from the local DB");
-
-                return false;
+            ) = match verified_dwallet_checkpoint_messages {
+                Ok(verified_dwallet_checkpoint_messages) => {
+                    if let Some(verified_dwallet_checkpoint_messages) =
+                        verified_dwallet_checkpoint_messages
+                    {
+                        verified_dwallet_checkpoint_messages
+                    } else {
+                        error!("failed to get verified dwallet checkpoint messages, None value");
+                        panic!("failed to get verified dwallet checkpoint messages, None value");
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        error=?e,
+                        last_read_consensus_round=self.last_read_consensus_round,
+                        "failed to load verified dwallet checkpoint messages from the local DB"
+                    );
+                    panic!("failed to load verified dwallet checkpoint messages from the local DB");
+                }
             };
+
             if mpc_messages_consensus_round != mpc_outputs_consensus_round
                 || mpc_messages_consensus_round
                     != verified_dwallet_checkpoint_messages_consensus_round
@@ -316,7 +361,9 @@ impl DWalletMPCService {
                     "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
                 );
 
-                return false;
+                panic!(
+                    "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
+                );
             }
 
             let consensus_round = mpc_messages_consensus_round;
@@ -329,7 +376,7 @@ impl DWalletMPCService {
                     "consensus round must be in a ascending order"
                 );
 
-                return false;
+                panic!("consensus round must be in a ascending order");
             }
 
             // Let's start processing the MPC messages for the current round.
@@ -361,57 +408,72 @@ impl DWalletMPCService {
                         "End of publish reached, no more dwallet checkpoints will be processed for this epoch"
                     );
                 }
-                let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
-                    messages: checkpoint_messages.clone(),
-                    details: PendingDWalletCheckpointInfo {
-                        checkpoint_height: consensus_round,
-                    },
-                });
-                if let Err(e) = self
-                    .epoch_store
-                    .insert_pending_dwallet_checkpoint(pending_checkpoint)
-                {
-                    error!(
+                if !checkpoint_messages.is_empty() {
+                    let pending_checkpoint =
+                        PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
+                            messages: checkpoint_messages.clone(),
+                            details: PendingDWalletCheckpointInfo {
+                                checkpoint_height: consensus_round,
+                            },
+                        });
+                    if let Err(e) = self
+                        .epoch_store
+                        .insert_pending_dwallet_checkpoint(pending_checkpoint)
+                    {
+                        error!(
+                                err=?e,
+                                ?consensus_round,
+                                ?checkpoint_messages,
+                                "failed to insert pending checkpoint into the local DB"
+                        );
+
+                        panic!("failed to insert pending checkpoint into the local DB");
+                    };
+
+                    debug!(
+                        ?consensus_round,
+                        "Notifying checkpoint service about new pending checkpoint(s)",
+                    );
+                    // Only after batch is written, notify checkpoint service to start building any new
+                    // pending checkpoints.
+                    if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
+                        error!(
                             err=?e,
                             ?consensus_round,
-                            ?checkpoint_messages,
-                            "failed to insert pending checkpoint into the local DB"
-                    );
-                    return false;
-                };
-                debug!(
-                    ?consensus_round,
-                    "Notifying checkpoint service about new pending checkpoint(s)",
-                );
-                // Only after batch is written, notify checkpoint service to start building any new
-                // pending checkpoints.
-                if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
+                            "failed to notify checkpoint service about new pending checkpoint(s)"
+                        );
+
+                        panic!(
+                            "failed to notify checkpoint service about new pending checkpoint(s)"
+                        );
+                    }
+                }
+
+                if let Err(e) = self
+                    .state
+                    .perpetual_tables
+                    .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
+                {
                     error!(
                         err=?e,
                         ?consensus_round,
-                        "failed to notify checkpoint service about new pending checkpoint(s)"
+                        ?completed_sessions,
+                        "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
                     );
-                    return false;
+
+                    panic!(
+                        "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
+                    );
                 }
             }
 
-            if let Err(e) = self
-                .state
-                .perpetual_tables
-                .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
-            {
-                error!(
-                    err=?e,
-                    ?consensus_round,
-                    ?completed_sessions,
-                    "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
-                );
-            }
-
             self.last_read_consensus_round = Some(consensus_round);
-        }
 
-        true
+            self.dwallet_mpc_metrics
+                .last_process_mpc_consensus_round
+                .set(consensus_round as i64);
+            tokio::task::yield_now().await;
+        }
     }
 
     async fn handle_computation_results_and_submit_to_consensus(

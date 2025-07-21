@@ -4,6 +4,10 @@
 module ika_dwallet_2pc_mpc::coordinator;
 
 use ika::ika::IKA;
+use ika_common::advance_epoch_approver::AdvanceEpochApprover;
+use ika_common::protocol_cap::VerifiedProtocolCap;
+use ika_common::system_current_status_info::SystemCurrentStatusInfo;
+use ika_common::validator_cap::VerifiedValidatorOperationCap;
 use ika_dwallet_2pc_mpc::coordinator_inner::{
     Self,
     DWalletCap,
@@ -18,10 +22,6 @@ use ika_dwallet_2pc_mpc::coordinator_inner::{
 };
 use ika_dwallet_2pc_mpc::pricing::PricingInfo;
 use ika_dwallet_2pc_mpc::sessions_manager::SessionIdentifier;
-use ika_system::advance_epoch_approver::AdvanceEpochApprover;
-use ika_system::protocol_cap::VerifiedProtocolCap;
-use ika_system::system_current_status_info::SystemCurrentStatusInfo;
-use ika_system::validator_cap::VerifiedValidatorOperationCap;
 use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::sui::SUI;

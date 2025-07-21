@@ -27,6 +27,7 @@ use ika_types::messages_dwallet_mpc::{
     SESSIONS_MANAGER_MODULE_NAME, SignRequestEvent,
 };
 use serde::de::DeserializeOwned;
+use std::mem;
 use std::time::Duration;
 use sui_types::dynamic_field::Field;
 use sui_types::id::ID;
@@ -47,26 +48,24 @@ impl DWalletMPCManager {
     ///
     /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
-    pub(crate) fn handle_mpc_event_batch(&mut self, events: Vec<DWalletMPCEvent>) {
+    pub(crate) async fn handle_mpc_event_batch(&mut self, events: Vec<DWalletMPCEvent>) {
         // We only update `next_active_committee` in this block. Once it's set,
         // there will no longer be any pending events targeting it for this epoch.
         if self.next_active_committee.is_none() {
             let got_next_active_committee = self.try_receiving_next_active_committee();
             if got_next_active_committee {
-                // `..` stands for `RangeFull`, and calling `drain(..)` will drain (i.e. mutate) the vector thus removing all events from it.
-                let events_pending_for_next_active_committee: Vec<_> = self
-                    .events_pending_for_next_active_committee
-                    .drain(..)
-                    .collect();
+                let events_pending_for_next_active_committee =
+                    mem::take(&mut self.events_pending_for_next_active_committee);
 
                 for event in events_pending_for_next_active_committee {
                     self.handle_mpc_event(event);
+                    tokio::task::yield_now().await;
                 }
             }
         }
 
         // First, try to update the network keys.
-        let newly_updated_network_keys_ids = self.maybe_update_network_keys();
+        let newly_updated_network_keys_ids = self.maybe_update_network_keys().await;
 
         // Now handle events for which we've just received the corresponding public data.
         // Since events are only queued in `events_pending_for_network_key` within this function,
@@ -85,10 +84,12 @@ impl DWalletMPCManager {
                 // in which case it would be added to that queue.
                 self.handle_mpc_event(event);
             }
+            tokio::task::yield_now().await;
         }
 
         for event in events {
             self.handle_mpc_event(event);
+            tokio::task::yield_now().await;
         }
     }
 

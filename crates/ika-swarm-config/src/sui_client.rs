@@ -205,7 +205,7 @@ pub async fn init_ika_on_sui(
         "Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}"
     );
 
-    let (ika_common_package_id, ika_common_package_upgrade_cap_id) =
+    let (ika_common_package_id, system_object_cap_id, ika_common_package_upgrade_cap_id) =
         publish_ika_common_package_to_sui(&mut context, contract_paths.ika_common_contract_path)
             .await?;
 
@@ -241,8 +241,10 @@ pub async fn init_ika_on_sui(
         publisher_address,
         &mut context,
         client.clone(),
+        ika_common_package_id,
         ika_system_package_id,
         init_cap_id,
+        system_object_cap_id,
         ika_package_upgrade_cap_id,
         ika_system_package_upgrade_cap_id,
         treasury_cap_id,
@@ -994,8 +996,10 @@ pub async fn init_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
+    ika_common_package_id: ObjectID,
     ika_system_package_id: ObjectID,
     init_cap_id: ObjectID,
+    system_object_cap_id: ObjectID,
     ika_package_upgrade_cap_id: ObjectID,
     ika_system_package_upgrade_cap_id: ObjectID,
     treasury_cap_id: ObjectID,
@@ -1006,6 +1010,10 @@ pub async fn init_initialize(
     let init_cap_ref = client
         .transaction_builder()
         .get_object_ref(init_cap_id)
+        .await?;
+    let system_object_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(system_object_cap_id)
         .await?;
     let ika_package_upgrade_cap_ref = client
         .transaction_builder()
@@ -1027,6 +1035,7 @@ pub async fn init_initialize(
         vec![],
         vec![
             CallArg::Object(ObjectArg::ImmOrOwnedObject(init_cap_ref)),
+            CallArg::Object(ObjectArg::ImmOrOwnedObject(system_object_cap_ref)),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(ika_package_upgrade_cap_ref)),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(
                 ika_system_package_upgrade_cap_ref,
@@ -1077,7 +1086,7 @@ pub async fn init_initialize(
         .unwrap();
 
     let protocol_cap_type = StructTag {
-        address: ika_system_package_id.into(),
+        address: ika_common_package_id.into(),
         module: PROTOCOL_CAP_MODULE_NAME.into(),
         name: PROTOCOL_CAP_STRUCT_NAME.into(),
         type_params: vec![],
@@ -1366,7 +1375,7 @@ async fn request_add_validator_candidate(
     let object_changes = response.object_changes.unwrap();
 
     let validator_cap_type = StructTag {
-        address: ika_system_package_id.into(),
+        address: ika_common_package_id.into(),
         module: VALIDATOR_CAP_MODULE_NAME.into(),
         name: VALIDATOR_CAP_STRUCT_NAME.into(),
         type_params: vec![],
@@ -1514,12 +1523,34 @@ pub async fn publish_ika_system_package_to_sui(
 pub async fn publish_ika_common_package_to_sui(
     context: &mut WalletContext,
     contract_path: PathBuf,
-) -> Result<(ObjectID, ObjectID), anyhow::Error> {
+) -> Result<(ObjectID, ObjectID, ObjectID), anyhow::Error> {
     let object_changes = publish_package_to_sui(context, contract_path).await?;
+
     let ika_common_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Published { package_id, .. } => Some(*package_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    let system_object_cap_type = StructTag {
+        address: ika_common_package_id.into(),
+        module: ident_str!("system_object_cap").into(),
+        name: ident_str!("SystemObjectCap").into(),
+        type_params: vec![],
+    };
+
+    let system_object_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if system_object_cap_type == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()
@@ -1540,7 +1571,11 @@ pub async fn publish_ika_common_package_to_sui(
         .first()
         .unwrap();
 
-    Ok((ika_common_package_id, ika_common_package_upgrade_cap_id))
+    Ok((
+        ika_common_package_id,
+        system_object_cap_id,
+        ika_common_package_upgrade_cap_id,
+    ))
 }
 
 async fn create_class_groups_public_key_and_proof_builder_object(

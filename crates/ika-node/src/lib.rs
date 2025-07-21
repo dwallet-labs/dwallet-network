@@ -61,7 +61,7 @@ use ika_core::epoch::epoch_metrics::EpochMetrics;
 use ika_core::storage::RocksDbStore;
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::{discovery, state_sync};
-use ika_protocol_config::ProtocolConfig;
+use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use mysten_metrics::{RegistryService, spawn_monitored_task};
 use sui_json_rpc_types::SuiEvent;
 use sui_macros::{fail_point_async, replay_log};
@@ -478,6 +478,13 @@ impl IkaNode {
 
         let connection_monitor_status = Arc::new(connection_monitor_status);
         let ika_node_metrics = Arc::new(IkaNodeMetrics::new(&registry_service.default_registry()));
+
+        ika_node_metrics
+            .binary_max_protocol_version
+            .set(ProtocolVersion::MAX.as_u64() as i64);
+        ika_node_metrics
+            .configured_max_protocol_version
+            .set(config.supported_protocol_versions.unwrap().max.as_u64() as i64);
 
         let validator_components = if state.is_validator(&epoch_store) {
             let components = Self::construct_validator_components(
@@ -1129,6 +1136,11 @@ impl IkaNode {
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
             let config = cur_epoch_store.protocol_config();
+
+            // Update the current protocol version metric.
+            self.metrics
+                .current_protocol_version
+                .set(config.version.as_u64() as i64);
 
             let transaction =
                 ConsensusTransaction::new_capability_notification_v1(AuthorityCapabilitiesV1::new(

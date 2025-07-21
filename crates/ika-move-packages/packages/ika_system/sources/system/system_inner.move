@@ -4,15 +4,13 @@
 module ika_system::system_inner;
 
 use ika::ika::IKA;
+use ika_common::advance_epoch_approver::{Self, AdvanceEpochApprover};
 use ika_common::bls_committee::BlsCommittee;
 use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::advance_epoch_approver::{Self, AdvanceEpochApprover};
-use ika_system::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
-use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::staked_ika::StakedIka;
-use ika_system::system_current_status_info::{Self, SystemCurrentStatusInfo};
-use ika_system::token_exchange_rate::TokenExchangeRate;
-use ika_system::validator_cap::{
+use ika_common::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
+use ika_common::system_current_status_info::{Self, SystemCurrentStatusInfo};
+use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorOperationCap,
     ValidatorCommissionCap,
@@ -20,6 +18,9 @@ use ika_system::validator_cap::{
     VerifiedValidatorOperationCap,
     VerifiedValidatorCommissionCap
 };
+use ika_system::protocol_treasury::ProtocolTreasury;
+use ika_system::staked_ika::StakedIka;
+use ika_system::token_exchange_rate::TokenExchangeRate;
 use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::validator_set::ValidatorSet;
 use std::string::String;
@@ -82,6 +83,8 @@ public struct SystemInner has store {
     /// The current epoch ID, starting from 0.
     epoch: u64,
     epoch_start_tx_digest: vector<u8>,
+    /// The system object cap for common modules.
+    system_object_cap: SystemObjectCap,
     /// The current protocol version, starting from 1.
     protocol_version: u64,
     next_protocol_version: Option<u64>,
@@ -222,6 +225,7 @@ public struct SetOrRemoveWitnessApprovingAdvanceEpochEvent has copy, drop {
 /// Create a new IkaSystemState object and make it shared.
 /// This function will be called only once in init.
 public(package) fun create(
+    system_object_cap: SystemObjectCap,
     upgrade_caps: vector<UpgradeCap>,
     validator_set: ValidatorSet,
     protocol_version: u64,
@@ -231,7 +235,7 @@ public(package) fun create(
     protocol_treasury: ProtocolTreasury,
     ctx: &mut TxContext,
 ): (SystemInner, ProtocolCap) {
-    let protocol_cap = protocol_cap::create(ctx);
+    let protocol_cap = protocol_cap::create(ctx, &system_object_cap);
     let protocol_cap_id = object::id(&protocol_cap);
 
     let authorized_protocol_cap_ids = vector[protocol_cap_id];
@@ -239,6 +243,7 @@ public(package) fun create(
     let system_state = SystemInner {
         epoch: 0,
         epoch_start_tx_digest: *ctx.digest(),
+        system_object_cap,
         protocol_version,
         next_protocol_version: option::none(),
         upgrade_caps,
@@ -290,6 +295,7 @@ public(package) fun initialize(
     advance_epoch_approver::create(
         self.witness_approving_advance_epoch,
         balance::zero(),
+        &self.system_object_cap,
     )
 }
 
@@ -329,6 +335,7 @@ public(package) fun request_add_validator_candidate(
             consensus_address,
             commission_rate,
             metadata,
+            &self.system_object_cap,
             ctx,
         )
 }
@@ -439,7 +446,7 @@ public(package) fun rotate_operation_cap(
     cap: &ValidatorCap,
     ctx: &mut TxContext,
 ): ValidatorOperationCap {
-    self.validator_set.rotate_operation_cap(cap, ctx)
+    self.validator_set.rotate_operation_cap(cap, &self.system_object_cap, ctx)
 }
 
 public(package) fun rotate_commission_cap(
@@ -447,7 +454,7 @@ public(package) fun rotate_commission_cap(
     cap: &ValidatorCap,
     ctx: &mut TxContext,
 ): ValidatorCommissionCap {
-    self.validator_set.rotate_commission_cap(cap, ctx)
+    self.validator_set.rotate_commission_cap(cap, &self.system_object_cap, ctx)
 }
 
 public(package) fun collect_commission(
@@ -582,6 +589,7 @@ public(package) fun create_system_current_status_info(
         self.is_end_epoch_time(clock),
         self.active_committee(),
         self.validator_set.next_epoch_active_committee(),
+        &self.system_object_cap,
     )
 }
 
@@ -594,6 +602,7 @@ public(package) fun initiate_advance_epoch(
     advance_epoch_approver::create(
         self.witness_approving_advance_epoch,
         balance::zero(),
+        &self.system_object_cap,
     )
 }
 
@@ -620,7 +629,9 @@ public(package) fun advance_epoch(
     self.previous_epoch_last_checkpoint_sequence_number =
         self.last_processed_checkpoint_sequence_number;
 
-    let dwallet_computation_and_consensus_validation_rewards = advance_epoch_approver.destroy();
+    let dwallet_computation_and_consensus_validation_rewards = advance_epoch_approver.destroy(
+        &self.system_object_cap,
+    );
 
     let mut stake_subsidy = balance::zero();
 
@@ -727,7 +738,7 @@ public(package) fun verify_validator_cap(
     cap: &ValidatorCap,
 ): VerifiedValidatorCap {
     self.validator_set.verify_validator_cap(cap);
-    cap.create_verified_validator_cap()
+    cap.create_verified_validator_cap(&self.system_object_cap)
 }
 
 public(package) fun verify_operation_cap(
@@ -735,7 +746,7 @@ public(package) fun verify_operation_cap(
     cap: &ValidatorOperationCap,
 ): VerifiedValidatorOperationCap {
     self.validator_set.verify_operation_cap(cap);
-    cap.create_verified_validator_operation_cap()
+    cap.create_verified_validator_operation_cap(&self.system_object_cap)
 }
 
 public(package) fun verify_commission_cap(
@@ -743,7 +754,7 @@ public(package) fun verify_commission_cap(
     cap: &ValidatorCommissionCap,
 ): VerifiedValidatorCommissionCap {
     self.validator_set.verify_commission_cap(cap);
-    cap.create_verified_validator_commission_cap()
+    cap.create_verified_validator_commission_cap(&self.system_object_cap)
 }
 
 fun verify_protocol_cap_impl(self: &SystemInner, cap: &ProtocolCap) {
@@ -937,7 +948,7 @@ public(package) fun verify_protocol_cap(
     cap: &ProtocolCap,
 ): VerifiedProtocolCap {
     self.verify_protocol_cap_impl(cap);
-    protocol_cap::create_verified()
+    protocol_cap::create_verified(&self.system_object_cap)
 }
 
 public(package) fun set_approved_upgrade_by_cap(

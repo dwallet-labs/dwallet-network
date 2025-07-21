@@ -240,6 +240,7 @@ pub enum PoolState {
 
 impl StakingPool {
     pub fn verified_validator_info(&self) -> &VerifiedValidatorInfo {
+        // Todo (#1298): Remove unwrap.
         self.verified_validator_info
             .get_or_init(|| self.validator_info.verify().unwrap()) // Why unwrap? this could fail
     }

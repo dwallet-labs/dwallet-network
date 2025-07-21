@@ -110,16 +110,13 @@
 module ika_system::system;
 
 use ika::ika::IKA;
+use ika_common::advance_epoch_approver::AdvanceEpochApprover;
 use ika_common::bls_committee::BlsCommittee;
 use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::advance_epoch_approver::AdvanceEpochApprover;
-use ika_system::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
-use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::staked_ika::StakedIka;
-use ika_system::system_current_status_info::SystemCurrentStatusInfo;
-use ika_system::system_inner::{Self, SystemInner};
-use ika_system::token_exchange_rate::TokenExchangeRate;
-use ika_system::validator_cap::{
+use ika_common::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
+use ika_common::system_current_status_info::SystemCurrentStatusInfo;
+use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorCommissionCap,
     ValidatorOperationCap,
@@ -127,6 +124,10 @@ use ika_system::validator_cap::{
     VerifiedValidatorCommissionCap,
     VerifiedValidatorOperationCap
 };
+use ika_system::protocol_treasury::ProtocolTreasury;
+use ika_system::staked_ika::StakedIka;
+use ika_system::system_inner::{Self, SystemInner};
+use ika_system::token_exchange_rate::TokenExchangeRate;
 use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::validator_set::ValidatorSet;
 use std::string::String;
@@ -192,6 +193,7 @@ public struct System has key {
 /// then wraps it in a versioned System object and makes it shared for network access.
 public(package) fun create(
     package_id: ID,
+    system_object_cap: SystemObjectCap,
     upgrade_caps: vector<UpgradeCap>,
     validators: ValidatorSet,
     protocol_version: u64,
@@ -202,6 +204,7 @@ public(package) fun create(
     ctx: &mut TxContext,
 ): ProtocolCap {
     let (system_state, protocol_cap) = system_inner::create(
+        system_object_cap,
         upgrade_caps,
         validators,
         protocol_version,

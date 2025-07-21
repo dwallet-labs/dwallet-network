@@ -5,10 +5,11 @@ module ika_system::validator;
 
 use ika::ika::IKA;
 use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
+use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::validator_cap::{Self, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::pending_values::{Self, PendingValues};
 use ika_system::staked_ika::{Self, StakedIka};
 use ika_system::token_exchange_rate::{Self, TokenExchangeRate};
-use ika_system::validator_cap::{Self, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::validator_info::{Self, ValidatorInfo};
 use ika_system::validator_metadata::ValidatorMetadata;
 use std::string::String;
@@ -174,14 +175,23 @@ public(package) fun new(
     consensus_address: String,
     commission_rate: u16,
     metadata: ValidatorMetadata,
+    system_object_cap: &SystemObjectCap,
     ctx: &mut TxContext,
 ): (Validator, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
     let id = object::new(ctx);
     let validator_id = id.to_inner();
 
-    let validator_cap = validator_cap::new_validator_cap(validator_id, ctx);
-    let validator_operation_cap = validator_cap::new_validator_operation_cap(validator_id, ctx);
-    let validator_commission_cap = validator_cap::new_validator_commission_cap(validator_id, ctx);
+    let validator_cap = validator_cap::new_validator_cap(validator_id, ctx, system_object_cap);
+    let validator_operation_cap = validator_cap::new_validator_operation_cap(
+        validator_id,
+        ctx,
+        system_object_cap,
+    );
+    let validator_commission_cap = validator_cap::new_validator_commission_cap(
+        validator_id,
+        ctx,
+        system_object_cap,
+    );
     let validator = Validator {
         id,
         validator_info: validator_info::new(
@@ -700,11 +710,16 @@ public(package) fun ika_balance_at_epoch(validator: &Validator, epoch: u64): u64
 public(package) fun rotate_operation_cap(
     self: &mut Validator,
     cap: &ValidatorCap,
+    system_object_cap: &SystemObjectCap,
     ctx: &mut TxContext,
 ): ValidatorOperationCap {
     let validator_id = cap.validator_id();
     self.verify_validator_cap(cap);
-    let operation_cap = validator_cap::new_validator_operation_cap(validator_id, ctx);
+    let operation_cap = validator_cap::new_validator_operation_cap(
+        validator_id,
+        ctx,
+        system_object_cap,
+    );
     self.operation_cap_id = object::id(&operation_cap);
     operation_cap
 }
@@ -714,11 +729,16 @@ public(package) fun rotate_operation_cap(
 public(package) fun rotate_commission_cap(
     self: &mut Validator,
     cap: &ValidatorCap,
+    system_object_cap: &SystemObjectCap,
     ctx: &mut TxContext,
 ): ValidatorCommissionCap {
     let validator_id = cap.validator_id();
     self.verify_validator_cap(cap);
-    let commission_cap = validator_cap::new_validator_commission_cap(validator_id, ctx);
+    let commission_cap = validator_cap::new_validator_commission_cap(
+        validator_id,
+        ctx,
+        system_object_cap,
+    );
     self.commission_cap_id = object::id(&commission_cap);
     commission_cap
 }
