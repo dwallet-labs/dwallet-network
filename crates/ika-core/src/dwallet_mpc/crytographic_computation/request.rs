@@ -53,7 +53,7 @@ pub(crate) struct Request {
     pub(crate) request_input: MPCRequestInput,
     pub(crate) decryption_key_shares:
         Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
-    /// Round -> Messages map.
+
     pub(crate) messages: MPCRoundToMessagesHashMap,
 }
 
@@ -70,6 +70,8 @@ impl Request {
         root_seed: RootSeed,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<GuaranteedOutputDeliveryRoundResult> {
+        // TODO: delete mpc round from message in this project
+
         let messages_skeleton = self
             .messages
             .iter()
@@ -151,6 +153,8 @@ impl Request {
                         malicious_parties,
                         private_output,
                     } => {
+                        // TODO: take the event data
+
                         // Verify the encrypted share before finalizing, guaranteeing a two-for-one
                         // computation of both that the key import was successful, and
                         // the encrypted user share is valid.
