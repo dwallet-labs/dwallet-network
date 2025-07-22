@@ -1054,10 +1054,7 @@ where
         .await;
 
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
-            Ok(result) => {
-                error!(?result, "Successfully submitted dwallet checkpoint to sui");
-                Ok(result)
-            }
+            Ok(result) => Ok(result),
             Err(err) => {
                 error!(?err, "failed to submit dwallet checkpoint to sui",);
                 metrics.dwallet_checkpoint_writes_failure_total.inc();
