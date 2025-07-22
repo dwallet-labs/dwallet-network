@@ -1199,7 +1199,7 @@ impl IkaValidatorCommand {
                 let path = "current_pricing.yaml";
                 let file = BufWriter::new(File::create(path)?);
                 serde_yaml::to_writer(file, &current_pricing_info)?;
-                IkaValidatorCommandResponse::FetchCurrentPricingInfo(config_path)
+                IkaValidatorCommandResponse::FetchCurrentPricingInfo(PathBuf::from(path))
             }
         })
     }
