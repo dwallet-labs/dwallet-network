@@ -551,12 +551,17 @@ public fun authorize_upgrade(self: &mut System, package_id: ID): UpgradeTicket {
     self.inner_mut().authorize_upgrade(package_id)
 }
 
-public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt) {
+public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt): UpgradePackageApprover {
     let new_package_id = receipt.package();
-    let old_package_id = self.inner_mut().commit_upgrade(receipt);
-    if (self.package_id == old_package_id) {
+    let approver = self.inner_mut().commit_upgrade(receipt);
+    if (self.package_id == approver.old_package_id()) {
         self.new_package_id = option::some(new_package_id);
-    }
+    };
+    approver
+}
+
+public fun finalize_upgrade(self: &mut System, upgrade_package_approver: UpgradePackageApprover) {
+    self.inner().finalize_upgrade(upgrade_package_approver);
 }
 
 public fun process_checkpoint_message_by_quorum(

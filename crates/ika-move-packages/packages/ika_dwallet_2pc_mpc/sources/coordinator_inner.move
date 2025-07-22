@@ -1651,6 +1651,11 @@ public(package) fun create(
     inner
 }
 
+/// Get a witness for the coordinator.
+public(package) fun dwallet_coordinator_witness(): DWalletCoordinatorWitness {
+    DWalletCoordinatorWitness {}
+}
+
 /// Locks the last active session sequence number to prevent further updates.
 ///
 /// This function is called before epoch transitions to ensure session scheduling
@@ -2083,7 +2088,7 @@ public(package) fun advance_epoch(
     self.active_committee = self.next_epoch_active_committee.extract();
 
     let balance = self.pricing_and_fee_manager.advance_epoch();
-    advance_epoch_approver.approve_advance_epoch_by_witness(DWalletCoordinatorWitness {}, balance);
+    advance_epoch_approver.approve_advance_epoch_by_witness(dwallet_coordinator_witness(), balance);
 }
 
 /// Gets an immutable reference to a dWallet by ID.
