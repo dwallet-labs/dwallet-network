@@ -134,8 +134,8 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 50;
-			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 1;
+			const iterations = 100;
+			const delayBeforeMPCRequestSec = 1000 * 5;
 			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 
 			// Create a new configuration for each iteration
@@ -157,7 +157,7 @@ describe('Test dWallet MPC', () => {
 				dkgFirstTasks.push(
 					(async () => {
 						await dkgFirstStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(getRandomDelay(delayBeforeMPCRequestSec));
 						console.time(`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const dkgFirstRoundOutput = await executeDKGFirstRoundTransaction(cfg, tx);
 						console.timeEnd(
@@ -207,7 +207,7 @@ describe('Test dWallet MPC', () => {
 					(async () => {
 						await dkgSeconsStartSignal.promise;
 						const centralizedSecretKeyShare = centralizedPartyOutputs[i].centralizedSecretKeyShare;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(delayBeforeMPCRequestSec);
 						console.time(`DKG second round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const secondRoundResponse = await executeDKGSecondRoundTransaction(
 							cfg,
@@ -248,7 +248,7 @@ describe('Test dWallet MPC', () => {
 				presignTasks.push(
 					(async () => {
 						await presignStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(delayBeforeMPCRequestSec);
 						return executePresignTransaction(cfg, tx);
 					})(),
 				);
@@ -293,7 +293,7 @@ describe('Test dWallet MPC', () => {
 				signAndSendTasks.push(
 					(async () => {
 						await startSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						// await delay(delayBeforeMPCRequestSec);
 						console.time(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
 						const signRes = await executeSignTransaction(signTx, cfg);
 						console.timeEnd(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
