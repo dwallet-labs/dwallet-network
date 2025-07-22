@@ -1,4 +1,6 @@
 use anyhow::Result;
+use std::fs::File;
+use std::io::BufWriter;
 use std::{
     fmt::{Debug, Display, Formatter, Write},
     fs,
@@ -1194,9 +1196,9 @@ impl IkaValidatorCommand {
                 )
                 .await?;
                 let current_pricing_info = client.get_pricing_info().await;
-                current_pricing_info.iter().for_each(|entry| {
-                    println!("Pricing Info: {:?} - {:?}", entry.key, entry.value);
-                });
+                let path = "current_pricing.yaml";
+                let file = BufWriter::new(File::create(path)?);
+                serde_yaml::to_writer(file, &current_pricing_info)?;
                 IkaValidatorCommandResponse::FetchCurrentPricingInfo(config_path)
             }
         })
