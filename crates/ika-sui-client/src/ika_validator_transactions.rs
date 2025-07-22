@@ -1624,7 +1624,7 @@ pub async fn set_pricing_vote(
         ident_str!("pricing").into(),
         ident_str!("empty").into(),
         vec![],
-        vec![dwallet_2pc_mpc_coordinator],
+        vec![],
     ));
     let none_bcs = bcs::to_bytes(&None::<u32>)?;
 
