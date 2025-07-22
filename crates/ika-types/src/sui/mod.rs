@@ -106,12 +106,17 @@ pub const SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME: &IdentStr =
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
 pub const TABLE_VEC_MODULE_NAME: &IdentStr = ident_str!("table_vec");
-pub const CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("empty");
-pub const PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("push_back");
+pub const TABLE_VEC_STRUCT_NAME: &IdentStr = ident_str!("TableVec");
+pub const CREATE_BYTES_TABLE_VEC_FUNCTION_NAME: &IdentStr = ident_str!("empty");
+pub const PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME: &IdentStr = ident_str!("push_back");
+pub const DROP_TABLE_VEC_FUNCTION_NAME: &IdentStr = ident_str!("drop");
 
 pub const VECTOR_MODULE_NAME: &IdentStr = ident_str!("vector");
 pub const APPEND_VECTOR_FUNCTION_NAME: &IdentStr = ident_str!("append");
-// pub const DROP_OPRIONAL_TABLE_VEC_FUNC_NAME: &IdentStr = ident_str!("drop_option_table_vec");
+
+pub const OPTION_MODULE_NAME: &IdentStr = ident_str!("option");
+pub const OPTION_DESTROY_NONE_FUNCTION_NAME: &IdentStr = ident_str!("destroy_none");
+pub const OPTION_DESTROY_SOME_FUNCTION_NAME: &IdentStr = ident_str!("destroy_some");
 
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10

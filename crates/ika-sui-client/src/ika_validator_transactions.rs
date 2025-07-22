@@ -6,24 +6,26 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME,
-    NEW_VALIDATOR_METADATA_FUNCTION_NAME, PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME,
-    REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
-    REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
-    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
+    COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
+    DROP_TABLE_VEC_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
+    OPTION_DESTROY_NONE_FUNCTION_NAME, OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME,
+    PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME, REPORT_VALIDATOR_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME,
+    ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME,
+    SET_NEXT_COMMISSION_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME,
     SET_VALIDATOR_METADATA_FUNCTION_NAME, SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    TABLE_VEC_MODULE_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME, VALIDATOR_METADATA_FUNCTION_NAME,
-    VALIDATOR_METADATA_MODULE_NAME, VALIDATOR_OPERATION_STRUCT_NAME,
-    VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
-    VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
+    TABLE_VEC_MODULE_NAME, TABLE_VEC_STRUCT_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME,
+    VALIDATOR_METADATA_FUNCTION_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    VALIDATOR_OPERATION_STRUCT_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME,
+    VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
+    WITHDRAW_STAKE_FUNCTION_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -57,7 +59,7 @@ fn store_mcp_data_in_table_vec(
     let table_arg = ptb.programmable_move_call(
         SUI_FRAMEWORK_PACKAGE_ID,
         TABLE_VEC_MODULE_NAME.into(),
-        CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
+        CREATE_BYTES_TABLE_VEC_FUNCTION_NAME.into(),
         vec![TypeTag::Vector(Box::new(TypeTag::U8))],
         vec![],
     );
@@ -76,7 +78,7 @@ fn store_mcp_data_in_table_vec(
         ptb.programmable_move_call(
             SUI_FRAMEWORK_PACKAGE_ID,
             TABLE_VEC_MODULE_NAME.into(),
-            PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
+            PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME.into(),
             vec![TypeTag::Vector(Box::new(TypeTag::U8))],
             vec![table_arg, slice],
         );
@@ -1435,7 +1437,7 @@ pub async fn verify_commission_cap(
 
     execute_transaction(context, tx_data).await
 }
-pub async fn create_ptb_set_next_epoch_mpc_data_bytes_without_drop(
+pub async fn ptb_set_next_epoch_mpc_data_bytes_inner(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
@@ -1471,42 +1473,35 @@ pub async fn create_ptb_set_next_epoch_mpc_data_bytes_without_drop(
     Ok((ptb, optional_tablevec_to_delete))
 }
 
-pub async fn create_ptb_set_next_epoch_mpc_data_bytes_with_drop(
+pub async fn new_ptb_set_next_epoch_mpc_data_bytes_with_drop(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     validator_operation_cap_id: ObjectID,
     next_mpc_data: &VersionedMPCData,
+    table_vec_struct_tag: StructTag,
 ) -> Result<ProgrammableTransactionBuilder, anyhow::Error> {
-    let (mut ptb, optional_tablevec_to_delete) =
-        create_ptb_set_next_epoch_mpc_data_bytes_without_drop(
-            context,
-            ika_system_package_id,
-            ika_system_object_id,
-            validator_operation_cap_id,
-            next_mpc_data,
-        )
-        .await?;
-
-    let table_vec_struct_tag = StructTag {
-        address: SUI_FRAMEWORK_ADDRESS,
-        module: move_core_types::ident_str!("table_vec").into(),
-        name: move_core_types::ident_str!("TableVec").to_owned(),
-        type_params: vec![TypeTag::Vector(Box::new(TypeTag::U8))],
-    };
+    let (mut ptb, optional_tablevec_to_delete) = ptb_set_next_epoch_mpc_data_bytes_inner(
+        context,
+        ika_system_package_id,
+        ika_system_object_id,
+        validator_operation_cap_id,
+        next_mpc_data,
+    )
+    .await?;
 
     let tablevec_to_delete = ptb.programmable_move_call(
         MOVE_STDLIB_PACKAGE_ID,
-        move_core_types::ident_str!("option").into(),
-        move_core_types::ident_str!("destroy_some").to_owned(),
+        OPTION_MODULE_NAME.into(),
+        OPTION_DESTROY_SOME_FUNCTION_NAME.to_owned(),
         vec![TypeTag::Struct(Box::new(table_vec_struct_tag))],
         vec![optional_tablevec_to_delete],
     );
 
     ptb.programmable_move_call(
         SUI_FRAMEWORK_PACKAGE_ID,
-        move_core_types::ident_str!("table_vec").into(),
-        move_core_types::ident_str!("drop").into(),
+        TABLE_VEC_MODULE_NAME.into(),
+        DROP_TABLE_VEC_FUNCTION_NAME.into(),
         vec![TypeTag::Vector(Box::new(TypeTag::U8))],
         vec![tablevec_to_delete],
     );
@@ -1523,12 +1518,20 @@ pub async fn set_next_epoch_mpc_data_bytes(
     next_mpc_data: VersionedMPCData,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let ptb = create_ptb_set_next_epoch_mpc_data_bytes_with_drop(
+    let table_vec_struct_tag = StructTag {
+        address: SUI_FRAMEWORK_ADDRESS,
+        module: TABLE_VEC_MODULE_NAME.into(),
+        name: TABLE_VEC_STRUCT_NAME.to_owned(),
+        type_params: vec![TypeTag::Vector(Box::new(TypeTag::U8))],
+    };
+
+    let ptb = new_ptb_set_next_epoch_mpc_data_bytes_with_drop(
         context,
         ika_system_package_id,
         ika_system_object_id,
         validator_operation_cap_id,
         &next_mpc_data,
+        table_vec_struct_tag.clone(),
     )
     .await?;
 
@@ -1539,27 +1542,21 @@ pub async fn set_next_epoch_mpc_data_bytes(
     let tx_data = match construct_result {
         Ok(tx_data) => tx_data,
         Err(IkaError::DryRunFailed(_)) => {
-            let (mut ptb, optional_tablevec_to_delete) =
-                create_ptb_set_next_epoch_mpc_data_bytes_without_drop(
-                    context,
-                    ika_system_package_id,
-                    ika_system_object_id,
-                    validator_operation_cap_id,
-                    &next_mpc_data,
-                )
-                .await?;
-
-            let table_vec_struct_tag = StructTag {
-                address: SUI_FRAMEWORK_ADDRESS,
-                module: move_core_types::ident_str!("table_vec").into(),
-                name: move_core_types::ident_str!("TableVec").to_owned(),
-                type_params: vec![TypeTag::Vector(Box::new(TypeTag::U8))],
-            };
+            // If dry run fails, we try to `destroy_none` as the `set_next_epoch_mpc_data_bytes`
+            // transaction returns an `Option<TableVec>` which most be dropped.
+            let (mut ptb, optional_tablevec_to_delete) = ptb_set_next_epoch_mpc_data_bytes_inner(
+                context,
+                ika_system_package_id,
+                ika_system_object_id,
+                validator_operation_cap_id,
+                &next_mpc_data,
+            )
+            .await?;
 
             ptb.programmable_move_call(
                 MOVE_STDLIB_PACKAGE_ID,
-                move_core_types::ident_str!("option").into(),
-                move_core_types::ident_str!("destroy_none").to_owned(),
+                OPTION_MODULE_NAME.into(),
+                OPTION_DESTROY_NONE_FUNCTION_NAME.to_owned(),
                 vec![TypeTag::Struct(Box::new(table_vec_struct_tag))],
                 vec![optional_tablevec_to_delete],
             );
