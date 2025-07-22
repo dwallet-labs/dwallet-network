@@ -12,7 +12,7 @@ use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::EpochId;
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
@@ -30,8 +30,7 @@ use ika_types::sui::{
     ADVANCE_EPOCH_FUNCTION_NAME, APPEND_VECTOR_FUNCTION_NAME,
     CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, DWalletCoordinatorInner,
     INITIATE_ADVANCE_EPOCH_FUNCTION_NAME, INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
-    NEW_VECTOR_FUNCTION_NAME, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME,
-    REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
+    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
     REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
     SystemInner, SystemInnerTrait, VECTOR_MODULE_NAME,
 };
@@ -43,10 +42,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
-use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
+use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
 use tokio::sync::watch;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
@@ -494,36 +493,27 @@ where
     ) -> DwalletMPCResult<Argument> {
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
-        if messages.len() == 1 {
-            return Ok(ptb
-                .input(CallArg::Pure(bcs::to_bytes(&messages.first().unwrap())?))
-                .map_err(|e| {
-                    IkaError::SuiConnectorSerializationError(format!(
-                        "can't serialize ptb input: {e}"
-                    ))
-                })?);
+        if messages.len() < 1 {
+            return Err(DwalletMPCError::CheckpointMessageIsEmpty);
         }
+        let vector_arg = ptb
+            .input(CallArg::Pure(bcs::to_bytes(messages.first().unwrap())?))
+            .map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!("can't serialize ptb input: {e}"))
+            })?;
 
-        let vector_arg = ptb.programmable_move_call(
-            SUI_FRAMEWORK_PACKAGE_ID,
-            VECTOR_MODULE_NAME.into(),
-            NEW_VECTOR_FUNCTION_NAME.into(),
-            vec![TypeTag::U8],
-            vec![],
-        );
-
-        messages
-            .iter()
+        messages[1..]
+            .into_iter()
             .map(|message| {
                 let message_arg =
-                    ptb.input(CallArg::Pure(bcs::to_bytes(&message)?))
+                    ptb.input(CallArg::Pure(bcs::to_bytes(*message)?))
                         .map_err(|e| {
                             IkaError::SuiConnectorSerializationError(format!(
                                 "can't serialize ptb input: {e}"
                             ))
                         })?;
                 ptb.programmable_move_call(
-                    SUI_FRAMEWORK_PACKAGE_ID,
+                    MOVE_STDLIB_PACKAGE_ID,
                     VECTOR_MODULE_NAME.into(),
                     APPEND_VECTOR_FUNCTION_NAME.into(),
                     vec![TypeTag::U8],
@@ -1064,9 +1054,12 @@ where
         .await;
 
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
-            Ok(result) => Ok(result),
+            Ok(result) => {
+                error!(?result, "Successfully submitted dwallet checkpoint to sui");
+                Ok(result)
+            }
             Err(err) => {
-                error!(?err, "failed to submit dwallet checkpoint to consensus",);
+                error!(?err, "failed to submit dwallet checkpoint to sui",);
                 metrics.dwallet_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }

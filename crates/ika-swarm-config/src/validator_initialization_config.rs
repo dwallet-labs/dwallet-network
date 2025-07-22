@@ -19,7 +19,7 @@ use sui_types::base_types::SuiAddress;
 use sui_types::crypto::{PublicKey, SuiKeyPair};
 use sui_types::multiaddr::Multiaddr;
 
-pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
+pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 12;
 
 // All information needed to build a NodeConfig for a validator.
 #[derive(Debug, Serialize, Deserialize)]
