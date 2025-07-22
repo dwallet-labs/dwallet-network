@@ -992,15 +992,10 @@ impl DWalletCheckpointAggregator {
     }
 
     fn next_checkpoint_to_certify(&self) -> IkaResult<DWalletCheckpointSequenceNumber> {
-        let epoch = self.epoch_store.epoch();
-        let default_next_checkpoint_to_certify = if epoch != 1 {
-            self.previous_epoch_last_checkpoint_sequence_number + 1
-        } else {
-            1
-        };
+        let default_next_checkpoint_to_certify = self.previous_epoch_last_checkpoint_sequence_number + 1;
         debug!(
-            epoch,
-            default_next_checkpoint_to_certify, "Getting next checkpoint to certify",
+            default_next_checkpoint_to_certify,
+            "Getting next dwallet checkpoint to certify",
         );
         Ok(self
             .tables
