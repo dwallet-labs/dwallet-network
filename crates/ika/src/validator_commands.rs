@@ -1191,11 +1191,13 @@ impl IkaValidatorCommand {
                     config.ika_system_package_id,
                     config.ika_system_object_id,
                     config.ika_dwallet_coordinator_object_id,
-                );
-                let current_pricing_info = client
-                    .get_pricing_info(config.ika_dwallet_coordinator_object_id, 0)
-                    .await?;
-                IkaValidatorCommandResponse::FetchCurrentPricingInfo(config_path)   
+                )
+                .await?;
+                let current_pricing_info = client.get_pricing_info().await;
+                current_pricing_info.iter().for_each(|entry| {
+                    println!("Pricing Info: {:?} - {:?}", entry.key, entry.value);
+                });
+                IkaValidatorCommandResponse::FetchCurrentPricingInfo(config_path)
             }
         })
     }
