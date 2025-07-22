@@ -34,6 +34,7 @@ backoff.workspace = true
 dwallet-classgroups-types.workspace = true
 sui.workspace = true
 sui-keys.workspace = true
+dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 ika-types = { workspace = true }

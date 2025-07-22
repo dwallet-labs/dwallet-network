@@ -9,5 +9,7 @@ thiserror.workspace = true
 schemars.workspace = true
 twopc_mpc.workspace = true
 class_groups.workspace = true
+enum_dispatch.workspace = true
+
 [lints]
 workspace = true

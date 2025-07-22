@@ -4,8 +4,9 @@
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::sui_connector::metrics::SuiConnectorMetrics;
+use dwallet_mpc_types::dwallet_mpc::MPCDataTrait;
 use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
-use ika_types::committee::{Committee, StakeUnit};
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
@@ -153,24 +154,33 @@ where
             .await
             .map_err(DwalletMPCError::IkaError)?;
 
-        let class_group_encryption_keys_and_proofs = sui_client
-            .get_class_groups_public_keys_and_proofs(&validators, read_next_epoch_class_groups_keys)
+        let committee_mpc_data = sui_client
+            .get_mpc_data_from_validators_pool(&validators, read_next_epoch_class_groups_keys)
             .await
             .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = committee
             .iter()
             .filter_map(|(id, (name, _))| {
-                let validator_class_groups_public_key_and_proof =
-                    class_group_encryption_keys_and_proofs.get(id);
+                let mpc_data = committee_mpc_data.get(id);
 
-                let validator_class_groups_public_key_and_proof =
-                    validator_class_groups_public_key_and_proof.cloned();
-                validator_class_groups_public_key_and_proof.map(
-                    |validator_class_groups_public_key_and_proof| {
-                        (*name, validator_class_groups_public_key_and_proof)
-                    },
-                )
+                mpc_data.clone().and_then(|mpc_data| {
+                    let class_groups_public_key_and_proof =
+                        bcs::from_bytes::<ClassGroupsEncryptionKeyAndProof>(
+                            &mpc_data.class_groups_public_key_and_proof(),
+                        );
+
+                    match class_groups_public_key_and_proof {
+                        Ok(key_and_proof) => Some((*name, key_and_proof)),
+                        Err(e) => {
+                            error!(
+                                "Failed to deserialize class groups public key and proof: {}",
+                                e
+                            );
+                            None
+                        }
+                    }
+                })
             })
             .collect::<HashMap<_, _>>();
 
