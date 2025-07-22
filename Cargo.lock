@@ -5670,10 +5670,12 @@ name = "ika"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "bcs",
  "bin-version",
  "clap",
  "colored 3.0.0",
  "dwallet-classgroups-types",
+ "dwallet-mpc-types",
  "dwallet-rng",
  "fastcrypto",
  "http 1.2.0",

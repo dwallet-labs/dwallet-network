@@ -2,10 +2,13 @@ use anyhow::bail;
 use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
+use ika_types::error::{IkaError, IkaResult};
+use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME,
+    REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
     REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
@@ -17,30 +20,28 @@ use ika_types::sui::{
     SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME,
     SET_VALIDATOR_METADATA_FUNCTION_NAME, SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    UNDO_REPORT_VALIDATOR_FUNCTION_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
-    VALIDATOR_COMMISSION_STRUCT_NAME, VALIDATOR_METADATA_FUNCTION_NAME,
+    TABLE_VEC_MODULE_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME, VALIDATOR_CAP_MODULE_NAME,
+    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME, VALIDATOR_METADATA_FUNCTION_NAME,
     VALIDATOR_METADATA_MODULE_NAME, VALIDATOR_OPERATION_STRUCT_NAME,
     VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
     VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, TABLE_VEC_MODULE_NAME,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::Serialize;
 use shared_crypto::intent::Intent;
+use sui::client_commands::{SuiClientCommandResult, execute_dry_run};
 use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
 use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions};
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
-
+use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
 
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
@@ -52,7 +53,7 @@ pub struct BecomeCandidateValidatorData {
 
 fn store_mcp_data_in_table_vec(
     ptb: &mut ProgrammableTransactionBuilder,
-    mpc_data: VersionedMPCData,
+    mpc_data: &VersionedMPCData,
 ) -> anyhow::Result<Argument> {
     let table_arg = ptb.programmable_move_call(
         SUI_FRAMEWORK_PACKAGE_ID,
@@ -62,8 +63,7 @@ fn store_mcp_data_in_table_vec(
         vec![],
     );
 
-    let mpc_data: Box<VersionedMPCData> = Box::new(mpc_data);
-    let mpc_data_bytes = bcs::to_bytes(&mpc_data)?;
+    let mpc_data_bytes = bcs::to_bytes(mpc_data)?;
 
     let ten_kb = 10 * 1024;
     let mut i = 0;
@@ -105,7 +105,7 @@ pub async fn request_add_validator_candidate(
         )?,
     });
 
-    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, mpc_data)?;
+    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &mpc_data)?;
 
     let name = ptb.input(CallArg::Pure(bcs::to_bytes(
         validator_initialization_metadata.name.as_str(),
@@ -717,7 +717,9 @@ async fn construct_unsigned_ika_system_txn(
     )
     .await?;
 
-    construct_unsigned_txn(context, sender, gas_budget, ptb).await
+    construct_unsigned_txn(context, sender, gas_budget, ptb)
+        .await
+        .map_err(|e| e.into())
 }
 
 async fn add_ika_system_command_to_ptb(
@@ -769,12 +771,36 @@ async fn construct_unsigned_txn(
     sender: SuiAddress,
     gas_budget: u64,
     ptb: ProgrammableTransactionBuilder,
-) -> anyhow::Result<TransactionData> {
-    let sui_client = context.get_client().await?;
-    let gas_price = context.get_reference_gas_price().await?;
+) -> IkaResult<TransactionData> {
+    let sui_client = context
+        .get_client()
+        .await
+        .map_err(|_| IkaError::SuiSDKError)?;
+    let gas_price = context
+        .get_reference_gas_price()
+        .await
+        .map_err(|_| IkaError::SuiSDKError)?;
 
     let tx = ptb.finish();
     let tx_kind = TransactionKind::ProgrammableTransaction(tx.clone());
+
+    let dry_run = execute_dry_run(
+        context,
+        sender,
+        tx_kind.clone(),
+        None,
+        gas_price,
+        vec![],
+        None,
+    )
+    .await
+    .map_err(|e| IkaError::DryRunFailed(e.to_string()))?;
+    if let SuiClientCommandResult::DryRun(dry_run) = dry_run {
+        if let Some(dry_run_err) = dry_run.execution_error_source {
+            return Err(IkaError::DryRunFailed(dry_run_err));
+        }
+    };
+
     let gas_budget = sui::client_commands::estimate_gas_budget(
         context,
         sender,
@@ -789,9 +815,12 @@ async fn construct_unsigned_txn(
     let rgp = sui_client
         .governance_api()
         .get_reference_gas_price()
-        .await?;
+        .await
+        .map_err(|_| IkaError::SuiSDKError)?;
 
-    let gas_obj_ref = get_gas_obj_ref(sender, &sui_client, gas_budget).await?;
+    let gas_obj_ref = get_gas_obj_ref(sender, &sui_client, gas_budget)
+        .await
+        .map_err(|_| IkaError::SuiSDKError)?;
 
     Ok(TransactionData::new_programmable(
         sender,
@@ -1403,17 +1432,13 @@ pub async fn verify_commission_cap(
 
     execute_transaction(context, tx_data).await
 }
-
-/// Set next epoch class groups pubkey and proof bytes
-pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
+pub async fn set_next_epoch_mpc_data_bytes_without_drop(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
-    ika_common_package_id: ObjectID,
     validator_operation_cap_id: ObjectID,
-    class_groups_pubkey_and_proof_obj_ref: ObjectRef,
-    gas_budget: u64,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    next_mpc_data: &VersionedMPCData,
+) -> Result<(ProgrammableTransactionBuilder, Argument), anyhow::Error> {
     let client = context.get_client().await?;
     let validator_operation_cap_ref = client
         .transaction_builder()
@@ -1421,16 +1446,14 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
         .await?;
 
     let mut ptb = ProgrammableTransactionBuilder::new();
+    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &next_mpc_data)?;
+
     let call_args = vec![
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            class_groups_pubkey_and_proof_obj_ref,
-        )))?,
+        store_mcp_data_in_table_vec,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             validator_operation_cap_ref,
         )))?,
     ];
-
-    let sender = context.active_address()?;
 
     let optional_tablevec_to_delete = add_ika_system_command_to_ptb(
         context,
@@ -1442,15 +1465,73 @@ pub async fn set_next_epoch_class_groups_pubkey_and_proof_bytes(
     )
     .await?;
 
-    ptb.command(Command::move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        DROP_OPRIONAL_TABLE_VEC_FUNC_NAME.to_owned(),
-        vec![],
-        vec![optional_tablevec_to_delete],
-    ));
+    Ok((ptb, optional_tablevec_to_delete))
+}
+/// Set next epoch MPC data bytes
+pub async fn set_next_epoch_mpc_data_bytes(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    validator_operation_cap_id: ObjectID,
+    next_mpc_data: VersionedMPCData,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let (ptb, _) = set_next_epoch_mpc_data_bytes_without_drop(
+        context,
+        ika_system_package_id,
+        ika_system_object_id,
+        validator_operation_cap_id,
+        &next_mpc_data,
+    )
+    .await?;
 
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+    let sender = context.active_address()?;
+
+    let construct_result = construct_unsigned_txn(context, sender, gas_budget, ptb).await;
+
+    let tx_data = match construct_result {
+        Ok(tx_data) => tx_data,
+        Err(IkaError::DryRunFailed(_)) => {
+            let (mut ptb, optional_tablevec_to_delete) =
+                set_next_epoch_mpc_data_bytes_without_drop(
+                    context,
+                    ika_system_package_id,
+                    ika_system_object_id,
+                    validator_operation_cap_id,
+                    &next_mpc_data,
+                )
+                .await?;
+
+            let table_vec_struct_tag = StructTag {
+                address: SUI_FRAMEWORK_ADDRESS,
+                module: move_core_types::ident_str!("table_vec").into(),
+                name: move_core_types::ident_str!("TableVec").to_owned(),
+                type_params: vec![TypeTag::Vector(Box::new(TypeTag::U8))],
+            };
+
+            let tablevec_to_delete = ptb.programmable_move_call(
+                MOVE_STDLIB_PACKAGE_ID,
+                move_core_types::ident_str!("option").into(),
+                move_core_types::ident_str!("extract").to_owned(),
+                vec![TypeTag::Struct(Box::new(table_vec_struct_tag))],
+                vec![optional_tablevec_to_delete],
+            );
+
+            ptb.programmable_move_call(
+                SUI_FRAMEWORK_PACKAGE_ID,
+                move_core_types::ident_str!("table_vec").into(),
+                move_core_types::ident_str!("drop").into(),
+                vec![TypeTag::Vector(Box::new(TypeTag::U8))],
+                vec![tablevec_to_delete],
+            );
+
+            construct_unsigned_txn(context, sender, gas_budget, ptb).await?
+        }
+        Err(e) => {
+            // return Err(anyhow::anyhow!(e));
+            return Err(e.into());
+        }
+    };
 
     execute_transaction(context, tx_data).await
 }
@@ -1488,32 +1569,34 @@ pub async fn set_pricing_vote(
 
     let sender = context.active_address()?;
 
-    let dwallet_2pc_mpc_coordinator = ptb.input(get_dwallet_2pc_mpc_coordinator_call_arg(
-        context,
-        ika_dwallet_2pc_mpc_coordinator_object_id,
-    )
-    .await?)?;
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
 
-    let pricing_info = ptb.command(Command::move_call(
+    let pricing_info = ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_coordinator_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         move_core_types::ident_str!("current_pricing").to_owned(),
         vec![],
         vec![dwallet_2pc_mpc_coordinator],
-    ));
+    );
 
     let args = vec![
         dwallet_2pc_mpc_coordinator,
         pricing_info,
         verified_validator_operation_cap,
     ];
-    ptb.command(Command::move_call(
+    ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_coordinator_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
         vec![],
         args,
-    ));
+    );
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
