@@ -9,7 +9,7 @@ use move_core_types::language_storage::TypeTag;
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
-use sui_types::collection_types::{TableVec, VecMap};
+use sui_types::collection_types::VecMap;
 use sui_types::versioned::Versioned;
 
 pub mod epoch_start_system;
@@ -72,13 +72,12 @@ pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
 
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
-pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
-    ident_str!("class_groups_public_key_and_proof");
-pub const CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME: &IdentStr =
-    ident_str!("empty");
-pub const ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr =
-    ident_str!("add_public_key_and_proof");
-pub const FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME: &IdentStr = ident_str!("finish");
+pub const TABLE_VEC_MODULE_NAME: &IdentStr = ident_str!("table_vec");
+pub const CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("empty");
+pub const PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME: &IdentStr = ident_str!("push_back");
+
+pub const VECTOR_MODULE_NAME: &IdentStr = ident_str!("vector");
+pub const APPEND_VECTOR_FUNCTION_NAME: &IdentStr = ident_str!("append");
 
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10
@@ -187,41 +186,6 @@ pub struct Element {
 pub struct Validator {
     pub id: ObjectID,
     pub inner: Versioned,
-}
-
-/// Rust representation of the Move `ika::class_groups::ClassGroupsPublicKeyAndProofBuilder` type.
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct ClassGroupsPublicKeyAndProofBuilder;
-
-impl ClassGroupsPublicKeyAndProofBuilder {
-    /// Return the Move struct tag for this type
-    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
-        StructTag {
-            address: ika_system_package_address,
-            name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
-            module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-/// Rust version of the Move ika::class_groups::ClassGroupsPublicKeyAndProof type
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct ClassGroupsPublicKeyAndProof {
-    pub id: ObjectID,
-    pub public_keys_and_proofs: TableVec,
-}
-
-impl ClassGroupsPublicKeyAndProof {
-    /// Return the Move struct tag for this type
-    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
-        StructTag {
-            address: ika_system_package_address,
-            name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
-            module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
