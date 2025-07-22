@@ -240,6 +240,9 @@ pub enum IkaError {
 
     #[error("failed to receive data: {0}")]
     ReceiverError(String),
+
+    #[error("validator info verification failed with error code {0}")]
+    ValidatorInfoVerificationFailed(u64),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;

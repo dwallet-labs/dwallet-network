@@ -3,6 +3,7 @@
 
 use super::{Element, ExtendedField, PendingValues};
 use crate::crypto::{AuthorityPublicKey, AuthorityPublicKeyBytes, NetworkPublicKey};
+use crate::error::{IkaError, IkaResult};
 use fastcrypto::traits::ToFromBytes;
 use jsonrpsee::core::Serialize;
 use mysten_network::Multiaddr;
@@ -239,9 +240,16 @@ pub enum PoolState {
 }
 
 impl StakingPool {
-    pub fn verified_validator_info(&self) -> &VerifiedValidatorInfo {
-        // Todo (#1298): Remove unwrap.
-        self.verified_validator_info
-            .get_or_init(|| self.validator_info.verify().unwrap())
+    pub fn verified_validator_info(&self) -> IkaResult<&VerifiedValidatorInfo> {
+        let Some(verified_info) = self.verified_validator_info.get() else {
+            let verified_info = self
+                .validator_info
+                .verify()
+                .map_err(|e| IkaError::ValidatorInfoVerificationFailed(e))?;
+            return Ok(self
+                .verified_validator_info
+                .get_or_init(|| verified_info.clone()));
+        };
+        Ok(verified_info)
     }
 }

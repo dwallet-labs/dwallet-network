@@ -417,7 +417,7 @@ where
                                 m.validator_id
                             )),
                         )?;
-                        let info = validator.verified_validator_info();
+                        let info = validator.verified_validator_info()?;
                         Ok(EpochStartValidatorInfoV1 {
                             name: info.name.clone(),
                             validator_id: validator.id,
@@ -962,7 +962,12 @@ impl SuiClientInner for SuiSdkClient {
             ClassGroupsEncryptionKeyAndProof,
         > = HashMap::new();
         for validator in validators {
-            let info = validator.verified_validator_info();
+            let info = validator.verified_validator_info().map_err(|e| {
+                Error::DataError(format!(
+                    "Failed to get verified validator info for validator {}: {e}",
+                    validator.id
+                ))
+            })?;
             let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys
                 && info
                     .next_epoch_class_groups_pubkey_and_proof_bytes
