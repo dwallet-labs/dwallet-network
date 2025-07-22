@@ -164,7 +164,7 @@ where
             .filter_map(|(id, (name, _))| {
                 let mpc_data = committee_mpc_data.get(id);
 
-                mpc_data.clone().and_then(|mpc_data| {
+                mpc_data.and_then(|mpc_data| {
                     let class_groups_public_key_and_proof =
                         bcs::from_bytes::<ClassGroupsEncryptionKeyAndProof>(
                             &mpc_data.class_groups_public_key_and_proof(),

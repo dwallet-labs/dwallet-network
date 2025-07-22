@@ -42,10 +42,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
-use sui_types::MOVE_STDLIB_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
+use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
 use tokio::sync::watch;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
@@ -493,7 +493,7 @@ where
     ) -> DwalletMPCResult<Argument> {
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
-        if messages.len() < 1 {
+        if messages.is_empty() {
             return Err(DwalletMPCError::CheckpointMessageIsEmpty);
         }
         let vector_arg = ptb
@@ -503,8 +503,7 @@ where
             })?;
 
         messages[1..]
-            .into_iter()
-            .map(|message| {
+            .iter().try_for_each(|message| {
                 let message_arg =
                     ptb.input(CallArg::Pure(bcs::to_bytes(*message)?))
                         .map_err(|e| {
@@ -517,11 +516,10 @@ where
                     VECTOR_MODULE_NAME.into(),
                     APPEND_VECTOR_FUNCTION_NAME.into(),
                     vec![TypeTag::U8],
-                    vec![vector_arg.clone(), message_arg],
+                    vec![vector_arg, message_arg],
                 );
-                Ok(())
-            })
-            .collect::<DwalletMPCResult<()>>()?;
+                Ok::<(), DwalletMPCError>(())
+            })?;
 
         Ok(vector_arg)
     }
