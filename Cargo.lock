@@ -3649,6 +3649,7 @@ name = "dwallet-mpc-types"
 version = "1.0.0"
 dependencies = [
  "class_groups",
+ "enum_dispatch",
  "schemars",
  "serde",
  "thiserror 2.0.12",
@@ -5934,6 +5935,7 @@ dependencies = [
  "backoff",
  "bcs",
  "dwallet-classgroups-types",
+ "dwallet-mpc-types",
  "fastcrypto",
  "ika-config",
  "ika-move-packages",
@@ -5983,6 +5985,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "dwallet-classgroups-types",
+ "dwallet-mpc-types",
  "dwallet-rng",
  "fastcrypto",
  "futures",

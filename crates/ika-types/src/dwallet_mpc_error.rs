@@ -170,6 +170,9 @@ pub enum DwalletMPCError {
 
     #[error("tokio recv error")]
     TokioRecv,
+
+    #[error("checkpoint message is empty")]
+    CheckpointMessageIsEmpty,
 }
 
 /// A wrapper type for the result of a runtime operation.
