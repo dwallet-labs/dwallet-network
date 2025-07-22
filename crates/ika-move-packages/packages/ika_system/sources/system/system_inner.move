@@ -9,6 +9,7 @@ use ika_common::bls_committee::BlsCommittee;
 use ika_common::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
 use ika_common::system_current_status_info::{Self, SystemCurrentStatusInfo};
 use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::upgrade_package_approver::{Self, UpgradePackageApprover};
 use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorOperationCap,

@@ -115,6 +115,7 @@ use ika_common::bls_committee::BlsCommittee;
 use ika_common::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
 use ika_common::system_current_status_info::SystemCurrentStatusInfo;
 use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::upgrade_package_approver::UpgradePackageApprover;
 use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorCommissionCap,
