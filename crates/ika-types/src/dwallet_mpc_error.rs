@@ -65,13 +65,11 @@ pub enum DwalletMPCError {
     #[error("missing MPC public parameters in config")]
     MissingDwalletMPCDecryptionSharesPublicParameters,
 
-    // Note:
-    // this one actually takes mpc_error,
-    // but because of poor error design in the underline lib we can't use it,
-    // since there are generic implementations
-    // that conflict with generic implementations in the current lib.
-    #[error("TwoPC MPC error: {0}")]
-    TwoPCMPCError(String),
+    #[error("2PC-MPC error")]
+    TwoPCMPCError(#[from] twopc_mpc::Error),
+
+    #[error("mpc error")]
+    MPCError(#[from] mpc::Error),
 
     #[error("failed to find a message in batch: {0:?}")]
     MissingMessageInBatch(Vec<u8>),
@@ -94,8 +92,8 @@ pub enum DwalletMPCError {
     #[error(transparent)]
     DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
 
-    #[error("error in Class Groups: {0}")]
-    ClassGroupsError(String),
+    #[error("class_groups error")]
+    ClassGroups(#[from] class_groups::Error),
 
     #[error("failed to read seed from file: {0}")]
     FailedToReadSeed(String),

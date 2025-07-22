@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 mod input;
-mod logger;
 mod mpc_event_data;
 
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCSessionStatus};
@@ -16,7 +15,6 @@ use tracing::{debug, error, info};
 
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 pub(crate) use input::{PublicInput, session_input_from_event};
-pub(crate) use logger::MPCSessionLogger;
 
 pub(crate) type MPCRoundToMessagesHashMap = HashMap<u64, HashMap<PartyID, MPCMessage>>;
 

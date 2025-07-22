@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::dwallet_mpc::crytographic_computation::mpc_computations::build_messages_to_advance;
 use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
@@ -394,7 +393,11 @@ impl DWalletMPCManager {
     /// Returns the completed computation results.
     pub(crate) async fn perform_cryptographic_computation(
         &mut self,
-    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::AsynchronousRoundGODResult>> {
+    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::GuaranteedOutputDeliveryRoundResult>> {
+        let completed_computation_results = self
+            .cryptographic_computations_orchestrator
+            .receive_completed_computations(self.dwallet_mpc_metrics.clone());
+
         let mut ready_to_advance_sessions: Vec<_> = self
             .mpc_sessions
             .iter()
@@ -425,57 +428,47 @@ impl DWalletMPCManager {
             mpc_event_data.cmp(other_mpc_event_data)
         });
 
-        let computation_requests: Vec<_> = ready_to_advance_sessions
-            .into_iter()
-            .flat_map(|(session, mpc_event_data)| {
-                let rounds_to_delay = self.consensus_rounds_delay_for_mpc_round(
-                    session.current_mpc_round,
-                    &mpc_event_data,
-                );
+        for (session, mpc_event_data) in ready_to_advance_sessions {
+            let rounds_to_delay = self
+                .consensus_rounds_delay_for_mpc_round(session.current_mpc_round, &mpc_event_data);
 
-                build_messages_to_advance(
-                    session.current_mpc_round,
-                    rounds_to_delay,
-                    session
-                        .mpc_round_to_threshold_not_reached_consensus_rounds
-                        .clone(),
-                    session.messages_by_consensus_round.clone(),
-                    &self.access_structure,
-                )
-                .map(|(consensus_round, messages_for_advance)| {
-                    let attempt_number = session.get_attempt_number();
+            // session.current_mpc_round,
+            // rounds_to_delay,
+            // session
+            //     .mpc_round_to_threshold_not_reached_consensus_rounds
+            //     .clone(),
+            // session.messages_by_consensus_round.clone(),
+            // &self.access_structure,
 
-                    // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
-                    let mpc_event_data = session.mpc_event_data.clone().unwrap();
+            // .map(|(consensus_round, messages_for_advance)| {
+            let attempt_number = session.get_attempt_number();
 
-                    let computation_id = ComputationId {
-                        session_identifier: session.session_identifier,
-                        consensus_round,
-                        mpc_round: session.current_mpc_round,
-                        attempt_number,
-                    };
+            // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
+            let mpc_event_data = session.mpc_event_data.clone().unwrap();
 
-                    let computation_request = ComputationRequest {
-                        party_id: self.party_id,
-                        validator_name: self.validator_name,
-                        committee: self.committee.clone(),
-                        access_structure: self.access_structure.clone(),
-                        request_input: mpc_event_data.request_input,
-                        private_input: mpc_event_data.private_input,
-                        public_input: mpc_event_data.public_input,
-                        decryption_key_shares: mpc_event_data.decryption_key_shares,
-                        messages: messages_for_advance,
-                    };
+            let consensus_round = Some(0); // TODO
+            let computation_id = ComputationId {
+                session_identifier: session.session_identifier,
+                consensus_round,
+                mpc_round: session.current_mpc_round,
+                attempt_number,
+            };
 
-                    (computation_id, computation_request)
-                })
-            })
-            .collect();
+            let computation_request = ComputationRequest {
+                party_id: self.party_id,
+                validator_name: self.validator_name,
+                committee: self.committee.clone(),
+                access_structure: self.access_structure.clone(),
+                request_input: mpc_event_data.request_input,
+                private_input: mpc_event_data.private_input,
+                public_input: mpc_event_data.public_input,
+                decryption_key_shares: mpc_event_data.decryption_key_shares,
+                messages: HashMap::new(), // TODO
+            };
 
-        let completed_computation_results = self
-            .cryptographic_computations_orchestrator
-            .receive_completed_computations(self.dwallet_mpc_metrics.clone());
-        for (computation_id, computation_request) in computation_requests {
+            // })
+
+            // Check first didn't execute
             let computation_executing = self
                 .cryptographic_computations_orchestrator
                 .try_spawn_cryptographic_computation(

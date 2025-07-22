@@ -91,8 +91,7 @@ pub(crate) fn generate_access_structure_from_committee(
         .expect("should never have more than 2^16 parties");
 
     // TODO: use error directly
-    WeightedThresholdAccessStructure::new(threshold, party_to_weight)
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+    WeightedThresholdAccessStructure::new(threshold, party_to_weight).map_err(DwalletMPCError::from)
 }
 
 /// Convert a given `party_id` to it's corresponding authority name (address).
