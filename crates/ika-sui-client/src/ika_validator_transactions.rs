@@ -10,11 +10,12 @@ use ika_types::sui::{
     ClassGroupsPublicKeyAndProofBuilder, DROP_OPRIONAL_TABLE_VEC_FUNC_NAME,
     DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
     FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
-    REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
-    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
+    PricingInfoKey, PricingInfoValue, REPORT_VALIDATOR_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME,
+    ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME,
+    SET_NEXT_COMMISSION_FUNCTION_NAME,
     SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
@@ -28,6 +29,7 @@ use ika_types::sui::{
     VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
     VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
 };
+use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 use serde::Serialize;
@@ -39,6 +41,7 @@ use sui_keys::keystore::AccountKeystore;
 use sui_sdk::SuiClient;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
+use sui_types::collection_types::Entry;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
@@ -1579,9 +1582,11 @@ pub async fn set_pricing_vote(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
     validator_operation_cap_id: ObjectID,
+    new_value: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1616,12 +1621,42 @@ pub async fn set_pricing_vote(
     )?;
 
     let pricing_info = ptb.command(Command::move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-        move_core_types::ident_str!("current_pricing").to_owned(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("empty").into(),
         vec![],
         vec![dwallet_2pc_mpc_coordinator],
     ));
+    for entry in new_value {
+        let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
+        let signature_algo = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &entry.key.signature_algorithm,
+        )?))?;
+        let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
+        let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
+        let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &entry.value.gas_fee_reimbursement_sui,
+        )?))?;
+        let gas_fee_reimbursement_sui_for_system_calls = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&entry.value.gas_fee_reimbursement_sui_for_system_calls)?,
+        ))?;
+        let args = vec![
+            pricing_info,
+            curve,
+            signature_algo,
+            protocol,
+            fee_ika,
+            gas_fee_reimbursement_sui,
+            gas_fee_reimbursement_sui_for_system_calls,
+        ];
+        ptb.command(Command::move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            ident_str!("pricing").into(),
+            ident_str!("insert_or_update_pricing").into(),
+            vec![],
+            args,
+        ));
+    }
 
     let args = vec![
         dwallet_2pc_mpc_coordinator,
