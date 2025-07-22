@@ -11,7 +11,7 @@
     signature_algorithm: null
     protocol: 1
   value:
-    fee_ika: 1
+    fee_ika: 100
     gas_fee_reimbursement_sui: 0
     gas_fee_reimbursement_sui_for_system_calls: 0
 - key:
