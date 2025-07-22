@@ -37,7 +37,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::sui::DWalletCoordinatorInner;
 use itertools::Itertools;
-use mpc::AsynchronousRoundGODResult;
+use mpc::GuaranteedOutputDeliveryRoundResult;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -480,7 +480,7 @@ impl DWalletMPCService {
         &mut self,
         completed_computation_results: HashMap<
             ComputationId,
-            DwalletMPCResult<AsynchronousRoundGODResult>,
+            DwalletMPCResult<GuaranteedOutputDeliveryRoundResult>,
         >,
     ) {
         let committee = self.epoch_store.committee().clone();
@@ -501,7 +501,7 @@ impl DWalletMPCService {
                 if session.status == MPCSessionStatus::Active {
                     if let Some(mpc_event_data) = session.mpc_event_data.clone() {
                         match computation_result {
-                            Ok(AsynchronousRoundGODResult::Advance { wrapped_message }) => {
+                            Ok(GuaranteedOutputDeliveryRoundResult::Advance { message }) => {
                                 info!(
                                     ?session_identifier,
                                     validator=?validator_name,
@@ -511,7 +511,7 @@ impl DWalletMPCService {
                                 let message = self.new_dwallet_mpc_message(
                                     session_identifier,
                                     mpc_round,
-                                    wrapped_message,
+                                    message,
                                 );
 
                                 if let Err(err) = consensus_adapter
@@ -527,7 +527,7 @@ impl DWalletMPCService {
                                     );
                                 }
                             }
-                            Ok(AsynchronousRoundGODResult::Finalize {
+                            Ok(GuaranteedOutputDeliveryRoundResult::Finalize {
                                 malicious_parties,
                                 private_output: _,
                                 public_output_value,
@@ -581,9 +581,9 @@ impl DWalletMPCService {
                                     );
                                 }
                             }
-                            Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
+                            Err(DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached)) => {
                                 error!(
-                                    err=?DwalletMPCError::TWOPCMPCThresholdNotReached,
+                                    err=?DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached),
                                         ?session_identifier,
                                     validator=?validator_name,
                                     mpc_round,

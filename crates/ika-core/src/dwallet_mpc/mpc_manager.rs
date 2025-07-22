@@ -394,7 +394,7 @@ impl DWalletMPCManager {
     /// Returns the completed computation results.
     pub(crate) async fn perform_cryptographic_computation(
         &mut self,
-    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::AsynchronousRoundGODResult>> {
+    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::GuaranteedOutputDeliveryRoundResult>> {
         let mut ready_to_advance_sessions: Vec<_> = self
             .mpc_sessions
             .iter()
