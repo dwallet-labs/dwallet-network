@@ -38,7 +38,7 @@ const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 struct ComputationCompletionUpdate {
     computation_id: ComputationId,
     computation_request: ComputationRequest,
-    computation_result: DwalletMPCResult<mpc::AsynchronousRoundGODResult>,
+    computation_result: DwalletMPCResult<mpc::GuaranteedOutputDeliveryRoundResult>,
     elapsed_ms: u128,
 }
 
@@ -111,7 +111,7 @@ impl CryptographicComputationsOrchestrator {
     pub(crate) fn receive_completed_computations(
         &mut self,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::AsynchronousRoundGODResult>> {
+    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::GuaranteedOutputDeliveryRoundResult>> {
         let mut completed_computation_results = HashMap::new();
         while let Ok(computation_update) = self.completed_computation_receiver.try_recv() {
             let party_id = computation_update.computation_request.party_id;
