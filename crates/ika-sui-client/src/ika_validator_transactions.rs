@@ -1632,7 +1632,7 @@ pub async fn set_pricing_vote(
         let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
         let signature_algo_bcs = match &entry.key.signature_algorithm {
             None => none_bcs.clone(),
-            Some(signature_algo) => bcs::to_bytes(&Some(signature_algo))?,
+            Some(signature_algo) => bcs::to_bytes(&Some(*signature_algo))?,
         };
         let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
         let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
