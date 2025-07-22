@@ -1214,9 +1214,13 @@ impl Display for IkaValidatorCommandResponse {
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
                 writeln!(writer, "Ika Sui config file created at: {path:?}")?;
-            },
+            }
             IkaValidatorCommandResponse::SetNextEpochMPCData(response) => {
-                write!(writer, "{}", write_transaction_response_without_transaction_data(response)?)?;
+                write!(
+                    writer,
+                    "{}",
+                    write_transaction_response_without_transaction_data(response)?
+                )?;
             }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))
