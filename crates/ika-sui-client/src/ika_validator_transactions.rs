@@ -1,4 +1,4 @@
-use anyhow::{bail};
+use anyhow::bail;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -1607,11 +1607,13 @@ pub async fn set_pricing_vote(
 
     let sender = context.active_address()?;
 
-    let dwallet_2pc_mpc_coordinator = ptb.input(get_dwallet_2pc_mpc_coordinator_call_arg(
-        context,
-        ika_dwallet_2pc_mpc_coordinator_object_id,
-    )
-    .await?)?;
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
 
     let pricing_info = ptb.command(Command::move_call(
         ika_dwallet_2pc_mpc_coordinator_package_id,

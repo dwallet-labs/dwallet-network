@@ -141,12 +141,14 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
-    pub async fn get_pricing_info(
-        &self,
-    ) -> Vec<Entry<PricingInfoKey, PricingInfoValue>> {
+    pub async fn get_pricing_info(&self) -> Vec<Entry<PricingInfoKey, PricingInfoValue>> {
         let coordinator_inner = self.must_get_dwallet_coordinator_inner().await;
         let DWalletCoordinatorInner::V1(coordinator_inner) = coordinator_inner;
-        coordinator_inner.pricing_and_fee_management.current.pricing_map.contents
+        coordinator_inner
+            .pricing_and_fee_management
+            .current
+            .pricing_map
+            .contents
     }
 
     pub async fn get_events_by_tx_digest(
