@@ -805,11 +805,6 @@ pub trait SuiClientInner: Send + Sync {
         table_id: ObjectID,
     ) -> Result<ObjectID, Self::Error>;
 
-    async fn get_pricing_info(
-        &self,
-        pricing_management_id: ObjectID,
-    ) -> Result<HashMap<PricingInfoKey, PricingInfoValue>, Self::Error>;
-
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
     -> Result<Vec<u8>, self::Error>;
 
@@ -1159,54 +1154,6 @@ impl SuiClientInner for SuiSdkClient {
             network_dkg_public_output,
             state: key.state.clone(),
         })
-    }
-
-    async fn get_pricing_info(
-        &self,
-        table_id: ObjectID,
-    ) -> Result<HashMap<PricingInfoKey, PricingInfoValue>, Self::Error> {
-        let mut cursor = None;
-        loop {
-            let dynamic_fields = self
-                .read_api()
-                .get_dynamic_fields(table_id, cursor, None)
-                .await
-                .map_err(|e| {
-                    Error::DataError(format!(
-                        "can't get dynamic fields of table {table_id:?}: {e:?}"
-                    ))
-                })?;
-
-            for df in dynamic_fields.data.iter() {
-                let object_id = df.object_id;
-                let dynamic_field_response = self
-                    .read_api()
-                    .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
-                    .await?;
-                let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("can't get bcs of object {object_id:?}: {e:?}"))
-                })?;
-                let raw_data = resp.bcs.ok_or(Error::DataError(format!(
-                    "object {object_id:?} has no bcs data"
-                )))?;
-                let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
-                    "object {object_id:?} is not a MoveObject"
-                )))?;
-                let reconfig_public_output =
-                    bcs::from_bytes::<Field<u64, Table>>(&raw_move_obj.bcs_bytes)?;
-                if reconfig_public_output.name == epoch_id {
-                    return Ok(reconfig_public_output.value.id);
-                }
-            }
-
-            cursor = dynamic_fields.next_cursor;
-            if !dynamic_fields.has_next_page {
-                break;
-            }
-        }
-        Err(Error::DataError(format!(
-            "Failed to load current reconfiguration public output for epoch {epoch_id:?} from table {table_id:?}"
-        )))
     }
 
     async fn get_current_reconfiguration_public_output(
