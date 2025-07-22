@@ -27,6 +27,8 @@ use ika_sui_client::ika_validator_transactions::{
     set_validator_name, stake_ika, undo_report_validator, validator_metadata,
     verify_commission_cap, verify_operation_cap, verify_validator_cap, withdraw_stake,
 };
+use ika_sui_client::metrics::SuiClientMetrics;
+use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::DEFAULT_COMMISSION_RATE;
@@ -344,6 +346,11 @@ pub enum IkaValidatorCommand {
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
+    #[clap(name = "get-current-pricing-info")]
+    GetCurrentPricingInfo {
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
+    },
 }
 
 #[derive(Serialize)]
@@ -378,6 +385,7 @@ pub enum IkaValidatorCommandResponse {
     VerifyOperationCap(SuiTransactionBlockResponse),
     VerifyCommissionCap(SuiTransactionBlockResponse),
     SetPricingVote(SuiTransactionBlockResponse),
+    FetchCurrentPricingInfo(PathBuf),
 }
 
 impl IkaValidatorCommand {
@@ -1165,6 +1173,30 @@ impl IkaValidatorCommand {
                 .await?;
                 IkaValidatorCommandResponse::SetPricingVote(response)
             }
+            IkaValidatorCommand::GetCurrentPricingInfo { ika_sui_config } => {
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {config_path:?}"
+                        ))
+                    })?;
+
+                let client = SuiClient::new(
+                    &context.get_active_env()?.rpc,
+                    SuiClientMetrics::new_for_testing(),
+                    config.ika_package_id,
+                    config.ika_common_package_id,
+                    config.ika_dwallet_2pc_mpc_package_id,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    config.ika_dwallet_coordinator_object_id,
+                );
+                let current_pricing_info = client
+                    .get_pricing_info(config.ika_dwallet_coordinator_object_id, 0)
+                    .await?;
+                IkaValidatorCommandResponse::FetchCurrentPricingInfo(config_path)   
+            }
         })
     }
 }
@@ -1225,6 +1257,12 @@ impl Display for IkaValidatorCommandResponse {
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
                 writeln!(writer, "Ika Sui config file created at: {path:?}")?;
+            }
+            IkaValidatorCommandResponse::FetchCurrentPricingInfo(path) => {
+                writeln!(
+                    writer,
+                    "Fetched current pricing info from Sui, you can view & edit it at: {path:?}"
+                )?;
             }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))

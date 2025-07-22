@@ -16,9 +16,7 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::staking::StakingPool;
 use ika_types::sui::system_inner_v1::{DWalletCoordinatorInnerV1, SystemInnerV1};
-use ika_types::sui::{
-    DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
-};
+use ika_types::sui::{DWalletCoordinator, DWalletCoordinatorInner, PricingInfoKey, PricingInfoValue, System, SystemInner, SystemInnerTrait, Validator};
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -275,11 +273,11 @@ where
                 let dynamic_field_inner = bcs::from_bytes::<Field<u64, DWalletCoordinatorInnerV1>>(
                     &result,
                 )
-                .map_err(|e| {
-                    IkaError::SuiClientSerializationError(format!(
-                        "Can't serialize DWalletCoordinatorInner v1: {e}"
-                    ))
-                })?;
+                    .map_err(|e| {
+                        IkaError::SuiClientSerializationError(format!(
+                            "Can't serialize DWalletCoordinatorInner v1: {e}"
+                        ))
+                    })?;
                 let ika_system_state_inner = dynamic_field_inner.value;
 
                 Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
@@ -425,9 +423,9 @@ where
                             network_pubkey: info.network_pubkey.clone(),
                             consensus_pubkey: info.consensus_pubkey.clone(),
                             class_groups_public_key_and_proof:
-                                validators_class_groups_public_key_and_proof
-                                    .get(&validator.id)
-                                    .cloned(),
+                            validators_class_groups_public_key_and_proof
+                                .get(&validator.id)
+                                .cloned(),
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),
@@ -499,7 +497,7 @@ where
             };
             system_arg
         })
-        .await
+            .await
     }
 
     /// Get the clock object arg for the shared system object on the chain.
@@ -514,7 +512,7 @@ where
             };
             system_arg
         })
-        .await
+            .await
     }
 
     /// Retrieves the dwallet_2pc_mpc_coordinator_id object arg from the Sui chain.
@@ -530,7 +528,7 @@ where
             };
             system_arg
         })
-        .await
+            .await
     }
 
     pub async fn get_available_move_packages(
@@ -797,7 +795,7 @@ pub trait SuiClientInner: Send + Sync {
     ) -> Result<ObjectID, Self::Error>;
 
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
-    -> Result<Vec<u8>, self::Error>;
+                                         -> Result<Vec<u8>, self::Error>;
 
     async fn get_system_inner(
         &self,
@@ -965,8 +963,8 @@ impl SuiClientInner for SuiSdkClient {
             let info = validator.verified_validator_info();
             let class_groups_pubkey_and_proof_bytes_id = if read_next_epoch_class_groups_keys
                 && info
-                    .next_epoch_class_groups_pubkey_and_proof_bytes
-                    .is_some()
+                .next_epoch_class_groups_pubkey_and_proof_bytes
+                .is_some()
                 && info.previous_class_groups_pubkey_and_proof_bytes.is_none()
             {
                 info.next_epoch_class_groups_pubkey_and_proof_bytes
@@ -1259,11 +1257,11 @@ impl SuiClientInner for SuiSdkClient {
         let dynamic_field = dynamic_fields.data.iter().find(|df| {
             df.name.type_ == TypeTag::U64
                 && df
-                    .name
-                    .value
-                    .as_str()
-                    .map(|v| v == version.to_string().as_str())
-                    .unwrap_or(false)
+                .name
+                .value
+                .as_str()
+                .map(|v| v == version.to_string().as_str())
+                .unwrap_or(false)
         });
         if let Some(dynamic_field) = dynamic_field {
             let result = self
@@ -1305,11 +1303,11 @@ impl SuiClientInner for SuiSdkClient {
         let dynamic_field = dynamic_fields.data.iter().find(|df| {
             df.name.type_ == TypeTag::U64
                 && df
-                    .name
-                    .value
-                    .as_str()
-                    .map(|v| v == version.to_string().as_str())
-                    .unwrap_or(false)
+                .name
+                .value
+                .as_str()
+                .map(|v| v == version.to_string().as_str())
+                .unwrap_or(false)
         });
         if let Some(dynamic_field) = dynamic_field {
             let result = self
@@ -1388,11 +1386,11 @@ impl SuiClientInner for SuiSdkClient {
             let dynamic_field = dynamic_fields.data.iter().find(|df| {
                 df.name.type_ == TypeTag::U64
                     && df
-                        .name
-                        .value
-                        .as_str()
-                        .map(|v| v == validator.inner.version.to_string().as_str())
-                        .unwrap_or(false)
+                    .name
+                    .value
+                    .as_str()
+                    .map(|v| v == validator.inner.version.to_string().as_str())
+                    .unwrap_or(false)
             });
 
             if let Some(dynamic_field) = dynamic_field {
@@ -1427,8 +1425,8 @@ impl SuiClientInner for SuiSdkClient {
             )
             .await?;
         let Some(Owner::Shared {
-            initial_shared_version,
-        }) = response.owner()
+                     initial_shared_version,
+                 }) = response.owner()
         else {
             return Err(Self::Error::DataError(format!(
                 "Failed to load ika system state owner {ika_system_object_id:?}"
@@ -1448,8 +1446,8 @@ impl SuiClientInner for SuiSdkClient {
             .get_object_with_options(obj_id, SuiObjectDataOptions::new().with_owner())
             .await?;
         let Some(Owner::Shared {
-            initial_shared_version,
-        }) = response.owner()
+                     initial_shared_version,
+                 }) = response.owner()
         else {
             return Err(Self::Error::DataError(format!(
                 "Failed to load ika system state owner {obj_id:?}"
