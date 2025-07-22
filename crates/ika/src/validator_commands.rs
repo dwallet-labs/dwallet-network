@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::{
+    fmt,
     fmt::{Debug, Display, Formatter, Write},
     fs,
     path::PathBuf,
@@ -12,18 +13,18 @@ use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 use clap::*;
 use colored::Colorize;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
+use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
 use dwallet_rng::RootSeed;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
-    BecomeCandidateValidatorData, collect_commission,
-    create_class_groups_public_key_and_proof_object, report_validator, request_add_validator,
+    BecomeCandidateValidatorData, collect_commission, report_validator, request_add_validator,
     request_add_validator_candidate, request_remove_validator, request_remove_validator_candidate,
     request_withdraw_stake, rotate_commission_cap, rotate_operation_cap, set_next_commission,
-    set_next_epoch_class_groups_pubkey_and_proof_bytes, set_next_epoch_consensus_address,
-    set_next_epoch_consensus_pubkey_bytes, set_next_epoch_network_address,
+    set_next_epoch_consensus_address, set_next_epoch_consensus_pubkey_bytes,
+    set_next_epoch_mpc_data_bytes, set_next_epoch_network_address,
     set_next_epoch_network_pubkey_bytes, set_next_epoch_p2p_address,
     set_next_epoch_protocol_pubkey_bytes, set_pricing_vote, set_validator_metadata,
     set_validator_name, stake_ika, undo_report_validator, validator_metadata,
@@ -304,8 +305,8 @@ pub enum IkaValidatorCommand {
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
-    #[clap(name = "set-next-epoch-class-groups-pubkey")]
-    SetNextEpochClassGroupsPubkey {
+    #[clap(name = "set-next-epoch-mpc-data")]
+    SetNextEpochMPCData {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
         #[clap(name = "validator-operation-cap-id", long)]
@@ -385,7 +386,7 @@ pub enum IkaValidatorCommandResponse {
     SetNextEpochProtocolPubkey(SuiTransactionBlockResponse),
     SetNextEpochNetworkPubkey(SuiTransactionBlockResponse),
     SetNextEpochConsensusPubkey(SuiTransactionBlockResponse),
-    SetNextEpochClassGroupsPubkey(SuiTransactionBlockResponse),
+    SetNextEpochMPCData(SuiTransactionBlockResponse),
     VerifyValidatorCap(SuiTransactionBlockResponse),
     VerifyOperationCap(SuiTransactionBlockResponse),
     VerifyCommissionCap(SuiTransactionBlockResponse),
@@ -494,24 +495,16 @@ impl IkaValidatorCommand {
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
 
-                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
-                    context.active_address()?,
-                    context,
-                    config.ika_common_package_id,
-                    validator_info.class_groups_public_key_and_proof.clone(),
-                    gas_budget,
-                ).await?;
-
-                let (res, validator_data) = request_add_validator_candidate(
+                let (res, validator_caps) = request_add_validator_candidate(
                     context,
                     &validator_info,
                     config.ika_system_package_id,
                     config.ika_system_object_id,
-                    class_groups_keypair_and_proof_obj_ref,
+                    config.ika_common_package_id,
                     gas_budget,
                 )
                 .await?;
-                IkaValidatorCommandResponse::BecomeCandidate(res, validator_data)
+                IkaValidatorCommandResponse::BecomeCandidate(res, validator_caps)
             }
             IkaValidatorCommand::JoinCommittee {
                 gas_budget,
@@ -1034,7 +1027,7 @@ impl IkaValidatorCommand {
                 .await?;
                 IkaValidatorCommandResponse::SetNextEpochConsensusPubkey(response)
             }
-            IkaValidatorCommand::SetNextEpochClassGroupsPubkey {
+            IkaValidatorCommand::SetNextEpochMPCData {
                 gas_budget,
                 validator_operation_cap_id,
                 ika_sui_config,
@@ -1050,39 +1043,32 @@ impl IkaValidatorCommand {
 
                 // Create a new seed and class groups key
                 let new_seed = RootSeed::random_seed();
-                let new_class_groups_key = ClassGroupsKeyPairAndProof::from_seed(&new_seed);
+                let new_class_groups_key =
+                    ClassGroupsKeyPairAndProof::from_seed(&new_seed).encryption_key_and_proof();
 
-                // Create the class groups object with the new key
-                let class_groups_keypair_and_proof_obj_ref =
-                    create_class_groups_public_key_and_proof_object(
-                        context.active_address()?,
-                        context,
-                        config.ika_common_package_id,
-                        new_class_groups_key.encryption_key_and_proof(),
-                        gas_budget,
-                    )
-                    .await?;
+                let mpc_data = VersionedMPCData::V1(MPCDataV1 {
+                    class_groups_public_key_and_proof: bcs::to_bytes(&new_class_groups_key)?,
+                });
 
-                let response = set_next_epoch_class_groups_pubkey_and_proof_bytes(
+                let response = set_next_epoch_mpc_data_bytes(
                     context,
                     config.ika_system_package_id,
                     config.ika_system_object_id,
-                    config.ika_common_package_id,
                     validator_operation_cap_id,
-                    class_groups_keypair_and_proof_obj_ref,
+                    mpc_data,
                     gas_budget,
                 )
                 .await?;
 
                 if response.status_ok().is_some() && response.status_ok().unwrap() {
-                    // Save the new seed to class-groups.key file (override if exists)
+                    // Save the new seed to class-groups.seed file (override if exists)
                     let dir = std::env::current_dir()?;
-                    let class_groups_key_file = dir.join("class-groups.key");
+                    let class_groups_key_file = dir.join("class-groups.seed");
                     new_seed.save_to_file(class_groups_key_file.clone())?;
                     println!("Generated new class groups seed file: {class_groups_key_file:?}.");
                 }
 
-                IkaValidatorCommandResponse::SetNextEpochClassGroupsPubkey(response)
+                IkaValidatorCommandResponse::SetNextEpochMPCData(response)
             }
             IkaValidatorCommand::VerifyValidatorCap {
                 gas_budget,
@@ -1227,7 +1213,11 @@ impl Display for IkaValidatorCommandResponse {
                     validator_commission_cap_id,
                 },
             ) => {
-                write!(writer, "{}", write_transaction_response(response)?)?;
+                write!(
+                    writer,
+                    "{}",
+                    write_transaction_response_without_transaction_data(response)?
+                )?;
                 writeln!(writer, "Validator ID: {validator_id}")?;
                 writeln!(writer, "Validator Cap ID: {validator_cap_id}")?;
                 writeln!(
@@ -1260,7 +1250,6 @@ impl Display for IkaValidatorCommandResponse {
             | IkaValidatorCommandResponse::SetNextEpochProtocolPubkey(response)
             | IkaValidatorCommandResponse::SetNextEpochNetworkPubkey(response)
             | IkaValidatorCommandResponse::SetNextEpochConsensusPubkey(response)
-            | IkaValidatorCommandResponse::SetNextEpochClassGroupsPubkey(response)
             | IkaValidatorCommandResponse::VerifyValidatorCap(response)
             | IkaValidatorCommandResponse::VerifyOperationCap(response)
             | IkaValidatorCommandResponse::VerifyCommissionCap(response)
@@ -1269,6 +1258,13 @@ impl Display for IkaValidatorCommandResponse {
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
                 writeln!(writer, "Ika Sui config file created at: {path:?}")?;
+            }
+            IkaValidatorCommandResponse::SetNextEpochMPCData(response) => {
+                write!(
+                    writer,
+                    "{}",
+                    write_transaction_response_without_transaction_data(response)?
+                )?;
             }
             IkaValidatorCommandResponse::FetchCurrentPricingInfo(path) => {
                 writeln!(
@@ -1357,4 +1353,23 @@ fn read_or_generate_seed_and_class_groups_key(
     let class_groups_public_key_and_proof = Box::new(ClassGroupsKeyPairAndProof::from_seed(&seed));
 
     Ok(class_groups_public_key_and_proof)
+}
+
+pub fn write_transaction_response_without_transaction_data(
+    response: &SuiTransactionBlockResponse,
+) -> Result<String, fmt::Error> {
+    // we requested with for full_content, so the following content should be available.
+    let success = response.status_ok().unwrap();
+    let lines = vec![
+        String::from("----- Transaction Digest ----"),
+        response.digest.to_string(),
+        String::from("----- Transaction Effects ----"),
+        response.effects.as_ref().unwrap().to_string(),
+    ];
+    let mut writer = String::new();
+    for line in lines {
+        let colorized_line = if success { line.green() } else { line.red() };
+        writeln!(writer, "{}", colorized_line)?;
+    }
+    Ok(writer)
 }

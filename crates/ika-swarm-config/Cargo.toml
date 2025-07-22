@@ -38,6 +38,7 @@ ika-move-packages.workspace = true
 move-core-types.workspace = true
 serde_json.workspace = true
 move-package.workspace = true
+dwallet-mpc-types.workspace = true
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true
