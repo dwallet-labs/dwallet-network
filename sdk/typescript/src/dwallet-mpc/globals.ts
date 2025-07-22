@@ -117,6 +117,34 @@ interface CoordinatorInner {
 	};
 }
 
+interface SystemInner {
+	fields: {
+		value: {
+			fields: {
+				validator_set: {
+					fields: {
+						validators: {
+							fields: {
+								id: {
+									id: string;
+								};
+								size: number;
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+}
+
+function isSystemInner(obj: any): obj is SystemInner {
+	return (
+		obj?.fields?.value?.fields?.validator_set?.fields?.validators?.fields?.id?.id !== undefined &&
+		obj?.fields?.value?.fields?.validator_set?.fields?.validators?.fields?.size !== undefined
+	);
+}
+
 interface DWalletNetworkDecryptionKey {
 	fields: {
 		id: { id: string };

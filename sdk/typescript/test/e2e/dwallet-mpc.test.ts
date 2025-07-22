@@ -266,4 +266,17 @@ describe('Test dWallet MPC', () => {
 		);
 		expect(isValid).toBeTruthy();
 	});
+
+	it('should fetch all the validator operator cap ids from Sui', async () => {
+		let dynamicFields = await conf.client.getDynamicFields({
+			parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
+		});
+		const innerCoordinatorState = await conf.client.getDynamicFieldObject({
+			parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
+			name: dynamicFields.data[IKA_SYSTEM_VERSION].name,
+		});
+		if (!isCoordinatorInner(innerCoordinatorState.data?.content)) {
+			throw new Error("Invalid inner system state");
+		}
+	});
 });
