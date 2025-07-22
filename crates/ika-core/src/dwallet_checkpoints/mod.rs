@@ -992,7 +992,8 @@ impl DWalletCheckpointAggregator {
     }
 
     fn next_checkpoint_to_certify(&self) -> IkaResult<DWalletCheckpointSequenceNumber> {
-        let default_next_checkpoint_to_certify = self.previous_epoch_last_checkpoint_sequence_number + 1;
+        let default_next_checkpoint_to_certify =
+            self.previous_epoch_last_checkpoint_sequence_number + 1;
         debug!(
             default_next_checkpoint_to_certify,
             "Getting next dwallet checkpoint to certify",
