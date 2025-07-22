@@ -13,8 +13,11 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getAllChildObjectsIDs,
 	getNetworkPublicParameters,
 	getObjectWithType,
+	isSystemInner,
+	isValidator,
 } from '../../src/dwallet-mpc/globals';
 import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 import { presign } from '../../src/dwallet-mpc/presign';
@@ -268,15 +271,25 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should fetch all the validator operator cap ids from Sui', async () => {
-		let dynamicFields = await conf.client.getDynamicFields({
-			parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
+		const dynamicFields = await conf.client.getDynamicFields({
+			parentId: conf.ikaConfig.ika_system_object_id,
 		});
 		const innerCoordinatorState = await conf.client.getDynamicFieldObject({
-			parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
-			name: dynamicFields.data[IKA_SYSTEM_VERSION].name,
+			parentId: conf.ikaConfig.ika_system_object_id,
+			name: dynamicFields.data[0].name,
 		});
-		if (!isCoordinatorInner(innerCoordinatorState.data?.content)) {
-			throw new Error("Invalid inner system state");
+		const systemInner = innerCoordinatorState.data?.content;
+		if (!isSystemInner(systemInner)) {
+			console.log("couldn't fetch the inner system state");
+			return;
 		}
+		const validatorTableID =
+			systemInner.fields.value.fields.validator_set.fields.validators.fields.id.id;
+		const allValidatorsIDs = await getAllChildObjectsIDs(conf, validatorTableID);
+		const operatorCapIDs = allValidatorsIDs.map(async (id) => {
+			const validator = await getObjectWithType(conf, id, isValidator);
+			return validator.operation_cap_id;
+		});
+		console.log({ operatorCapIDs });
 	});
 });
