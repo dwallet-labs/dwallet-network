@@ -286,10 +286,13 @@ describe('Test dWallet MPC', () => {
 		const validatorTableID =
 			systemInner.fields.value.fields.validator_set.fields.validators.fields.id.id;
 		const allValidatorsIDs = await getAllChildObjectsIDs(conf, validatorTableID);
-		const operatorCapIDs = allValidatorsIDs.map(async (id) => {
-			const validator = await getObjectWithType(conf, id, isValidator);
-			return validator.operation_cap_id;
-		});
+		const operatorCapIDs = await Promise.all(
+			allValidatorsIDs.map(async (id) => {
+				const validator = await getObjectWithType(conf, id, isValidator);
+				return validator.operation_cap_id;
+			}),
+		);
+
 		console.log({ operatorCapIDs });
 	});
 });
