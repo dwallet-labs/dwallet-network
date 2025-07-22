@@ -1583,7 +1583,6 @@ pub async fn set_pricing_vote(
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     ika_dwallet_2pc_mpc_package_id: ObjectID,
-    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
     validator_operation_cap_id: ObjectID,
     new_value: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
@@ -1664,7 +1663,7 @@ pub async fn set_pricing_vote(
         verified_validator_operation_cap,
     ];
     ptb.command(Command::move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
+        ika_dwallet_2pc_mpc_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
         vec![],
