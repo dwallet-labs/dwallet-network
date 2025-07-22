@@ -100,8 +100,8 @@ pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_p
 pub const SET_PRICING_VOTE_FUNCTION_NAME: &IdentStr = ident_str!("set_pricing_vote");
 pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
     ident_str!("set_paused_curves_and_signature_algorithms");
-pub const SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME: &IdentStr =
-    ident_str!("set_next_epoch_class_groups_pubkey_and_proof_bytes");
+pub const SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_next_epoch_mpc_data_bytes");
 
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 

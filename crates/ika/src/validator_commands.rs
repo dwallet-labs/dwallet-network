@@ -1206,7 +1206,6 @@ impl Display for IkaValidatorCommandResponse {
             | IkaValidatorCommandResponse::SetNextEpochProtocolPubkey(response)
             | IkaValidatorCommandResponse::SetNextEpochNetworkPubkey(response)
             | IkaValidatorCommandResponse::SetNextEpochConsensusPubkey(response)
-            | IkaValidatorCommandResponse::SetNextEpochMPCData(response)
             | IkaValidatorCommandResponse::VerifyValidatorCap(response)
             | IkaValidatorCommandResponse::VerifyOperationCap(response)
             | IkaValidatorCommandResponse::VerifyCommissionCap(response)
@@ -1215,6 +1214,9 @@ impl Display for IkaValidatorCommandResponse {
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
                 writeln!(writer, "Ika Sui config file created at: {path:?}")?;
+            },
+            IkaValidatorCommandResponse::SetNextEpochMPCData(response) => {
+                write!(writer, "{}", write_transaction_response_without_transaction_data(response)?)?;
             }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))
