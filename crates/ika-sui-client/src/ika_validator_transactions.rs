@@ -5,19 +5,15 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
-    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, COLLECT_COMMISSION_FUNCTION_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
-    ClassGroupsPublicKeyAndProofBuilder, DROP_OPRIONAL_TABLE_VEC_FUNC_NAME,
-    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
+
+    COLLECT_COMMISSION_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME,
     PricingInfoKey, PricingInfoValue, REPORT_VALIDATOR_FUNCTION_NAME,
     REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
     REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME,
     ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME,
     SET_NEXT_COMMISSION_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CLASS_GROUPS_PUBKEY_AND_PROOF_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
@@ -46,7 +42,7 @@ use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::Entry;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::TransactionData;
+use sui_types::transaction::{Command, TransactionData};
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
 
@@ -1624,7 +1620,7 @@ pub async fn set_pricing_vote(
         ident_str!("empty").into(),
         vec![],
         vec![],
-    ));
+    );
     let none_bcs = bcs::to_bytes(&None::<u32>)?;
 
     for entry in new_value {
@@ -1671,7 +1667,7 @@ pub async fn set_pricing_vote(
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
         vec![],
         args,
-    );
+    ));
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
