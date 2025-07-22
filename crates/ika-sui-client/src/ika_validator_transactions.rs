@@ -1626,11 +1626,15 @@ pub async fn set_pricing_vote(
         vec![],
         vec![dwallet_2pc_mpc_coordinator],
     ));
+    let none_bcs = bcs::to_bytes(&None::<u32>)?;
+
     for entry in new_value {
         let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
-        let signature_algo = ptb.input(CallArg::Pure(bcs::to_bytes(
-            &entry.key.signature_algorithm,
-        )?))?;
+        let signature_algo_bcs = match &entry.key.signature_algorithm {
+            None => none_bcs.clone(),
+            Some(signature_algo) => bcs::to_bytes(&Some(signature_algo))?,
+        };
+        let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
         let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
         let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
         let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
