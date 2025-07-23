@@ -23,7 +23,7 @@ use tokio::runtime::Runtime;
 use tracing::info;
 
 // 24 Hours.
-const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 5;
+const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 2;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Parser)]

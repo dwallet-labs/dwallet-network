@@ -1,6 +1,9 @@
 #!/bin/bash
-./target/debug/ika validator get-current-pricing-info
+
+# This script allows running a pricing update experiment for Ika using Swarm.
+
 yq -P -o yaml ./ika_config.json > /Users/itaylevy/.ika/ika_config/ika_sui_config.yaml
+./target/debug/ika validator get-current-pricing-info
 ./target/debug/ika validator get-current-pricing-info
 yq -i '(.[] | select(.value.fee_ika) | .value.fee_ika) = 100' current_pricing.yaml
 grep "account_key_pair: A" ~/.ika/ika_config/network.yaml | awk '{print $2}' | while read key; do
@@ -8,10 +11,10 @@ grep "account_key_pair: A" ~/.ika/ika_config/network.yaml | awk '{print $2}' | w
   sui keytool import "$parsed_secret" ed25519
 done
 
-operators_cap_ids="0x212fe64375a01cee46f31c900e3a8dbac1df3d7928eccc4feed758588bc426a1 \
-0x29779066a514fcae2943a9d836f78fffc67534a40198ef590e3d17bc7ce501ec \
-0xbce0bb8411a008bf8f4a84fa61d40ca67a7a31388fabde7ca6e52761c6bb1ceb \
-0xb4a5921cf07174f7ae8adf0cf1308be6aec801122640b59fcb05df455632c5f9"
+operators_cap_ids="0x06ca7b7c6c2cf947a398e6b3bcf23f6f2e99d788427b0ac76a46ae135714e32f \
+0x4b2d0bdc8e150f220e1447209c39c3ccef2ebd7a984a133e2dff8d0efe861c2d \
+0xf2c8d3489389f1a37f85e0872623c15450e31bc68ca99341db95e6c9d2ade5fa \
+0x7ae6306cbe2f590e55717381a48ab789ecf208a61adcca85a9bc9ec92b0522c4"
 
 new_ika_fee_per_validator="100 200 300 400"
 
