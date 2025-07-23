@@ -104,9 +104,7 @@ pub async fn request_add_validator_candidate(
 
     let mpc_data = VersionedMPCData::V1(MPCDataV1 {
         class_groups_public_key_and_proof: bcs::to_bytes(
-            &validator_initialization_metadata
-                .mpc_data
-                .clone(),
+            &validator_initialization_metadata.mpc_data.clone(),
         )?,
     });
 
@@ -1411,7 +1409,7 @@ pub async fn ptb_set_next_epoch_mpc_data_bytes_inner(
         .await?;
 
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &next_mpc_data)?;
+    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, next_mpc_data)?;
 
     let call_args = vec![
         store_mcp_data_in_table_vec,

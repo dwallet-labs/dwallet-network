@@ -27,6 +27,7 @@ use sui_types::collection_types::Entry;
 const DEFAULT_GAS_BUDGET: u64 = 200_000_000;
 
 #[derive(Subcommand)]
+#[allow(clippy::enum_variant_names)]
 pub enum IkaProtocolCommand {
     #[clap(name = "set-paused-curves-and-signature-algorithms")]
     SetPausedCurvesAndSignatureAlgorithms {
@@ -72,6 +73,7 @@ pub enum IkaProtocolCommand {
     },
 }
 
+#[allow(clippy::enum_variant_names)]
 pub enum IkaProtocolCommandResponse {
     SetApprovedUpgradeByCap(SuiTransactionBlockResponse),
     SetPausedCurvesAndSignatureAlgorithms(SuiTransactionBlockResponse),
@@ -238,7 +240,7 @@ fn write_transaction_response_without_transaction_data(
     let mut writer = String::new();
     for line in lines {
         let colorized_line = if success { line.green() } else { line.red() };
-        writeln!(writer, "{}", colorized_line)?;
+        writeln!(writer, "{colorized_line}")?;
     }
     Ok(writer)
 }
