@@ -416,7 +416,7 @@ where
                                 m.validator_id
                             )),
                         )?;
-                        let info = validator.verified_validator_info();
+                        let info = validator.verified_validator_info()?;
                         Ok(EpochStartValidatorInfoV1 {
                             name: info.name.clone(),
                             validator_id: validator.id,
@@ -955,7 +955,12 @@ impl SuiClientInner for SuiSdkClient {
     ) -> Result<HashMap<ObjectID, VersionedMPCData>, self::Error> {
         let mut mpc_data_from_all_validators: HashMap<ObjectID, VersionedMPCData> = HashMap::new();
         for validator in validators {
-            let info = validator.verified_validator_info();
+            let info = validator.verified_validator_info().map_err(|e| {
+                Error::DataError(format!(
+                    "Failed to get verified validator info for validator {}: {e}",
+                    validator.id
+                ))
+            })?;
             let mpc_data_id = if read_next_mpc_data
                 && info.next_epoch_mpc_data_bytes.is_some()
                 && info.previous_mpc_data_bytes.is_none()
