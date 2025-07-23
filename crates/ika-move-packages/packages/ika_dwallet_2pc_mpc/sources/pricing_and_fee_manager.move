@@ -186,7 +186,7 @@ public(package) fun get_pricing_value_for_protocol(
     protocol: u32,
 ): PricingInfoValue {
     let mut pricing_value = self
-        .default
+        .current
         .try_get_pricing_value(curve, signature_algorithm, protocol);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
     pricing_value.extract()
