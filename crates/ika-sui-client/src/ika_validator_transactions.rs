@@ -48,7 +48,8 @@ use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
 
 const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
-const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr = ident_str!("insert_or_update_pricing");
+const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
+    ident_str!("insert_or_update_pricing");
 
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
