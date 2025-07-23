@@ -83,6 +83,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should sign full flow', async () => {
+		console.log(conf.suiClientKeypair.toSuiAddress());
 		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 		console.log('Creating dWallet...');
 		console.time('Step 1: dWallet Creation');
