@@ -1295,7 +1295,7 @@ impl IkaNode {
                 system_checkpoint_service_tasks.abort_all();
 
                 if let Err(err) = dwallet_mpc_service_exit.send(()) {
-                    warn!(?err, "failed to send exit signal to dwallet mpc service");
+                    warn!(error=?err, "failed to send exit signal to dwallet mpc service");
                 }
                 drop(dwallet_mpc_service_exit);
 
@@ -1304,7 +1304,7 @@ impl IkaNode {
                         if err.is_panic() {
                             std::panic::resume_unwind(err.into_panic());
                         }
-                        warn!(?err, "error in checkpoint service task");
+                        warn!(error=?err, "error in checkpoint service task");
                     }
                 }
                 info!("DWallet checkpoint service has shut down.");

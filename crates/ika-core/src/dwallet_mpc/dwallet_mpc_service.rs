@@ -37,7 +37,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::sui::DWalletCoordinatorInner;
 use itertools::Itertools;
-use mpc::AsynchronousRoundGODResult;
+use mpc::GuaranteedOutputDeliveryRoundResult;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -170,7 +170,7 @@ impl DWalletMPCService {
                 }
                 Err(err) => {
                     warn!(
-                        err=?err,
+                        error=?err,
                         authority=?self.epoch_store.name,
                         our_epoch_id=self.dwallet_mpc_manager.epoch_id,
                         "DWalletMPCService exit channel was shutdown incorrectly"
@@ -421,7 +421,7 @@ impl DWalletMPCService {
                         .insert_pending_dwallet_checkpoint(pending_checkpoint)
                     {
                         error!(
-                                err=?e,
+                                error=?e,
                                 ?consensus_round,
                                 ?checkpoint_messages,
                                 "failed to insert pending checkpoint into the local DB"
@@ -438,7 +438,7 @@ impl DWalletMPCService {
                     // pending checkpoints.
                     if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
                         error!(
-                            err=?e,
+                            error=?e,
                             ?consensus_round,
                             "failed to notify checkpoint service about new pending checkpoint(s)"
                         );
@@ -455,7 +455,7 @@ impl DWalletMPCService {
                     .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
                 {
                     error!(
-                        err=?e,
+                        error=?e,
                         ?consensus_round,
                         ?completed_sessions,
                         "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
@@ -480,7 +480,7 @@ impl DWalletMPCService {
         &mut self,
         completed_computation_results: HashMap<
             ComputationId,
-            DwalletMPCResult<AsynchronousRoundGODResult>,
+            DwalletMPCResult<GuaranteedOutputDeliveryRoundResult>,
         >,
     ) {
         let committee = self.epoch_store.committee().clone();
@@ -490,6 +490,7 @@ impl DWalletMPCService {
         for (computation_id, computation_result) in completed_computation_results {
             let session_identifier = computation_id.session_identifier;
             let mpc_round = computation_id.mpc_round;
+            let attempt_number = computation_id.attempt_number;
             let consensus_adapter = self.consensus_adapter.clone();
             let epoch_store = self.epoch_store.clone();
 
@@ -501,17 +502,23 @@ impl DWalletMPCService {
                 if session.status == MPCSessionStatus::Active {
                     if let Some(mpc_event_data) = session.mpc_event_data.clone() {
                         match computation_result {
-                            Ok(AsynchronousRoundGODResult::Advance { wrapped_message }) => {
+                            Ok(GuaranteedOutputDeliveryRoundResult::Advance { message }) => {
                                 info!(
                                     ?session_identifier,
                                     validator=?validator_name,
                                     ?mpc_round,
                                     "Advanced MPC session"
                                 );
+
+                                // We don't support sending threshold not reached messages in this version.
+                                // We will in future ones.
+                                let is_threshold_not_reached = false;
                                 let message = self.new_dwallet_mpc_message(
                                     session_identifier,
                                     mpc_round,
-                                    wrapped_message,
+                                    attempt_number,
+                                    is_threshold_not_reached,
+                                    message,
                                 );
 
                                 if let Err(err) = consensus_adapter
@@ -522,12 +529,12 @@ impl DWalletMPCService {
                                         ?session_identifier,
                                         validator=?validator_name,
                                         ?mpc_round,
-                                        err=?err,
+                                        error=?err,
                                         "failed to submit an MPC message to consensus"
                                     );
                                 }
                             }
-                            Ok(AsynchronousRoundGODResult::Finalize {
+                            Ok(GuaranteedOutputDeliveryRoundResult::Finalize {
                                 malicious_parties,
                                 private_output: _,
                                 public_output_value,
@@ -576,14 +583,14 @@ impl DWalletMPCService {
                                     error!(
                                         ?session_identifier,
                                         validator=?validator_name,
-                                        err=?err,
+                                        error=?err,
                                         "failed to submit an MPC output message to consensus",
                                     );
                                 }
                             }
-                            Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
+                            Err(DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached)) => {
                                 error!(
-                                    err=?DwalletMPCError::TWOPCMPCThresholdNotReached,
+                                    error=?DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached),
                                         ?session_identifier,
                                     validator=?validator_name,
                                     mpc_round,
@@ -667,6 +674,8 @@ impl DWalletMPCService {
         &self,
         session_identifier: SessionIdentifier,
         mpc_round: u64,
+        attempt_number: u64,
+        is_threshold_not_reached: bool,
         message: MPCMessage,
     ) -> ConsensusTransaction {
         ConsensusTransaction::new_dwallet_mpc_message(
@@ -674,6 +683,8 @@ impl DWalletMPCService {
             session_identifier,
             message,
             mpc_round,
+            attempt_number,
+            is_threshold_not_reached,
         )
     }
 

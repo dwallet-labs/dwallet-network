@@ -885,9 +885,9 @@ pub async fn ika_system_set_witness_approving_advance_epoch(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             witness_type_arg,
             false_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -958,8 +958,8 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             ika_common_package_upgrade_cap_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -970,8 +970,8 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             ika_dwallet_2pc_mpc_package_upgrade_cap_arg,
+            protocol_cap_arg,
         ],
     );
 

@@ -13,6 +13,7 @@ use sui::balance::Balance;
 
 /// This struct is an Hot-Potato that is passed around during epoch advancement.
 public struct AdvanceEpochApprover {
+    new_epoch: u64,
     remaining_witnesses_to_approve: vector<String>,
     balance_ika: Balance<IKA>,
 }
@@ -25,14 +26,20 @@ const EWitnessIsNotInApprover: u64 = 0;
 // === Package Functions ===
 
 public fun create(
+    new_epoch: u64,
     remaining_witnesses_to_approve: vector<String>,
     balance_ika: Balance<IKA>,
     _: &SystemObjectCap,
 ): AdvanceEpochApprover {
     AdvanceEpochApprover {
+        new_epoch,
         remaining_witnesses_to_approve,
         balance_ika,
     }
+}
+
+public fun new_epoch(self: &AdvanceEpochApprover): u64 {
+    self.new_epoch
 }
 
 public fun assert_all_witnesses_approved(self: &AdvanceEpochApprover) {

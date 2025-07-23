@@ -493,7 +493,7 @@ where
     ) -> DwalletMPCResult<Argument> {
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
-        if messages.len() < 1 {
+        if messages.is_empty() {
             return Err(DwalletMPCError::CheckpointMessageIsEmpty);
         }
         let vector_arg = ptb
@@ -502,26 +502,23 @@ where
                 IkaError::SuiConnectorSerializationError(format!("can't serialize ptb input: {e}"))
             })?;
 
-        messages[1..]
-            .into_iter()
-            .map(|message| {
-                let message_arg =
-                    ptb.input(CallArg::Pure(bcs::to_bytes(*message)?))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorSerializationError(format!(
-                                "can't serialize ptb input: {e}"
-                            ))
-                        })?;
-                ptb.programmable_move_call(
-                    MOVE_STDLIB_PACKAGE_ID,
-                    VECTOR_MODULE_NAME.into(),
-                    APPEND_VECTOR_FUNCTION_NAME.into(),
-                    vec![TypeTag::U8],
-                    vec![vector_arg.clone(), message_arg],
-                );
-                Ok(())
-            })
-            .collect::<DwalletMPCResult<()>>()?;
+        messages[1..].iter().try_for_each(|message| {
+            let message_arg = ptb
+                .input(CallArg::Pure(bcs::to_bytes(*message)?))
+                .map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!(
+                        "can't serialize ptb input: {e}"
+                    ))
+                })?;
+            ptb.programmable_move_call(
+                MOVE_STDLIB_PACKAGE_ID,
+                VECTOR_MODULE_NAME.into(),
+                APPEND_VECTOR_FUNCTION_NAME.into(),
+                vec![TypeTag::U8],
+                vec![vector_arg, message_arg],
+            );
+            Ok::<(), DwalletMPCError>(())
+        })?;
 
         Ok(vector_arg)
     }
@@ -1056,7 +1053,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(result) => Ok(result),
             Err(err) => {
-                error!(?err, "failed to submit dwallet checkpoint to sui",);
+                error!(error=?err, "failed to submit dwallet checkpoint to sui",);
                 metrics.dwallet_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
@@ -1134,7 +1131,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(_) => Ok(()),
             Err(err) => {
-                error!(?err, "failed to submit a system checkpoint to consensus");
+                error!(error=?err, "failed to submit a system checkpoint to consensus");
                 metrics.system_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
