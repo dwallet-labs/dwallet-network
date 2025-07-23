@@ -1,5 +1,5 @@
 use anyhow::bail;
-use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
+use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::error::{IkaError, IkaResult};
@@ -48,7 +48,8 @@ use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
 
 const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
-const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr = ident_str!("insert_or_update_pricing");
+const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
+    ident_str!("insert_or_update_pricing");
 
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
@@ -104,15 +105,8 @@ pub async fn request_add_validator_candidate(
 ) -> Result<(SuiTransactionBlockResponse, BecomeCandidateValidatorData), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let mpc_data = VersionedMPCData::V1(MPCDataV1 {
-        class_groups_public_key_and_proof: bcs::to_bytes(
-            &validator_initialization_metadata
-                .class_groups_public_key_and_proof
-                .clone(),
-        )?,
-    });
-
-    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &mpc_data)?;
+    let store_mcp_data_in_table_vec =
+        store_mcp_data_in_table_vec(&mut ptb, &validator_initialization_metadata.mpc_data)?;
 
     let name = ptb.input(CallArg::Pure(bcs::to_bytes(
         validator_initialization_metadata.name.as_str(),

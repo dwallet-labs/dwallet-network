@@ -1258,9 +1258,7 @@ async fn request_add_validator_candidate(
 
     let mpc_data = VersionedMPCData::V1(MPCDataV1 {
         class_groups_public_key_and_proof: bcs::to_bytes(
-            &validator_initialization_metadata
-                .class_groups_public_key_and_proof
-                .clone(),
+            &validator_initialization_metadata.mpc_data.clone(),
         )?,
     });
 
