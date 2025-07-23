@@ -35,7 +35,7 @@ use std::sync::Arc;
 use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -274,7 +274,34 @@ impl DWalletMPCManager {
     pub(crate) fn handle_message(&mut self, consensus_round: u64, message: DWalletMPCMessage) {
         let session_identifier = message.session_identifier;
         let sender_authority = message.authority;
-        let mpc_round_number = message.round_number;
+        let Some(mpc_round_number) = (match message.message.first() {
+            Some(0) => {
+                let serialized_mpc_round_number = &message.message[1..=8];
+                bcs::from_bytes::<u64>(&serialized_mpc_round_number).ok()
+            }
+            Some(1) => {
+                warn!(
+                    session_identifier=?session_identifier,
+                    sender_authority=?sender_authority,
+                    receiver_authority=?self.validator_name,
+                    serialized_message=?message.message,
+                    "got a threshold not reached message, ignoring",
+                );
+
+                return;
+            }
+            _ => None,
+        }) else {
+            error!(
+                session_identifier=?session_identifier,
+                sender_authority=?sender_authority,
+                receiver_authority=?self.validator_name,
+                serialized_message=?message.message,
+                "got a short message, ignoring",
+            );
+
+            return;
+        };
 
         let Ok(sender_party_id) =
             authority_name_to_party_id_from_committee(&self.committee, &sender_authority)
@@ -340,7 +367,7 @@ impl DWalletMPCManager {
         };
 
         if session.status == MPCSessionStatus::Active {
-            session.add_message(consensus_round, sender_party_id, message);
+            session.add_message(consensus_round, mpc_round_number, sender_party_id, message);
         }
     }
 

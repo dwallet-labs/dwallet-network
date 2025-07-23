@@ -314,21 +314,6 @@ pub struct DWalletMPCMessage {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_identifier: SessionIdentifier,
-    /// The MPC round number starts from 0.
-    pub round_number: u64,
-    pub attempt_number: u64,
-    pub is_threshold_not_reached: bool,
-}
-
-/// The message unique key in the consensus network.
-/// Used to make sure no message is being processed twice.
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Ord, PartialOrd)]
-pub struct DWalletMPCMessageKey {
-    /// The authority (Validator) that sent the message.
-    pub authority: AuthorityName,
-    pub session_identifier: SessionIdentifier,
-    /// The MPC round number starts from 0.
-    pub round_number: u64,
 }
 
 /// Holds information about the current MPC session.

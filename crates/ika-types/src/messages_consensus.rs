@@ -6,9 +6,7 @@ use crate::message::DWalletCheckpointMessageKind;
 use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, DWalletMPCOutput, SessionIdentifier,
-};
+use crate::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput, SessionIdentifier};
 use crate::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage,
 };
@@ -48,7 +46,7 @@ pub enum ConsensusTransactionKey {
     DWalletCheckpointSignature(AuthorityName, DWalletCheckpointSequenceNumber),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     EndOfPublish(AuthorityName),
-    DWalletMPCMessage(DWalletMPCMessageKey),
+    DWalletMPCMessage(Vec<u8>, AuthorityName, SessionIdentifier),
     // Placing the consensus message in the `key`, allows re-voting in case of disagreement.
     DWalletMPCOutput(
         AuthorityName,
@@ -76,8 +74,11 @@ impl Debug for ConsensusTransactionKey {
                 name.concise(),
                 generation
             ),
-            Self::DWalletMPCMessage(message) => {
-                write!(f, "DWalletMPCMessage({message:?})",)
+            Self::DWalletMPCMessage(message, authority, session_identifier) => {
+                write!(
+                    f,
+                    "DWalletMPCMessage({message:?}, {authority:?}, {session_identifier:?})"
+                )
             }
             Self::DWalletMPCOutput(
                 authority,
@@ -192,27 +193,18 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         session_identifier: SessionIdentifier,
         message: Vec<u8>,
-        round_number: u64,
-        attempt_number: u64,
-        is_threshold_not_reached: bool,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
+        message.hash(&mut hasher);
         authority.hash(&mut hasher);
         session_identifier.hash(&mut hasher);
-        message.hash(&mut hasher);
-        round_number.hash(&mut hasher);
-        attempt_number.hash(&mut hasher);
-        is_threshold_not_reached.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::DWalletMPCMessage(DWalletMPCMessage {
                 message,
                 authority,
-                round_number,
                 session_identifier,
-                attempt_number,
-                is_threshold_not_reached,
             }),
         }
     }
@@ -297,11 +289,11 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::CapabilityNotification(cap.authority, cap.generation)
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
-                ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
-                    authority: message.authority,
-                    session_identifier: message.session_identifier,
-                    round_number: message.round_number,
-                })
+                ConsensusTransactionKey::DWalletMPCMessage(
+                    message.message.clone(),
+                    message.authority,
+                    message.session_identifier,
+                )
             }
             ConsensusTransactionKind::DWalletMPCOutput(output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
