@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - pera-v1.32.2
   pull_request:
     paths:
       - 'sdk/**'
@@ -25,9 +24,7 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
       - name: Configure git with personal access token
-        if: env.GH_PRIVATE_REPO_TOKEN
         run: |
           git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
