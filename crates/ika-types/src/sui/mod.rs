@@ -122,6 +122,10 @@ pub const OPTION_MODULE_NAME: &IdentStr = ident_str!("option");
 pub const OPTION_DESTROY_NONE_FUNCTION_NAME: &IdentStr = ident_str!("destroy_none");
 pub const OPTION_DESTROY_SOME_FUNCTION_NAME: &IdentStr = ident_str!("destroy_some");
 
+pub const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
+pub const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
+    ident_str!("insert_or_update_pricing");
+
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10
 #[cfg(msim)]

@@ -7,8 +7,9 @@ use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
-    DROP_TABLE_VEC_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    OPTION_DESTROY_NONE_FUNCTION_NAME, OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME,
+    DROP_TABLE_VEC_FUNCTION_NAME, INSERT_OR_UPDATE_PRICING_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, OPTION_DESTROY_NONE_FUNCTION_NAME,
+    OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME, PRICING_MODULE_NAME,
     PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME, PricingInfoKey, PricingInfoValue,
     REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
@@ -29,7 +30,7 @@ use ika_types::sui::{
     VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
     VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
 };
-use itertools::Itertools;
+
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -43,16 +44,12 @@ use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOption
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::collection_types::{Entry, VecMap};
+use sui_types::collection_types::Entry;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
-
-const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
-const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
-    ident_str!("insert_or_update_pricing");
 
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
@@ -1834,7 +1831,7 @@ pub async fn set_supported_and_pricing(
     ika_common_package_id: ObjectID,
     system_object_cap_id: ObjectID,
     default_pricing: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
-    supported_curves_to_signature_algorithms_to_hash_schemes: bool,
+    supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1854,9 +1851,11 @@ pub async fn set_supported_and_pricing(
     )
     .await?;
 
-    let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.input(CallArg::Pure(
-        bcs::to_bytes(&supported_curves_to_signature_algorithms_to_hash_schemes)?,
-    ))?;
+    let supported_curves_to_signature_algorithms_to_hash_schemes =
+        new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
+            &mut ptb,
+            supported_curves_to_signature_algorithms_to_hash_schemes,
+        )?;
 
     let dwallet_2pc_mpc_coordinator = ptb.input(
         get_dwallet_2pc_mpc_coordinator_call_arg(
@@ -1914,63 +1913,66 @@ async fn get_verified_protocol_cap(
     Ok(verified_protocol_cap)
 }
 
-// fn new_supported_curves_to_signature_algorithms_to_hash_schemes(
-//     ptb: &mut ProgrammableTransactionBuilder,
-//     supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
-// ) -> Result<Argument, anyhow::Error> {
-//     let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
-//     let zero_and_one_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u32, 1u32]])?))?;
-//
-//     let supported_curves_to_signature_algorithms_to_hash_schemes_args = supported_curves_to_signature_algorithms_to_hash_schemes.iter().map(|(curve, signature_algorithms_to_hash_schemes)| {
-//
-//             let keys = ptb.input(CallArg::Pure(bcs::to_bytes(&signature_algorithms_to_hash_schemes.keys().collect_vec())?))?;
-//             let value = ptb.input(CallArg::Pure(bcs::to_bytes(hash_schemes)?))?;
-//             let args= ptb.programmable_move_call(
-//                 SUI_FRAMEWORK_PACKAGE_ID,
-//                 ident_str!("vec_map").into(),
-//                 ident_str!("from_keys_values").into(),
-//                 vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-//                 vec![key, value],
-//             )
-//     })?;
-//
-//
-//     let supported_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
-//         SUI_FRAMEWORK_PACKAGE_ID,
-//         ident_str!("vec_map").into(),
-//         ident_str!("from_keys_values").into(),
-//         vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-//         vec![zero_key, zero_and_one_value],
-//     );
-//
-//     let supported_signature_algorithms_to_hash_schemes_vec = ptb.programmable_move_call(
-//         MOVE_STDLIB_PACKAGE_ID,
-//         ident_str!("vector").into(),
-//         ident_str!("singleton").into(),
-//         vec![TypeTag::Struct(Box::new(StructTag {
-//             address: SUI_FRAMEWORK_PACKAGE_ID.into(),
-//             module: ident_str!("vec_map").into(),
-//             name: ident_str!("VecMap").into(),
-//             type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-//         }))],
-//         vec![supported_signature_algorithms_to_hash_schemes],
-//     );
-//
-//     let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
-//         SUI_FRAMEWORK_PACKAGE_ID,
-//         ident_str!("vec_map").into(),
-//         ident_str!("from_keys_values").into(),
-//         vec![
-//             TypeTag::U32,
-//             TypeTag::Struct(Box::new(StructTag {
-//                 address: SUI_FRAMEWORK_PACKAGE_ID.into(),
-//                 module: ident_str!("vec_map").into(),
-//                 name: ident_str!("VecMap").into(),
-//                 type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-//             })),
-//         ],
-//         vec![zero_key, supported_signature_algorithms_to_hash_schemes_vec],
-//     );
-//
-//     Ok(supported_curves_to_signature_algorithms_to_hash_schemes)
-// }
+fn new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
+    ptb: &mut ProgrammableTransactionBuilder,
+    supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
+) -> anyhow::Result<Argument> {
+    let supported_curves_to_signature_algorithms_to_hash_schemes_arg = ptb.programmable_move_call(
+        SUI_FRAMEWORK_PACKAGE_ID,
+        ident_str!("vec_map").into(),
+        ident_str!("empty").into(),
+        vec![
+            TypeTag::U32,
+            TypeTag::Struct(Box::new(StructTag {
+                address: SUI_FRAMEWORK_PACKAGE_ID.into(),
+                module: ident_str!("vec_map").into(),
+                name: ident_str!("VecMap").into(),
+                type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+            })),
+        ],
+        vec![],
+    );
+
+    supported_curves_to_signature_algorithms_to_hash_schemes
+        .into_iter()
+        .map(|(curve, signature_algorithms_to_hash_schemes)| {
+            let (keys, values): (Vec<u32>, Vec<Vec<u32>>) =
+                signature_algorithms_to_hash_schemes.into_iter().unzip();
+            let keys = ptb.input(CallArg::Pure(bcs::to_bytes(&keys)?))?;
+            let values = ptb.input(CallArg::Pure(bcs::to_bytes(&values)?))?;
+
+            let signature_algorithms_to_hash_schemes_arg = ptb.programmable_move_call(
+                SUI_FRAMEWORK_PACKAGE_ID,
+                ident_str!("vec_map").into(),
+                ident_str!("from_keys_values").into(),
+                vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+                vec![keys, values],
+            );
+
+            let key = ptb.input(CallArg::Pure(bcs::to_bytes(&curve)?))?;
+            ptb.programmable_move_call(
+                SUI_FRAMEWORK_PACKAGE_ID,
+                ident_str!("vec_map").into(),
+                ident_str!("insert").into(),
+                vec![
+                    TypeTag::U32,
+                    TypeTag::Struct(Box::new(StructTag {
+                        address: SUI_FRAMEWORK_PACKAGE_ID.into(),
+                        module: ident_str!("vec_map").into(),
+                        name: ident_str!("VecMap").into(),
+                        type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+                    })),
+                ],
+                vec![
+                    supported_curves_to_signature_algorithms_to_hash_schemes_arg,
+                    key,
+                    signature_algorithms_to_hash_schemes_arg,
+                ],
+            );
+
+            Ok(())
+        })
+        .collect::<anyhow::Result<()>>()?;
+
+    Ok(supported_curves_to_signature_algorithms_to_hash_schemes_arg)
+}

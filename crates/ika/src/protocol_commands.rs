@@ -69,7 +69,7 @@ pub enum IkaProtocolCommand {
             name = "supported-curves-to-signature-algorithms-to-hash-schemes",
             long
         )]
-        supported_curves_to_signature_algorithms_to_hash_schemes: PathBuf,
+        supported_curves_to_signature_algorithms_to_hash_schemes_yaml: PathBuf,
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
@@ -152,7 +152,7 @@ impl IkaProtocolCommand {
                 gas_budget,
                 system_object_cap_id,
                 default_pricing_yaml,
-                supported_curves_to_signature_algorithms_to_hash_schemes,
+                supported_curves_to_signature_algorithms_to_hash_schemes_yaml,
                 ika_sui_config,
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
@@ -167,6 +167,11 @@ impl IkaProtocolCommand {
                 let default_pricing_yaml: Vec<Entry<PricingInfoKey, PricingInfoValue>> =
                     serde_yaml::from_reader(BufReader::new(File::open(default_pricing_yaml)?))?;
 
+                let supported_curves_to_signature_algorithms_to_hash_schemes =
+                    serde_yaml::from_reader(BufReader::new(File::open(
+                        supported_curves_to_signature_algorithms_to_hash_schemes_yaml,
+                    )?))?;
+
                 let response = set_supported_and_pricing(
                     context,
                     config.ika_dwallet_2pc_mpc_package_id,
@@ -174,7 +179,7 @@ impl IkaProtocolCommand {
                     config.ika_common_package_id,
                     system_object_cap_id,
                     default_pricing_yaml,
-                    false,
+                    supported_curves_to_signature_algorithms_to_hash_schemes,
                     gas_budget,
                 )
                 .await?;
