@@ -17,10 +17,7 @@
 
 NEW_IKA_FEE_PER_VALIDATOR="400 400 400 400"
 
-OPERATORS_CAP_IDS="0xc7c57a13f0be2c06cbf27079013e60ce53f6d3175e571bb145e3894481ac8ccb \
-0x29dac18df402828cee3a57286ca312987c6f38bedff9ef58c190c4fd733e7ad7 \
-0x7ced8211f735854a484fd62c4d2a19238ee9f697dd7f80c3d0d6ce6b3b6580ef \
-0x3774dfc4a84a89b53bd8acfad08cfd3b4b46eaca728d47c2488d9a24973f85a8"
+OPERATORS_CAP_IDS="0xc7c57a13f0be2c06cbf27079013e60ce53f6d3175e571bb145e3894481ac8ccb 0x29dac18df402828cee3a57286ca312987c6f38bedff9ef58c190c4fd733e7ad7 0x7ced8211f735854a484fd62c4d2a19238ee9f697dd7f80c3d0d6ce6b3b6580ef 0x3774dfc4a84a89b53bd8acfad08cfd3b4b46eaca728d47c2488d9a24973f85a8"
 
 yq -P -o yaml ./ika_config.json > /Users/itaylevy/.ika/ika_config/ika_sui_config.yaml
 ./target/debug/ika validator get-current-pricing-info

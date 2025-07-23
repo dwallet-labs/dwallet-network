@@ -301,6 +301,6 @@ describe('Test dWallet MPC', () => {
 			}),
 		);
 
-		console.log({ operatorCapIDs });
+		console.log(operatorCapIDs.join(' '));
 	});
 });
