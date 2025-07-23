@@ -1,4 +1,6 @@
 use anyhow::Result;
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
 use std::{
     fmt,
     fmt::{Debug, Display, Formatter, Write},
@@ -28,9 +30,11 @@ use ika_sui_client::ika_validator_transactions::{
     set_validator_name, stake_ika, undo_report_validator, validator_metadata,
     verify_commission_cap, verify_operation_cap, verify_validator_cap, withdraw_stake,
 };
+use ika_sui_client::metrics::SuiClientMetrics;
+use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
-use ika_types::sui::DEFAULT_COMMISSION_RATE;
+use ika_types::sui::{DEFAULT_COMMISSION_RATE, PricingInfoKey, PricingInfoValue};
 use serde::Serialize;
 use sui::validator_commands::write_transaction_response;
 use sui_config::PersistedConfig;
@@ -43,6 +47,7 @@ use sui_keys::{
 use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
+use sui_types::collection_types::Entry;
 use sui_types::crypto::get_authority_key_pair;
 use sui_types::crypto::{NetworkKeyPair, SignatureScheme, SuiKeyPair};
 
@@ -342,6 +347,13 @@ pub enum IkaValidatorCommand {
         gas_budget: Option<u64>,
         #[clap(name = "validator-operation-cap-id", long)]
         validator_operation_cap_id: ObjectID,
+        #[clap(name = "new-pricing-file-path", long)]
+        new_pricing_file_path: PathBuf,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
+    },
+    #[clap(name = "get-current-pricing-info")]
+    GetCurrentPricingInfo {
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
@@ -379,6 +391,7 @@ pub enum IkaValidatorCommandResponse {
     VerifyOperationCap(SuiTransactionBlockResponse),
     VerifyCommissionCap(SuiTransactionBlockResponse),
     SetPricingVote(SuiTransactionBlockResponse),
+    FetchCurrentPricingInfo(PathBuf),
 }
 
 impl IkaValidatorCommand {
@@ -1130,7 +1143,11 @@ impl IkaValidatorCommand {
                 gas_budget,
                 validator_operation_cap_id,
                 ika_sui_config,
+                new_pricing_file_path,
             } => {
+                let file = BufReader::new(File::open(new_pricing_file_path)?);
+                let new_pricing: Vec<Entry<PricingInfoKey, PricingInfoValue>> =
+                    serde_yaml::from_reader(file)?;
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
                 let config: IkaPackagesConfig =
@@ -1146,10 +1163,37 @@ impl IkaValidatorCommand {
                     config.ika_dwallet_2pc_mpc_package_id,
                     config.ika_dwallet_coordinator_object_id,
                     validator_operation_cap_id,
+                    new_pricing,
                     gas_budget,
                 )
                 .await?;
                 IkaValidatorCommandResponse::SetPricingVote(response)
+            }
+            IkaValidatorCommand::GetCurrentPricingInfo { ika_sui_config } => {
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {config_path:?}"
+                        ))
+                    })?;
+
+                let client = SuiClient::new(
+                    &context.get_active_env()?.rpc,
+                    SuiClientMetrics::new_for_testing(),
+                    config.ika_package_id,
+                    config.ika_common_package_id,
+                    config.ika_dwallet_2pc_mpc_package_id,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    config.ika_dwallet_coordinator_object_id,
+                )
+                .await?;
+                let current_pricing_info = client.get_pricing_info().await;
+                let path = "current_pricing.yaml";
+                let file = BufWriter::new(File::create(path)?);
+                serde_yaml::to_writer(file, &current_pricing_info)?;
+                IkaValidatorCommandResponse::FetchCurrentPricingInfo(PathBuf::from(path))
             }
         })
     }
@@ -1220,6 +1264,12 @@ impl Display for IkaValidatorCommandResponse {
                     writer,
                     "{}",
                     write_transaction_response_without_transaction_data(response)?
+                )?;
+            }
+            IkaValidatorCommandResponse::FetchCurrentPricingInfo(path) => {
+                writeln!(
+                    writer,
+                    "Fetched current pricing info from Sui, you can view & edit it at: {path:?}"
                 )?;
             }
         }

@@ -16,7 +16,8 @@ use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorIn
 use ika_types::sui::staking::StakingPool;
 use ika_types::sui::system_inner_v1::{DWalletCoordinatorInnerV1, SystemInnerV1};
 use ika_types::sui::{
-    DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
+    DWalletCoordinator, DWalletCoordinatorInner, PricingInfoKey, PricingInfoValue, System,
+    SystemInner, SystemInnerTrait, Validator,
 };
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -33,7 +34,7 @@ use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::TypeTag;
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::clock::Clock;
-use sui_types::collection_types::Table;
+use sui_types::collection_types::{Entry, Table};
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
 use sui_types::move_package::MovePackage;
@@ -139,6 +140,16 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+    pub async fn get_pricing_info(&self) -> Vec<Entry<PricingInfoKey, PricingInfoValue>> {
+        let coordinator_inner = self.must_get_dwallet_coordinator_inner().await;
+        let DWalletCoordinatorInner::V1(coordinator_inner) = coordinator_inner;
+        coordinator_inner
+            .pricing_and_fee_management
+            .current
+            .pricing_map
+            .contents
+    }
+
     pub async fn get_events_by_tx_digest(
         &self,
         tx_digest: TransactionDigest,
