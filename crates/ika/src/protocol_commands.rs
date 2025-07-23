@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Result;
+use clap::Subcommand;
+use colored::Colorize;
+use std::fs::File;
+use std::io::BufReader;
 use std::{
     fmt,
     fmt::{Debug, Display, Formatter, Write},
     path::PathBuf,
 };
-use std::fs::File;
-use std::io::BufReader;
-use clap::Subcommand;
-use colored::Colorize;
 // use hex;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
@@ -18,12 +18,12 @@ use ika_sui_client::ika_validator_transactions::{
     set_supported_and_pricing,
 };
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::sui::{PricingInfoKey, PricingInfoValue};
 use sui_config::PersistedConfig;
 use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::Entry;
-use ika_types::sui::{PricingInfoKey, PricingInfoValue};
 
 const DEFAULT_GAS_BUDGET: u64 = 200_000_000;
 

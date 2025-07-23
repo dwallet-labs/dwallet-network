@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
 use fastcrypto::traits::ToFromBytes;
-use itertools::Itertools;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
@@ -16,9 +14,8 @@ use ika_types::sui::{
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
     REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
-     ROTATE_OPERATION_CAP_FUNCTION_NAME,
-    SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
-    SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
+    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME,
+    SET_NEXT_COMMISSION_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
@@ -32,11 +29,13 @@ use ika_types::sui::{
     VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
     VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
 };
+use itertools::Itertools;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::Serialize;
 use shared_crypto::intent::Intent;
+use std::collections::HashMap;
 use sui::client_commands::{SuiClientCommandResult, execute_dry_run};
 use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
@@ -52,7 +51,8 @@ use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
 
 const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
-const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr = ident_str!("insert_or_update_pricing");
+const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
+    ident_str!("insert_or_update_pricing");
 
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
@@ -1614,12 +1614,16 @@ pub async fn set_pricing_vote(
 
     let sender = context.active_address()?;
 
-    let dwallet_2pc_mpc_coordinator = ptb.input(get_dwallet_2pc_mpc_coordinator_call_arg(
-        context,
-        ika_dwallet_2pc_mpc_coordinator_object_id,
-    ).await?)?;
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
 
-    let pricing_info = new_pricing_info(ika_dwallet_2pc_mpc_package_id, new_value, &mut ptb).await?;
+    let pricing_info =
+        new_pricing_info(ika_dwallet_2pc_mpc_package_id, new_value, &mut ptb).await?;
 
     let args = vec![
         dwallet_2pc_mpc_coordinator,
@@ -1639,8 +1643,11 @@ pub async fn set_pricing_vote(
     execute_transaction(context, tx_data).await
 }
 
-async fn new_pricing_info(ika_dwallet_2pc_mpc_package_id: ObjectID, pricing_info: Vec<Entry<PricingInfoKey, PricingInfoValue>>, ptb: &mut ProgrammableTransactionBuilder) -> Result<Argument, Error> {
-
+async fn new_pricing_info(
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
+    pricing_info: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> Result<Argument, Error> {
     let pricing_info_arg = ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
         ident_str!("pricing").into(),
@@ -1844,7 +1851,8 @@ pub async fn set_supported_and_pricing(
         ika_dwallet_2pc_mpc_coordinator_package_id,
         default_pricing,
         &mut ptb,
-    ).await?;
+    )
+    .await?;
 
     let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.input(CallArg::Pure(
         bcs::to_bytes(&supported_curves_to_signature_algorithms_to_hash_schemes)?,
@@ -1905,7 +1913,6 @@ async fn get_verified_protocol_cap(
 
     Ok(verified_protocol_cap)
 }
-
 
 // fn new_supported_curves_to_signature_algorithms_to_hash_schemes(
 //     ptb: &mut ProgrammableTransactionBuilder,
