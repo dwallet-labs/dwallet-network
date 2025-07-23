@@ -13,6 +13,11 @@
 
 NEW_IKA_FEE_PER_VALIDATOR="100 200 300 400"
 
+OPERATORS_CAP_IDS="0x2aa779a22b358946e6d39cedcd91c12f6d5875ac2b3b6e9e72f34b1ccfb73bcc \
+0xc07237cee68ea44a3d415c9643310a4d975157b1ee893aeb02b38149c6d4fd4e \
+0x08c3ca6aa5dad3fe3317892c2dbe4cc40d8835ad05d4318f18bc30caeca323b1 \
+0x6b82a5a60779a47bb046859540d45ed4eb802d1347be43c5b8795f0c76de66ec"
+
 yq -P -o yaml ./ika_config.json > /Users/itaylevy/.ika/ika_config/ika_sui_config.yaml
 ./target/debug/ika validator get-current-pricing-info
 yq -i '(.[] | select(.value.fee_ika) | .value.fee_ika) = 100' current_pricing.yaml
@@ -21,14 +26,8 @@ grep "account_key_pair: A" ~/.ika/ika_config/network.yaml | awk '{print $2}' | w
   sui keytool import "$parsed_secret" ed25519
 done
 
-operators_cap_ids="0x06ca7b7c6c2cf947a398e6b3bcf23f6f2e99d788427b0ac76a46ae135714e32f \
-0x4b2d0bdc8e150f220e1447209c39c3ccef2ebd7a984a133e2dff8d0efe861c2d \
-0xf2c8d3489389f1a37f85e0872623c15450e31bc68ca99341db95e6c9d2ade5fa \
-0x7ae6306cbe2f590e55717381a48ab789ecf208a61adcca85a9bc9ec92b0522c4"
 
-
-
-paste <(echo "$operators_cap_ids" | tr ' ' '\n') <(echo "$NEW_IKA_FEE_PER_VALIDATOR" | tr ' ' '\n') | while read object_id fee; do
+paste <(echo "$OPERATORS_CAP_IDS" | tr ' ' '\n') <(echo "$NEW_IKA_FEE_PER_VALIDATOR" | tr ' ' '\n') | while read object_id fee; do
   yq -i "(.[] | select(.value.fee_ika) | .value.fee_ika) = $fee" current_pricing.yaml
   owner_address=$(sui client object "$object_id" | grep 'AddressOwner' | sed -n 's/.*│ *\(0x[a-f0-9]\{64\}\) *│.*/\1/p')
   sui client switch --address "$owner_address"
