@@ -8,7 +8,7 @@ import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { createDWallet, launchDKGFirstRoundWithGivenCoins } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
 	Config,
@@ -109,6 +109,14 @@ describe('Test dWallet MPC', () => {
 		);
 		console.log(`Sing completed successfully: ${signRes.id.id}`);
 		console.timeEnd('Step 3: Sign Phase');
+	});
+
+	it('should create DWallet with given coins', async () => {
+		console.log('Creating dWallet...');
+		await launchDKGFirstRoundWithGivenCoins(
+			conf,
+			'0x1f0ad22ea5e04232a31de8bdec9506f8961f925a28ead54ac60420405a397bd6',
+		);
 	});
 
 	it('should create a dwallet and publish its secret share', async () => {
