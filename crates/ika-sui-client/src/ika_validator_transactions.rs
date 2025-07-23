@@ -16,6 +16,7 @@ use ika_types::sui::{
     REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
     REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
     ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME,
+    SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_BY_CAP_FUNCTION_NAME,
     SET_NEXT_COMMISSION_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
@@ -1890,6 +1891,57 @@ pub async fn set_supported_and_pricing(
     execute_transaction(context, tx_data).await
 }
 
+pub async fn set_gas_fee_reimbursement_sui_system_call_value_by_cap(
+    context: &mut WalletContext,
+    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    protocol_cap_id: ObjectID,
+    gas_fee_reimbursement_sui_system_call_value: u64,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let verified_protocol_cap = get_verified_protocol_cap(
+        context,
+        ika_system_package_id,
+        ika_system_object_id,
+        protocol_cap_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let gas_fee_reimbursement_sui_system_call_value = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &gas_fee_reimbursement_sui_system_call_value,
+    )?))?;
+
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
+
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_BY_CAP_FUNCTION_NAME.to_owned(),
+        vec![],
+        vec![
+            dwallet_2pc_mpc_coordinator,
+            gas_fee_reimbursement_sui_system_call_value,
+            verified_protocol_cap,
+        ],
+    );
+
+    let sender = context.active_address()?;
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
 async fn get_verified_protocol_cap(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
@@ -1914,7 +1966,8 @@ async fn get_verified_protocol_cap(
         ika_system_object_id,
         ika_system_package_id,
         ptb,
-    ).await
+    )
+    .await
 }
 
 fn new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(

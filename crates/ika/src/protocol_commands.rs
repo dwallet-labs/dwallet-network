@@ -14,8 +14,8 @@ use std::{
 // use hex;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
-    set_approved_upgrade_by_cap, set_paused_curves_and_signature_algorithms,
-    set_supported_and_pricing,
+    set_approved_upgrade_by_cap, set_gas_fee_reimbursement_sui_system_call_value_by_cap,
+    set_paused_curves_and_signature_algorithms, set_supported_and_pricing,
 };
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::{PricingInfoKey, PricingInfoValue};
@@ -73,12 +73,24 @@ pub enum IkaProtocolCommand {
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
+    #[clap(name = "set-gas-fee-reimbursement-sui-system-call-value-by-cap")]
+    SetGasFeeReimbursementSuiSystemCallValueByCap {
+        #[clap(name = "gas-budget", long)]
+        gas_budget: Option<u64>,
+        #[clap(name = "protocol-cap-id", long)]
+        protocol_cap_id: ObjectID,
+        #[clap(name = "gas-fee-reimbursement-sui-system-call-value", long)]
+        gas_fee_reimbursement_sui_system_call_value: u64,
+        #[clap(name = "ika-sui-config", long)]
+        ika_sui_config: Option<PathBuf>,
+    },
 }
 
 pub enum IkaProtocolCommandResponse {
     SetApprovedUpgradeByCap(SuiTransactionBlockResponse),
     SetPausedCurvesAndSignatureAlgorithms(SuiTransactionBlockResponse),
     SetSupportedAndPricing(SuiTransactionBlockResponse),
+    SetGasFeeReimbursementSuiSystemCallValueByCap(SuiTransactionBlockResponse),
 }
 
 impl IkaProtocolCommand {
@@ -187,6 +199,34 @@ impl IkaProtocolCommand {
                 .await?;
                 IkaProtocolCommandResponse::SetSupportedAndPricing(response)
             }
+            IkaProtocolCommand::SetGasFeeReimbursementSuiSystemCallValueByCap {
+                gas_budget,
+                protocol_cap_id,
+                gas_fee_reimbursement_sui_system_call_value,
+                ika_sui_config,
+            } => {
+                let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
+                let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
+                let config: IkaPackagesConfig =
+                    PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {config_path:?}"
+                        ))
+                    })?;
+
+                let response = set_gas_fee_reimbursement_sui_system_call_value_by_cap(
+                    context,
+                    config.ika_dwallet_2pc_mpc_package_id,
+                    config.ika_dwallet_coordinator_object_id,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    protocol_cap_id,
+                    gas_fee_reimbursement_sui_system_call_value,
+                    gas_budget,
+                )
+                .await?;
+                IkaProtocolCommandResponse::SetGasFeeReimbursementSuiSystemCallValueByCap(response)
+            }
         };
         Ok(response)
     }
@@ -198,7 +238,9 @@ impl Display for IkaProtocolCommandResponse {
         match self {
             IkaProtocolCommandResponse::SetApprovedUpgradeByCap(response)
             | IkaProtocolCommandResponse::SetPausedCurvesAndSignatureAlgorithms(response)
-            | IkaProtocolCommandResponse::SetSupportedAndPricing(response) => {
+            | IkaProtocolCommandResponse::SetSupportedAndPricing(response)
+            | IkaProtocolCommandResponse::SetGasFeeReimbursementSuiSystemCallValueByCap(response) =>
+            {
                 write!(
                     writer,
                     "{}",

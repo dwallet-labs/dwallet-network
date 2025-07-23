@@ -104,6 +104,8 @@ pub const SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("set_approved_upgrade_by_cap");
 pub const SET_SUPPORTED_AND_PRICING_FUNCTION_NAME: &IdentStr =
     ident_str!("set_supported_and_pricing");
+pub const SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_BY_CAP_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_gas_fee_reimbursement_sui_system_call_value_by_cap");
 pub const SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME: &IdentStr =
     ident_str!("set_next_epoch_mpc_data_bytes");
 
