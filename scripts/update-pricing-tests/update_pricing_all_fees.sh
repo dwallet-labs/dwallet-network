@@ -15,7 +15,7 @@
 # Then query the new current price with `./target/debug/ika validator get-current-pricing-info` & verify the
 # new ika fee has been updated correctly.
 
-NEW_IKA_FEE_PER_VALIDATOR="400 400 400 400"
+NEW_IKA_FEE_PER_VALIDATOR="0 0 0 0"
 
 OPERATORS_CAP_IDS="0x39d8a4171b40b8c8531bd2cbb89ee52069e01ee2cccffebfd0775dc35eddc509 0xaa526c5272b6eb77c6f30f1c7485a93b6681818029bfc94dbd35c4cea93a9e1f 0xfa41ce6654a553ee672960edcddbc32de7ccd2b66d5658f9f6bbb360eac7319e 0x3b4cebb120d725a57ac63ed102983f4be77dd8631ce962c0fe014c7df35077c6"
 

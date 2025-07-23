@@ -351,6 +351,7 @@ describe('tests that do not require faucet requests', () => {
 	});
 
 	it('should print the fees collection objects', async () => {
+		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			const dynamicFields = await conf.client.getDynamicFields({
 				parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
