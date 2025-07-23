@@ -277,7 +277,7 @@ impl DWalletMPCManager {
         let Some(mpc_round_number) = (match message.message.first() {
             Some(0) => {
                 let serialized_mpc_round_number = &message.message[1..=8];
-                bcs::from_bytes::<u64>(&serialized_mpc_round_number).ok()
+                bcs::from_bytes::<u64>(serialized_mpc_round_number).ok()
             }
             Some(1) => {
                 warn!(

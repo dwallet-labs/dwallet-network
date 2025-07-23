@@ -46,7 +46,8 @@ pub enum ConsensusTransactionKey {
     DWalletCheckpointSignature(AuthorityName, DWalletCheckpointSequenceNumber),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     EndOfPublish(AuthorityName),
-    DWalletMPCMessage(Vec<u8>, AuthorityName, SessionIdentifier),
+    /// Authority that sent the message, the session identifier, and the message itself.
+    DWalletMPCMessage(AuthorityName, SessionIdentifier, Vec<u8>),
     // Placing the consensus message in the `key`, allows re-voting in case of disagreement.
     DWalletMPCOutput(
         AuthorityName,
@@ -74,10 +75,10 @@ impl Debug for ConsensusTransactionKey {
                 name.concise(),
                 generation
             ),
-            Self::DWalletMPCMessage(message, authority, session_identifier) => {
+            Self::DWalletMPCMessage(authority, session_identifier, message) => {
                 write!(
                     f,
-                    "DWalletMPCMessage({message:?}, {authority:?}, {session_identifier:?})"
+                    "DWalletMPCMessage({authority:?}, {session_identifier:?}, {message:?})"
                 )
             }
             Self::DWalletMPCOutput(
@@ -290,9 +291,9 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(
-                    message.message.clone(),
                     message.authority,
                     message.session_identifier,
+                    message.message.clone(),
                 )
             }
             ConsensusTransactionKind::DWalletMPCOutput(output) => {
