@@ -601,7 +601,7 @@ public(package) fun initiate_mid_epoch_reconfiguration(self: &mut ValidatorSet) 
 public(package) fun advance_epoch(
     self: &mut ValidatorSet,
     new_epoch: u64,
-    total_reward: &mut Balance<IKA>,
+    total_rewards: &mut Balance<IKA>,
 ) {
     assert!(self.next_epoch_active_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
 
@@ -610,7 +610,7 @@ public(package) fun advance_epoch(
     // Compute the reward distribution without taking into account the tallying rule slashing.
     let unadjusted_staking_reward_amounts = self.compute_unadjusted_reward_distribution(
         total_voting_power,
-        total_reward.value(),
+        total_rewards.value(),
     );
 
     // Use the tallying rule report records for the epoch to compute validators that will be
@@ -653,7 +653,7 @@ public(package) fun advance_epoch(
     self.distribute_reward(
         new_epoch,
         &adjusted_staking_reward_amounts,
-        total_reward,
+        total_rewards,
     );
 
     self.previous_committee = self.active_committee;
@@ -916,14 +916,14 @@ fun compute_slashed_validators(self: &mut ValidatorSet): vector<ID> {
 fun compute_unadjusted_reward_distribution(
     self: &ValidatorSet,
     total_voting_power: u64,
-    total_reward: u64,
+    total_rewards: u64,
 ): vector<u64> {
     let members = self.active_committee.members();
     let reward_amounts = members.map_ref!(|_| {
         // Integer divisions will truncate the results. Because of this, we expect that at the end
-        // there will be some reward remaining in `total_reward`.
+        // there will be some reward remaining in `total_rewards`.
         // Use u128 to avoid multiplication overflow.
-        let reward_amount = (total_reward as u128) / (total_voting_power as u128);
+        let reward_amount = (total_rewards as u128) / (total_voting_power as u128);
         reward_amount as u64
     });
     reward_amounts

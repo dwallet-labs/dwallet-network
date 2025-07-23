@@ -75,7 +75,7 @@ macro_rules! retry_with_max_elapsed_time {
                     }
                     Err(err) => {
                         // For simplicity we treat every error as transient so we can retry until max_elapsed_time
-                        error!(?err, "retrying with max elapsed time");
+                        error!(error=?err, "retrying with max elapsed time");
                         return Err(backoff::Error::transient(err));
                     }
                 }
@@ -626,7 +626,7 @@ where
                         .with_label_values(&["must_get_system_inner_object"])
                         .inc();
                     warn!(
-                        ?err,
+                        error=?err,
                         "Received error from `get_system_inner()`. Retrying...",
                     );
                 }
@@ -636,7 +636,7 @@ where
                         .with_label_values(&["must_get_system_inner_object"])
                         .inc();
                     warn!(
-                        ?err,
+                        error=?err,
                         system_object_id=%self.ika_system_object_id,
                         "failed to get ika system inner object",
                     );
@@ -690,7 +690,7 @@ where
                         .with_label_values(&["must_get_dwallet_coordinator_inner"])
                         .inc();
                     warn!(
-                        ?err,
+                        error=?err,
                         "Received error from `get_dwallet_coordinator_inner()`. Retrying...",
                     );
                 }
@@ -700,7 +700,7 @@ where
                         .with_label_values(&["must_get_dwallet_coordinator_inner"])
                         .inc();
                     warn!(
-                        ?err,
+                        error=?err,
                         system_object_id=%self.ika_system_object_id,
                         "Failed to get dwallet coordinator inner object",
                     );
@@ -725,7 +725,7 @@ where
                         .with_label_values(&["must_get_epoch_start_system"])
                         .inc();
                     warn!(
-                        ?err,
+                        error=?err,
                         "Received error from `get_epoch_start_system()`. Retrying...",
                     );
                 }
@@ -735,7 +735,7 @@ where
                         .with_label_values(&["must_get_epoch_start_system"])
                         .inc();
                     warn!(
-                        ?err,
+                        error=?err,
                         "Received error from `get_epoch_start_system` retry wrapper. Retrying...",
                     );
                 }
