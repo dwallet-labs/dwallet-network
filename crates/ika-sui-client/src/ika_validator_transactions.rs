@@ -1665,7 +1665,7 @@ pub async fn set_pricing_vote(
         pricing_info,
         verified_validator_operation_cap,
     ];
-    ptb.command(Command::move_call(
+    ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
