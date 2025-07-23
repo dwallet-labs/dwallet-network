@@ -9,6 +9,7 @@ use ika_common::bls_committee::BlsCommittee;
 use ika_common::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
 use ika_common::system_current_status_info::{Self, SystemCurrentStatusInfo};
 use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::upgrade_package_approver::{Self, UpgradePackageApprover};
 use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorOperationCap,
@@ -31,9 +32,9 @@ use sui::coin::Coin;
 use sui::event;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::table::Table;
+use sui::table_vec::TableVec;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::VecSet;
-use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -779,12 +780,29 @@ public(package) fun authorize_upgrade(self: &mut SystemInner, package_id: ID): U
     self.upgrade_caps[index].authorize(policy, digest)
 }
 
-public(package) fun commit_upgrade(self: &mut SystemInner, receipt: UpgradeReceipt): ID {
+public(package) fun commit_upgrade(
+    self: &mut SystemInner,
+    receipt: UpgradeReceipt,
+): UpgradePackageApprover {
+    let new_package_id = receipt.package();
     let receipt_cap_id = receipt.cap();
     let index = self.upgrade_caps.find_index!(|c| object::id(c) == receipt_cap_id).extract();
     let old_package_id = self.upgrade_caps[index].package();
     self.upgrade_caps[index].commit(receipt);
-    old_package_id
+    upgrade_package_approver::create(
+        self.witness_approving_advance_epoch,
+        new_package_id,
+        old_package_id,
+        &self.system_object_cap,
+    )
+}
+
+public(package) fun finalize_upgrade(
+    self: &SystemInner,
+    upgrade_package_approver: UpgradePackageApprover,
+) {
+    upgrade_package_approver.assert_all_witnesses_approved();
+    upgrade_package_approver.destroy(&self.system_object_cap);
 }
 
 public(package) fun process_checkpoint_message_by_quorum(

@@ -26,6 +26,7 @@ use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::sui::SUI;
 use sui::vec_map::VecMap;
+use ika_common::upgrade_package_approver::UpgradePackageApprover;
 
 // === Errors ===
 
@@ -624,6 +625,11 @@ public fun subsidize_coordinator_with_sui(self: &mut DWalletCoordinator, sui: Co
 /// IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
 public fun subsidize_coordinator_with_ika(self: &mut DWalletCoordinator, ika: Coin<IKA>) {
     self.inner_mut().subsidize_coordinator_with_ika(ika);
+}
+
+public fun commit_upgrade(self: &mut DWalletCoordinator, upgrade_package_approver: &mut UpgradePackageApprover) {
+    upgrade_package_approver.approve_upgrade_package_by_witness(coordinator_inner::dwallet_coordinator_witness());
+    self.new_package_id = option::some(upgrade_package_approver.new_package_id());
 }
 
 /// Migrate the dwallet_2pc_mpc_coordinator object to the new package id.
