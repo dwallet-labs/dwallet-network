@@ -196,9 +196,9 @@ impl ConsensusTransaction {
         message: Vec<u8>,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        message.hash(&mut hasher);
         authority.hash(&mut hasher);
         session_identifier.hash(&mut hasher);
+        message.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
