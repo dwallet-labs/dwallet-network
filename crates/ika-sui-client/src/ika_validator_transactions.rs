@@ -9,11 +9,12 @@ use ika_types::sui::{
     COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
     DROP_TABLE_VEC_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
     OPTION_DESTROY_NONE_FUNCTION_NAME, OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME,
-    PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME, REPORT_VALIDATOR_FUNCTION_NAME,
-    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME,
-    ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME,
+    PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME, PricingInfoKey, PricingInfoValue,
+    REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
+    REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
+     ROTATE_OPERATION_CAP_FUNCTION_NAME,
     SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
@@ -29,6 +30,7 @@ use ika_types::sui::{
     VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
     VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
 };
+use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::Serialize;
@@ -40,11 +42,15 @@ use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOption
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SuiAddress};
+use sui_types::collection_types::Entry;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::TransactionData;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
+use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
+
+const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
+const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr = ident_str!("insert_or_update_pricing");
 
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
@@ -1577,9 +1583,10 @@ pub async fn set_pricing_vote(
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
-    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
     validator_operation_cap_id: ObjectID,
+    new_value: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1614,12 +1621,46 @@ pub async fn set_pricing_vote(
     )?;
 
     let pricing_info = ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-        move_core_types::ident_str!("current_pricing").to_owned(),
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("empty").into(),
         vec![],
-        vec![dwallet_2pc_mpc_coordinator],
+        vec![],
     );
+    let none_bcs = bcs::to_bytes(&None::<u32>)?;
+
+    for entry in new_value {
+        let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
+        let signature_algo_bcs = match &entry.key.signature_algorithm {
+            None => none_bcs.clone(),
+            Some(signature_algo) => bcs::to_bytes(&Some(*signature_algo))?,
+        };
+        let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
+        let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
+        let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
+        let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &entry.value.gas_fee_reimbursement_sui,
+        )?))?;
+        let gas_fee_reimbursement_sui_for_system_calls = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&entry.value.gas_fee_reimbursement_sui_for_system_calls)?,
+        ))?;
+        let args = vec![
+            pricing_info,
+            curve,
+            signature_algo,
+            protocol,
+            fee_ika,
+            gas_fee_reimbursement_sui,
+            gas_fee_reimbursement_sui_for_system_calls,
+        ];
+        ptb.command(Command::move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            PRICING_MODULE_NAME.into(),
+            INSERT_OR_UPDATE_PRICING_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        ));
+    }
 
     let args = vec![
         dwallet_2pc_mpc_coordinator,
@@ -1627,7 +1668,7 @@ pub async fn set_pricing_vote(
         verified_validator_operation_cap,
     ];
     ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
+        ika_dwallet_2pc_mpc_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
         vec![],
