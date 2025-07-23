@@ -47,6 +47,9 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, Transact
 use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
 
+const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
+const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr = ident_str!("insert_or_update_pricing");
+
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
     pub validator_id: ObjectID,
@@ -1650,8 +1653,8 @@ pub async fn set_pricing_vote(
         ];
         ptb.command(Command::move_call(
             ika_dwallet_2pc_mpc_package_id,
-            ident_str!("pricing").into(),
-            ident_str!("insert_or_update_pricing").into(),
+            PRICING_MODULE_NAME.into(),
+            INSERT_OR_UPDATE_PRICING_FUNCTION_NAME.into(),
             vec![],
             args,
         ));
@@ -1662,7 +1665,7 @@ pub async fn set_pricing_vote(
         pricing_info,
         verified_validator_operation_cap,
     ];
-    ptb.command(Command::move_call(
+    ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
         DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
