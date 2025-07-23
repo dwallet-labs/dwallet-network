@@ -115,8 +115,8 @@ describe('Test dWallet MPC', () => {
 		console.log('Creating dWallet...');
 		await launchDKGFirstRoundWithGivenCoins(
 			conf,
-			'0x17984da221bd6af5ecb756e50adc5de79fb6ab77bc476722fc5477c542d832c6',
-			'0xb55fe7cc317f5c30f343b4c219c587eeb78180e4169950722a23a56bb8feb1b6',
+			'0xb95fb6971af6769848be326e9428c7843ad4dd76481cf0f1a2d11d42f0a07406',
+			'0xcdcdd1ba19c6b97cc805fab550c4d6382d72c98fa9a7a81b10dd1e0a046b8f6f',
 		);
 	});
 
