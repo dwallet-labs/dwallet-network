@@ -6,26 +6,29 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
-    DROP_TABLE_VEC_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    OPTION_DESTROY_NONE_FUNCTION_NAME, OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME,
-    PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME, REPORT_VALIDATOR_FUNCTION_NAME,
-    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, REQUEST_WITHDRAW_STAKE_FUNCTION_NAME,
-    ROTATE_COMMISSION_CAP_FUNCTION_NAME, ROTATE_OPERATION_CAP_FUNCTION_NAME,
+    CALCULATE_PRICING_VOTES_FUNCTION_NAME, COLLECT_COMMISSION_FUNCTION_NAME,
+    CREATE_BYTES_TABLE_VEC_FUNCTION_NAME, DROP_TABLE_VEC_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, OPTION_DESTROY_NONE_FUNCTION_NAME,
+    OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME, PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME,
+    REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
+    REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
+    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME,
     SET_NEXT_COMMISSION_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
-    SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME,
-    SET_VALIDATOR_METADATA_FUNCTION_NAME, SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    TABLE_VEC_MODULE_NAME, TABLE_VEC_STRUCT_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME,
-    VALIDATOR_METADATA_FUNCTION_NAME, VALIDATOR_METADATA_MODULE_NAME,
-    VALIDATOR_OPERATION_STRUCT_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME,
-    VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
-    WITHDRAW_STAKE_FUNCTION_NAME,
+    SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME,
+    SET_OR_REMOVE_WITNESS_APPROVING_ADVANCE_EPOCH_BY_CAP_FUNCTION_NAME,
+    SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME,
+    SET_SUPPORTED_AND_PRICING_FUNCTION_NAME, SET_VALIDATOR_METADATA_FUNCTION_NAME,
+    SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME, TABLE_VEC_MODULE_NAME,
+    TABLE_VEC_STRUCT_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME, VALIDATOR_CAP_MODULE_NAME,
+    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME, VALIDATOR_METADATA_FUNCTION_NAME,
+    VALIDATOR_METADATA_MODULE_NAME, VALIDATOR_OPERATION_STRUCT_NAME,
+    VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
+    VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -1664,4 +1667,278 @@ async fn get_dwallet_2pc_mpc_coordinator_call_arg(
         initial_shared_version,
         mutable: true,
     }))
+}
+
+// === Protocol Commands ===
+
+/// Set or remove witness approving advance epoch by cap
+pub async fn set_or_remove_witness_approving_advance_epoch_by_cap(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    protocol_cap_id: ObjectID,
+    witness_type: String,
+    remove: bool,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let client = context.get_client().await?;
+    let protocol_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(protocol_cap_id)
+        .await?;
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let witness_type = ptb.input(CallArg::Pure(bcs::to_bytes(&witness_type)?))?;
+    let remove = ptb.input(CallArg::Pure(bcs::to_bytes(&remove)?))?;
+    let call_args = vec![
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+            protocol_cap_ref,
+        )))?,
+        witness_type,
+        remove,
+    ];
+
+    let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
+        context,
+        SET_OR_REMOVE_WITNESS_APPROVING_ADVANCE_EPOCH_BY_CAP_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+/// Set approved upgrade by cap
+pub async fn set_approved_upgrade_by_cap(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    protocol_cap_id: ObjectID,
+    package_id: ObjectID,
+    digest: Option<Vec<u8>>,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let client = context.get_client().await?;
+    let protocol_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(protocol_cap_id)
+        .await?;
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let package_id = ptb.input(CallArg::Pure(bcs::to_bytes(&package_id)?))?;
+    let digest = ptb.input(CallArg::Pure(bcs::to_bytes(&digest)?))?;
+    let call_args = vec![
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+            protocol_cap_ref,
+        )))?,
+        package_id,
+        digest,
+    ];
+
+    let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
+        context,
+        SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+/// Calculate pricing votes
+pub async fn calculate_pricing_votes(
+    context: &mut WalletContext,
+    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&curve)?))?;
+    let signature_algorithm = ptb.input(CallArg::Pure(bcs::to_bytes(&signature_algorithm)?))?;
+    let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&protocol)?))?;
+
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
+
+    let args = vec![
+        dwallet_2pc_mpc_coordinator,
+        curve,
+        signature_algorithm,
+        protocol,
+    ];
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        CALCULATE_PRICING_VOTES_FUNCTION_NAME.to_owned(),
+        vec![],
+        args,
+    );
+
+    let sender = context.active_address()?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+/// Set paused curves and signature algorithms
+pub async fn set_paused_curves_and_signature_algorithms(
+    context: &mut WalletContext,
+    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
+    ika_common_package_id: ObjectID,
+    system_object_cap_id: ObjectID,
+    paused_curves: Vec<u32>,
+    paused_signature_algorithms: Vec<u32>,
+    paused_hash_schemes: Vec<u32>,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let verified_protocol_cap = get_verified_protocol_cap(
+        context,
+        ika_common_package_id,
+        system_object_cap_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let paused_curves = ptb.input(CallArg::Pure(bcs::to_bytes(&paused_curves)?))?;
+    let paused_signature_algorithms =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&paused_signature_algorithms)?))?;
+    let paused_hash_schemes = ptb.input(CallArg::Pure(bcs::to_bytes(&paused_hash_schemes)?))?;
+
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
+
+    let args = vec![
+        dwallet_2pc_mpc_coordinator,
+        paused_curves,
+        paused_signature_algorithms,
+        paused_hash_schemes,
+        verified_protocol_cap,
+    ];
+
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME.to_owned(),
+        vec![],
+        args,
+    );
+
+    let sender = context.active_address()?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+/// Set supported and pricing
+pub async fn set_supported_and_pricing(
+    context: &mut WalletContext,
+    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
+    ika_common_package_id: ObjectID,
+    system_object_cap_id: ObjectID,
+    default_pricing: String,
+    supported_curves_to_signature_algorithms_to_hash_schemes: String,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let verified_protocol_cap = get_verified_protocol_cap(
+        context,
+        ika_common_package_id,
+        system_object_cap_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let default_pricing = ptb.input(CallArg::Pure(bcs::to_bytes(&default_pricing)?))?;
+    let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&supported_curves_to_signature_algorithms_to_hash_schemes)?,
+    ))?;
+
+    let dwallet_2pc_mpc_coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(
+            context,
+            ika_dwallet_2pc_mpc_coordinator_object_id,
+        )
+        .await?,
+    )?;
+
+    let args = vec![
+        dwallet_2pc_mpc_coordinator,
+        default_pricing,
+        supported_curves_to_signature_algorithms_to_hash_schemes,
+        verified_protocol_cap,
+    ];
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        SET_SUPPORTED_AND_PRICING_FUNCTION_NAME.to_owned(),
+        vec![],
+        args,
+    );
+
+    let sender = context.active_address()?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    execute_transaction(context, tx_data).await
+}
+
+async fn get_verified_protocol_cap(
+    context: &mut WalletContext,
+    ika_common_id: ObjectID,
+    system_object_cap_id: ObjectID,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> Result<Argument, anyhow::Error> {
+    let client = context.get_client().await?;
+    let protocol_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(system_object_cap_id)
+        .await?;
+
+    let call_args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        protocol_cap_ref,
+    )))?];
+
+    let verified_protocol_cap = ptb.programmable_move_call(
+        ika_common_id,
+        move_core_types::ident_str!("protocol_cap").to_owned(),
+        move_core_types::ident_str!("create_verified").to_owned(),
+        vec![],
+        call_args,
+    );
+
+    Ok(verified_protocol_cap)
 }

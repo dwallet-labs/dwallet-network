@@ -100,6 +100,13 @@ pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_p
 pub const SET_PRICING_VOTE_FUNCTION_NAME: &IdentStr = ident_str!("set_pricing_vote");
 pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
     ident_str!("set_paused_curves_and_signature_algorithms");
+pub const SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_approved_upgrade_by_cap");
+pub const SET_OR_REMOVE_WITNESS_APPROVING_ADVANCE_EPOCH_BY_CAP_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_or_remove_witness_approving_advance_epoch_by_cap");
+pub const CALCULATE_PRICING_VOTES_FUNCTION_NAME: &IdentStr = ident_str!("calculate_pricing_votes");
+pub const SET_SUPPORTED_AND_PRICING_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_supported_and_pricing");
 pub const SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME: &IdentStr =
     ident_str!("set_next_epoch_mpc_data_bytes");
 

@@ -3,4 +3,5 @@
 
 #[macro_use]
 pub mod ika_commands;
-mod validator_commands;
+pub mod protocol_commands;
+pub mod validator_commands;
