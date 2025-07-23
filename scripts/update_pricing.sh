@@ -30,7 +30,6 @@ grep "account_key_pair: A" ~/.ika/ika_config/network.yaml | awk '{print $2}' | w
   sui keytool import "$parsed_secret" ed25519
 done
 
-
 paste <(echo "$OPERATORS_CAP_IDS" | tr ' ' '\n') <(echo "$NEW_IKA_FEE_PER_VALIDATOR" | tr ' ' '\n') | while read object_id fee; do
   yq -i "(.[] | select(.value.fee_ika) | .value.fee_ika) = $fee" current_pricing.yaml
   owner_address=$(sui client object "$object_id" | grep 'AddressOwner' | sed -n 's/.*│ *\(0x[a-f0-9]\{64\}\) *│.*/\1/p')
