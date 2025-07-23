@@ -18,14 +18,14 @@ impl IkaRuntimes {
         let mut builder = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
             .stack_size(SIXTEEN_MEGA_BYTES);
-        #[cfg(feature = "enforce-minimum-cpu")]
-        {
+        if cfg!(feature = "enforce-minimum-cpu") {
             // When passing 0, Rayon will use the default number of threads, which is the number of available cores
             // on the machine
             builder = builder.num_threads(Self::calculate_num_of_computations_cores());
         }
+
         if let Err(err) = builder.build_global() {
-            error!(?err, "failed to create rayon thread pool");
+            error!(error=?err, "failed to create rayon thread pool");
             panic!("Failed to create rayon thread pool");
         }
         let ika_node = tokio::runtime::Builder::new_multi_thread()
@@ -50,18 +50,15 @@ impl IkaRuntimes {
             return 0;
         };
         let total_cores_available: usize = total_cores_available.into();
-        #[cfg(feature = "enforce-minimum-cpu")]
-        {
+        if cfg!(feature = "enforce-minimum-cpu") {
             assert!(
                 total_cores_available >= 16,
                 "Validator must have at least 16 CPU cores"
             );
+            total_cores_available - TOKIO_ALLOCATED_CORES
+        } else {
+            total_cores_available
         }
-        #[cfg(not(feature = "enforce-minimum-cpu"))]
-        {
-            return total_cores_available;
-        }
-        total_cores_available - TOKIO_ALLOCATED_CORES
     }
 }
 

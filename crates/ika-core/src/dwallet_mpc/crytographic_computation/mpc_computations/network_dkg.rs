@@ -7,7 +7,6 @@
 //! the network DKG protocol.
 
 use crate::dwallet_mpc::crytographic_computation::advance;
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::reconfiguration::{
     ReconfigurationSecp256k1Party,
@@ -21,7 +20,7 @@ use class_groups::{
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, NetworkDecryptionKeyPublicOutputType,
+    DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicOutputType,
     NetworkEncryptionKeyPublicData, SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
 use group::{OsCsRng, PartyID, secp256k1};
@@ -33,7 +32,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletNetworkEncryptionKeyData,
     DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCRequestInput, MPCSessionRequest,
 };
-use mpc::{AsynchronousRoundGODResult, WeightedThresholdAccessStructure};
+use mpc::{GuaranteedOutputDeliveryRoundResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
@@ -94,7 +93,7 @@ async fn get_decryption_key_shares_from_public_output(
                                     &access_structure,
                                     personal_decryption_key,
                                 )
-                                .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string())),
+                                .map_err(DwalletMPCError::from),
                             Err(e) => Err(e.into()),
                         }
                     }
@@ -113,7 +112,7 @@ async fn get_decryption_key_shares_from_public_output(
                                     &access_structure,
                                     personal_decryption_key,
                                 )
-                                .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string())),
+                                .map_err(DwalletMPCError::from),
                             Err(e) => Err(e.into()),
                         }
                     }
@@ -122,7 +121,7 @@ async fn get_decryption_key_shares_from_public_output(
         };
 
         if let Err(err) = key_shares_sender.send(res) {
-            error!(?err, "failed to send key shares");
+            error!(error=?err, "failed to send key shares");
         }
     });
 
@@ -173,7 +172,7 @@ impl ValidatorPrivateDecryptionKeyData {
                     public_parameters,
                     &mut OsCsRng,
                 )
-                .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
+                .map_err(DwalletMPCError::from)?;
 
                 Ok((virtual_party_id, decryption_key_share))
             })
@@ -266,15 +265,8 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: HashMap<u64, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
-    logger: &MPCSessionLogger,
     rng: ChaCha20Rng,
-) -> DwalletMPCResult<AsynchronousRoundGODResult> {
-    // Add the Class Groups key pair and proof to the logger.
-    let encoded_private_input: MPCPrivateInput = Some(bcs::to_bytes(&class_groups_decryption_key)?);
-    let logger = logger
-        .clone()
-        .with_class_groups_key_pair_and_proof(encoded_private_input.clone());
-
+) -> DwalletMPCResult<GuaranteedOutputDeliveryRoundResult> {
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             let PublicInput::NetworkEncryptionKeyDkg(public_input) = public_input else {
@@ -287,11 +279,10 @@ pub(crate) fn advance_network_dkg(
                 messages,
                 public_input,
                 class_groups_decryption_key,
-                &logger,
                 rng,
             );
             match result.clone() {
-                Ok(AsynchronousRoundGODResult::Finalize {
+                Ok(GuaranteedOutputDeliveryRoundResult::Finalize {
                     public_output_value,
                     malicious_parties,
                     private_output,
@@ -299,7 +290,7 @@ pub(crate) fn advance_network_dkg(
                     let public_output_value =
                         bcs::to_bytes(&VersionedNetworkDkgOutput::V1(public_output_value))?;
 
-                    Ok(AsynchronousRoundGODResult::Finalize {
+                    Ok(GuaranteedOutputDeliveryRoundResult::Finalize {
                         public_output_value,
                         malicious_parties,
                         private_output,
@@ -419,7 +410,7 @@ pub(crate) async fn instantiate_dwallet_mpc_network_encryption_key_public_data_f
         };
 
         if let Err(err) = key_public_data_sender.send(res) {
-            error!(?err, "failed to send a network encryption key ");
+            error!(error=?err, "failed to send a network encryption key ");
         }
     });
 
@@ -447,7 +438,7 @@ fn instantiate_dwallet_mpc_network_encryption_key_public_data_from_dkg_public_ou
                     .default_decryption_key_share_public_parameters::<secp256k1::GroupElement>(
                         access_structure,
                     )
-                    .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?;
+                    .map_err(DwalletMPCError::from)?;
 
                 let protocol_public_parameters = ProtocolPublicParameters::new::<
                     { secp256k1::SCALAR_LIMBS },
