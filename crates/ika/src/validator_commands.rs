@@ -426,7 +426,7 @@ impl IkaValidatorCommand {
                 let pop = generate_proof_of_possession(&keypair, sender_sui_address);
 
                 let class_groups_public_key_and_proof =
-                    read_or_generate_mpc_root_seed_and_class_groups_key(dir.join("mpc-root.seed"))?;
+                    read_or_generate_root_seed(dir.join("root-seed.key"))?;
                 let mpc_data = VersionedMPCData::V1(MPCDataV1 {
                     class_groups_public_key_and_proof: bcs::to_bytes(
                         &class_groups_public_key_and_proof.encryption_key_and_proof(),
@@ -1065,11 +1065,11 @@ impl IkaValidatorCommand {
                 .await?;
 
                 if response.status_ok().is_some() && response.status_ok().unwrap() {
-                    // Save the new seed to mpc-root.seed file (override if exists)
+                    // Save the new seed to root-seed.key file (override if exists)
                     let dir = std::env::current_dir()?;
-                    let mpc_root_seed_file_path = dir.join("mpc-root.seed");
+                    let mpc_root_seed_file_path = dir.join("root-seed.key");
                     mpc_root_seed.save_to_file(mpc_root_seed_file_path.clone())?;
-                    println!("Generated new MPC root seed file: {mpc_root_seed_file_path:?}.");
+                    println!("Generated new root seed key file: {mpc_root_seed_file_path:?}.");
                 }
 
                 IkaValidatorCommandResponse::SetNextEpochMPCData(response)
@@ -1338,9 +1338,7 @@ fn make_key_files(
 
 /// Generates the class groups a key pair and proof from a seed file if it exists,
 /// otherwise generates and saves the seed.
-fn read_or_generate_mpc_root_seed_and_class_groups_key(
-    seed_path: PathBuf,
-) -> Result<Box<ClassGroupsKeyPairAndProof>> {
+fn read_or_generate_root_seed(seed_path: PathBuf) -> Result<Box<ClassGroupsKeyPairAndProof>> {
     let seed = match RootSeed::from_file(seed_path.clone()) {
         Ok(seed) => {
             println!("Use existing seed: {seed_path:?}.",);
@@ -1349,7 +1347,7 @@ fn read_or_generate_mpc_root_seed_and_class_groups_key(
         Err(_) => {
             let seed = RootSeed::random_seed();
             seed.save_to_file(seed_path.clone())?;
-            println!("Generated MPC root seed info file: {seed_path:?}.",);
+            println!("Generated root seed () file: {seed_path:?}.",);
             seed
         }
     };
