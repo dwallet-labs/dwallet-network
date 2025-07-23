@@ -1,5 +1,5 @@
-use anyhow::bail;
-use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
+use anyhow::{Error, bail};
+use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::error::{IkaError, IkaResult};
@@ -7,8 +7,9 @@ use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     COLLECT_COMMISSION_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
-    DROP_TABLE_VEC_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    OPTION_DESTROY_NONE_FUNCTION_NAME, OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME,
+    DROP_TABLE_VEC_FUNCTION_NAME, INSERT_OR_UPDATE_PRICING_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, OPTION_DESTROY_NONE_FUNCTION_NAME,
+    OPTION_DESTROY_SOME_FUNCTION_NAME, OPTION_MODULE_NAME, PRICING_MODULE_NAME,
     PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME, PricingInfoKey, PricingInfoValue,
     REPORT_VALIDATOR_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
@@ -28,6 +29,7 @@ use ika_types::sui::{
     VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
     WITHDRAW_STAKE_FUNCTION_NAME,
 };
+
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -46,11 +48,6 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
-
-const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
-const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
-    ident_str!("insert_or_update_pricing");
-
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
     pub validator_id: ObjectID,
@@ -105,8 +102,15 @@ pub async fn request_add_validator_candidate(
 ) -> Result<(SuiTransactionBlockResponse, BecomeCandidateValidatorData), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let store_mcp_data_in_table_vec =
-        store_mcp_data_in_table_vec(&mut ptb, &validator_initialization_metadata.mpc_data)?;
+    let mpc_data = VersionedMPCData::V1(MPCDataV1 {
+        class_groups_public_key_and_proof: bcs::to_bytes(
+            &validator_initialization_metadata
+                .mpc_data
+                .clone(),
+        )?,
+    });
+
+    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &mpc_data)?;
 
     let name = ptb.input(CallArg::Pure(bcs::to_bytes(
         validator_initialization_metadata.name.as_str(),
@@ -727,51 +731,7 @@ async fn construct_unsigned_ika_system_txn(
         .map_err(|e| e.into())
 }
 
-async fn add_ika_system_command_to_ptb(
-    context: &mut WalletContext,
-    function: &IdentStr,
-    call_args: Vec<Argument>,
-    ika_system_object_id: ObjectID,
-    ika_system_package_id: ObjectID,
-    ptb: &mut ProgrammableTransactionBuilder,
-) -> anyhow::Result<Argument> {
-    let Some(Owner::Shared {
-        initial_shared_version,
-    }) = context
-        .get_client()
-        .await?
-        .read_api()
-        .get_object_with_options(
-            ika_system_object_id,
-            SuiObjectDataOptions::new().with_owner(),
-        )
-        .await?
-        .data
-        .ok_or(anyhow::Error::msg("failed to get object data"))?
-        .owner
-    else {
-        bail!("Failed to get owner of object")
-    };
-
-    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: ika_system_object_id,
-        initial_shared_version,
-        mutable: true,
-    }))?];
-
-    args.extend(call_args);
-
-    let return_arg = ptb.command(sui_types::transaction::Command::move_call(
-        ika_system_package_id,
-        SYSTEM_MODULE_NAME.into(),
-        function.to_owned(),
-        vec![],
-        args,
-    ));
-    Ok(return_arg)
-}
-
-async fn construct_unsigned_txn(
+pub(crate) async fn construct_unsigned_txn(
     context: &mut WalletContext,
     sender: SuiAddress,
     gas_budget: u64,
@@ -1612,47 +1572,8 @@ pub async fn set_pricing_vote(
         .await?,
     )?;
 
-    let pricing_info = ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_package_id,
-        ident_str!("pricing").into(),
-        ident_str!("empty").into(),
-        vec![],
-        vec![],
-    );
-    let none_bcs = bcs::to_bytes(&None::<u32>)?;
-
-    for entry in new_value {
-        let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
-        let signature_algo_bcs = match &entry.key.signature_algorithm {
-            None => none_bcs.clone(),
-            Some(signature_algo) => bcs::to_bytes(&Some(*signature_algo))?,
-        };
-        let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
-        let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
-        let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
-        let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
-            &entry.value.gas_fee_reimbursement_sui,
-        )?))?;
-        let gas_fee_reimbursement_sui_for_system_calls = ptb.input(CallArg::Pure(
-            bcs::to_bytes(&entry.value.gas_fee_reimbursement_sui_for_system_calls)?,
-        ))?;
-        let args = vec![
-            pricing_info,
-            curve,
-            signature_algo,
-            protocol,
-            fee_ika,
-            gas_fee_reimbursement_sui,
-            gas_fee_reimbursement_sui_for_system_calls,
-        ];
-        ptb.command(Command::move_call(
-            ika_dwallet_2pc_mpc_package_id,
-            PRICING_MODULE_NAME.into(),
-            INSERT_OR_UPDATE_PRICING_FUNCTION_NAME.into(),
-            vec![],
-            args,
-        ));
-    }
+    let pricing_info =
+        new_pricing_info(ika_dwallet_2pc_mpc_package_id, new_value, &mut ptb).await?;
 
     let args = vec![
         dwallet_2pc_mpc_coordinator,
@@ -1672,7 +1593,57 @@ pub async fn set_pricing_vote(
     execute_transaction(context, tx_data).await
 }
 
-async fn get_dwallet_2pc_mpc_coordinator_call_arg(
+pub(crate) async fn new_pricing_info(
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
+    pricing_info: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> Result<Argument, Error> {
+    let pricing_info_arg = ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("empty").into(),
+        vec![],
+        vec![],
+    );
+    let none_bcs = bcs::to_bytes(&None::<u32>)?;
+
+    for entry in pricing_info {
+        let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
+        let signature_algo_bcs = match &entry.key.signature_algorithm {
+            None => none_bcs.clone(),
+            Some(signature_algo) => bcs::to_bytes(&Some(*signature_algo))?,
+        };
+        let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
+        let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
+        let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
+        let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &entry.value.gas_fee_reimbursement_sui,
+        )?))?;
+        let gas_fee_reimbursement_sui_for_system_calls = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&entry.value.gas_fee_reimbursement_sui_for_system_calls)?,
+        ))?;
+        let args = vec![
+            pricing_info_arg,
+            curve,
+            signature_algo,
+            protocol,
+            fee_ika,
+            gas_fee_reimbursement_sui,
+            gas_fee_reimbursement_sui_for_system_calls,
+        ];
+        ptb.command(Command::move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            PRICING_MODULE_NAME.into(),
+            INSERT_OR_UPDATE_PRICING_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        ));
+    }
+
+    Ok(pricing_info_arg)
+}
+
+pub(crate) async fn get_dwallet_2pc_mpc_coordinator_call_arg(
     context: &mut WalletContext,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
 ) -> anyhow::Result<CallArg> {
@@ -1699,4 +1670,48 @@ async fn get_dwallet_2pc_mpc_coordinator_call_arg(
         initial_shared_version,
         mutable: true,
     }))
+}
+
+pub async fn add_ika_system_command_to_ptb(
+    context: &mut WalletContext,
+    function: &IdentStr,
+    call_args: Vec<Argument>,
+    ika_system_object_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> anyhow::Result<Argument> {
+    let Some(Owner::Shared {
+        initial_shared_version,
+    }) = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            ika_system_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
+        .await?
+        .data
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
+        .owner
+    else {
+        bail!("Failed to get owner of object")
+    };
+
+    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version,
+        mutable: true,
+    }))?];
+
+    args.extend(call_args);
+
+    let return_arg = ptb.command(sui_types::transaction::Command::move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        function.to_owned(),
+        vec![],
+        args,
+    ));
+    Ok(return_arg)
 }

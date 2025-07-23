@@ -50,6 +50,8 @@ use sui_types::{
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
 
+#[cfg(feature = "protocol-commands")]
+pub mod ika_protocol_transactions;
 pub mod ika_validator_transactions;
 pub mod metrics;
 
