@@ -47,7 +47,7 @@ pub enum IkaProtocolCommand {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
         #[clap(name = "protocol-cap-id", long)]
-        system_object_cap_id: ObjectID,
+        protocol_cap_id: ObjectID,
         #[clap(name = "paused-curves", long)]
         paused_curves: Vec<u32>,
         #[clap(name = "paused-signature-algorithms", long)]
@@ -62,7 +62,7 @@ pub enum IkaProtocolCommand {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
         #[clap(name = "protocol-cap-id", long)]
-        system_object_cap_id: ObjectID,
+        protocol_cap_id: ObjectID,
         #[clap(name = "default-pricing", long)]
         default_pricing_yaml: PathBuf,
         #[clap(
@@ -119,7 +119,7 @@ impl IkaProtocolCommand {
             // }
             IkaProtocolCommand::SetPausedCurvesAndSignatureAlgorithms {
                 gas_budget,
-                system_object_cap_id,
+                protocol_cap_id,
                 paused_curves,
                 paused_signature_algorithms,
                 paused_hash_schemes,
@@ -138,8 +138,9 @@ impl IkaProtocolCommand {
                     context,
                     config.ika_dwallet_2pc_mpc_package_id,
                     config.ika_dwallet_coordinator_object_id,
-                    config.ika_common_package_id,
-                    system_object_cap_id,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    protocol_cap_id,
                     paused_curves,
                     paused_signature_algorithms,
                     paused_hash_schemes,
@@ -150,7 +151,7 @@ impl IkaProtocolCommand {
             }
             IkaProtocolCommand::SetSupportedAndPricing {
                 gas_budget,
-                system_object_cap_id,
+                protocol_cap_id,
                 default_pricing_yaml,
                 supported_curves_to_signature_algorithms_to_hash_schemes_yaml,
                 ika_sui_config,
@@ -176,8 +177,9 @@ impl IkaProtocolCommand {
                     context,
                     config.ika_dwallet_2pc_mpc_package_id,
                     config.ika_dwallet_coordinator_object_id,
-                    config.ika_common_package_id,
-                    system_object_cap_id,
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
+                    protocol_cap_id,
                     default_pricing_yaml,
                     supported_curves_to_signature_algorithms_to_hash_schemes,
                     gas_budget,

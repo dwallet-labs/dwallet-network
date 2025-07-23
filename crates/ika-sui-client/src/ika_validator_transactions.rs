@@ -1770,8 +1770,9 @@ pub async fn set_paused_curves_and_signature_algorithms(
     context: &mut WalletContext,
     ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
-    ika_common_package_id: ObjectID,
-    system_object_cap_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    protocol_cap_id: ObjectID,
     paused_curves: Vec<u32>,
     paused_signature_algorithms: Vec<u32>,
     paused_hash_schemes: Vec<u32>,
@@ -1781,8 +1782,9 @@ pub async fn set_paused_curves_and_signature_algorithms(
 
     let verified_protocol_cap = get_verified_protocol_cap(
         context,
-        ika_common_package_id,
-        system_object_cap_id,
+        ika_system_package_id,
+        ika_system_object_id,
+        protocol_cap_id,
         &mut ptb,
     )
     .await?;
@@ -1828,8 +1830,9 @@ pub async fn set_supported_and_pricing(
     context: &mut WalletContext,
     ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
-    ika_common_package_id: ObjectID,
-    system_object_cap_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    protocol_cap_id: ObjectID,
     default_pricing: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
     supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
     gas_budget: u64,
@@ -1838,8 +1841,9 @@ pub async fn set_supported_and_pricing(
 
     let verified_protocol_cap = get_verified_protocol_cap(
         context,
-        ika_common_package_id,
-        system_object_cap_id,
+        ika_system_package_id,
+        ika_system_object_id,
+        protocol_cap_id,
         &mut ptb,
     )
     .await?;
@@ -1888,29 +1892,29 @@ pub async fn set_supported_and_pricing(
 
 async fn get_verified_protocol_cap(
     context: &mut WalletContext,
-    ika_common_id: ObjectID,
-    system_object_cap_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    protocol_cap_id: ObjectID,
     ptb: &mut ProgrammableTransactionBuilder,
 ) -> Result<Argument, anyhow::Error> {
     let client = context.get_client().await?;
     let protocol_cap_ref = client
         .transaction_builder()
-        .get_object_ref(system_object_cap_id)
+        .get_object_ref(protocol_cap_id)
         .await?;
 
-    let call_args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+    let args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
         protocol_cap_ref,
     )))?];
 
-    let verified_protocol_cap = ptb.programmable_move_call(
-        ika_common_id,
-        move_core_types::ident_str!("protocol_cap").to_owned(),
-        move_core_types::ident_str!("create_verified").to_owned(),
-        vec![],
-        call_args,
-    );
-
-    Ok(verified_protocol_cap)
+    add_ika_system_command_to_ptb(
+        context,
+        move_core_types::ident_str!("verify_protocol_cap"),
+        args,
+        ika_system_object_id,
+        ika_system_package_id,
+        ptb,
+    ).await
 }
 
 fn new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
