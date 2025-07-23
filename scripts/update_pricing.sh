@@ -14,5 +14,6 @@ operators_cap_ids="0x212fe64375a01cee46f31c900e3a8dbac1df3d7928eccc4feed758588bc
 
 for object_id in $operators_cap_ids; do
   owner_address=$(sui client object "$object_id" | grep 'AddressOwner' | sed -n 's/.*│ *\(0x[a-f0-9]\{64\}\) *│.*/\1/p')
-  echo "$owner_address"
+  sui client switch --address "$owner_address"
+  ./target/debug/ika validator set-pricing-vote --validator-operation-cap-id "$object_id"  --new-pricing-file-path ./current_pricing.yaml
 done
