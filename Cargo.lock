@@ -5670,10 +5670,12 @@ name = "ika"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "bcs",
  "bin-version",
  "clap",
  "colored 3.0.0",
  "dwallet-classgroups-types",
+ "dwallet-mpc-types",
  "dwallet-rng",
  "fastcrypto",
  "http 1.2.0",
@@ -5731,6 +5733,7 @@ dependencies = [
  "bcs",
  "consensus-config",
  "dirs 6.0.0",
+ "dwallet-mpc-types",
  "dwallet-rng",
  "ika-types",
  "once_cell",
@@ -5943,6 +5946,7 @@ dependencies = [
  "itertools 0.14.0",
  "move-core-types",
  "prometheus",
+ "serde",
  "shared-crypto",
  "sui",
  "sui-json-rpc-types",

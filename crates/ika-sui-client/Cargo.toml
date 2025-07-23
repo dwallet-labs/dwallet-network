@@ -13,6 +13,7 @@ workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
 async-trait.workspace = true
 bcs.workspace = true
+serde.workspace = true
 itertools.workspace = true
 prometheus.workspace = true
 tokio = { workspace = true, features = ["full", "tracing", "test-util"] }
