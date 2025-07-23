@@ -19,6 +19,7 @@ use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
+use ika_sui_client::SuiClient;
 use ika_sui_client::ika_validator_transactions::{
     BecomeCandidateValidatorData, collect_commission, report_validator, request_add_validator,
     request_add_validator_candidate, request_remove_validator, request_remove_validator_candidate,
@@ -31,7 +32,6 @@ use ika_sui_client::ika_validator_transactions::{
     verify_commission_cap, verify_operation_cap, verify_validator_cap, withdraw_stake,
 };
 use ika_sui_client::metrics::SuiClientMetrics;
-use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, PricingInfoKey, PricingInfoValue};
