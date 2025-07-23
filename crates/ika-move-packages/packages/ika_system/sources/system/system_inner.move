@@ -9,6 +9,7 @@ use ika_common::bls_committee::BlsCommittee;
 use ika_common::protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap};
 use ika_common::system_current_status_info::{Self, SystemCurrentStatusInfo};
 use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::upgrade_package_approver::{Self, UpgradePackageApprover};
 use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorOperationCap,
@@ -31,9 +32,9 @@ use sui::coin::Coin;
 use sui::event;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::table::Table;
+use sui::table_vec::TableVec;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::VecSet;
-use sui::table_vec::TableVec;
 
 // === Constants ===
 
@@ -113,7 +114,7 @@ public struct SystemInner has store {
     authorized_protocol_cap_ids: vector<ID>,
     /// List of witnesses approving advance epoch.
     /// as part of the epoch advancement, we have to collect approval from all witnesses.
-    witness_approving_advance_epoch: vector<String>,
+    witnesses_approving_advance_epoch: vector<String>,
     /// Whether the system has received the end of publish message.
     received_end_of_publish: bool,
     /// Any extra fields that's not defined statically.
@@ -257,7 +258,7 @@ public(package) fun create(
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
-        witness_approving_advance_epoch: vector[],
+        witnesses_approving_advance_epoch: vector[],
         // We advance epoch `0` immediately, and so the network doesn't participate in it and won't
         // send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish`
         // to overcome the check in `advance_epoch()`.
@@ -292,7 +293,8 @@ public(package) fun initialize(
     // This is done to avoid the case where the epoch 0 is advanced before the
     // committee is initialized.
     advance_epoch_approver::create(
-        self.witness_approving_advance_epoch,
+        self.epoch + 1,
+        self.witnesses_approving_advance_epoch,
         balance::zero(),
         &self.system_object_cap,
     )
@@ -599,7 +601,8 @@ public(package) fun initiate_advance_epoch(
     self.assert_end_epoch_time(clock);
 
     advance_epoch_approver::create(
-        self.witness_approving_advance_epoch,
+        self.epoch + 1,
+        self.witnesses_approving_advance_epoch,
         balance::zero(),
         &self.system_object_cap,
     )
@@ -628,7 +631,9 @@ public(package) fun advance_epoch(
     self.previous_epoch_last_checkpoint_sequence_number =
         self.last_processed_checkpoint_sequence_number;
 
-    let dwallet_computation_and_consensus_validation_rewards = advance_epoch_approver.destroy(
+    let new_epoch = advance_epoch_approver.new_epoch();
+    
+    let fee_rewards = advance_epoch_approver.destroy(
         &self.system_object_cap,
     );
 
@@ -644,15 +649,14 @@ public(package) fun advance_epoch(
 
     let stake_subsidy_amount = stake_subsidy.value();
 
-    let total_computation_fees = dwallet_computation_and_consensus_validation_rewards.value();
+    let total_computation_fees = fee_rewards.value();
 
-    let mut total_reward = sui::balance::zero<IKA>();
-    total_reward.join(dwallet_computation_and_consensus_validation_rewards);
-    total_reward.join(stake_subsidy);
-    total_reward.join(self.remaining_rewards.withdraw_all());
+    let mut total_rewards = sui::balance::zero<IKA>();
+    total_rewards.join(fee_rewards);
+    total_rewards.join(stake_subsidy);
+    total_rewards.join(self.remaining_rewards.withdraw_all());
 
-    let total_reward_amount_before_distribution = total_reward.value();
-    let new_epoch = current_epoch + 1;
+    let total_reward_amount_before_distribution = total_rewards.value();
     self.epoch = new_epoch;
     if (self.next_protocol_version.is_some()) {
         self.protocol_version = self.next_protocol_version.extract();
@@ -662,18 +666,18 @@ public(package) fun advance_epoch(
         .validator_set
         .advance_epoch(
             new_epoch,
-            &mut total_reward,
+            &mut total_rewards,
         );
 
     let new_total_stake = self.validator_set.total_stake();
 
-    let total_reward_amount_after_distribution = total_reward.value();
+    let total_reward_amount_after_distribution = total_rewards.value();
     let total_reward_distributed =
         total_reward_amount_before_distribution - total_reward_amount_after_distribution;
 
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `remaining_rewards`.
-    self.remaining_rewards.join(total_reward);
+    self.remaining_rewards.join(total_rewards);
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -764,8 +768,8 @@ fun verify_protocol_cap_impl(self: &SystemInner, cap: &ProtocolCap) {
 
 public(package) fun add_upgrade_cap_by_cap(
     self: &mut SystemInner,
-    cap: &ProtocolCap,
     upgrade_cap: UpgradeCap,
+    cap: &ProtocolCap,
 ) {
     self.verify_protocol_cap_impl(cap);
     self.upgrade_caps.push_back(upgrade_cap);
@@ -779,12 +783,29 @@ public(package) fun authorize_upgrade(self: &mut SystemInner, package_id: ID): U
     self.upgrade_caps[index].authorize(policy, digest)
 }
 
-public(package) fun commit_upgrade(self: &mut SystemInner, receipt: UpgradeReceipt): ID {
+public(package) fun commit_upgrade(
+    self: &mut SystemInner,
+    receipt: UpgradeReceipt,
+): UpgradePackageApprover {
+    let new_package_id = receipt.package();
     let receipt_cap_id = receipt.cap();
     let index = self.upgrade_caps.find_index!(|c| object::id(c) == receipt_cap_id).extract();
     let old_package_id = self.upgrade_caps[index].package();
     self.upgrade_caps[index].commit(receipt);
-    old_package_id
+    upgrade_package_approver::create(
+        self.witnesses_approving_advance_epoch,
+        new_package_id,
+        old_package_id,
+        &self.system_object_cap,
+    )
+}
+
+public(package) fun finalize_upgrade(
+    self: &SystemInner,
+    upgrade_package_approver: UpgradePackageApprover,
+) {
+    upgrade_package_approver.assert_all_witnesses_approved();
+    upgrade_package_approver.destroy(&self.system_object_cap);
 }
 
 public(package) fun process_checkpoint_message_by_quorum(
@@ -952,9 +973,9 @@ public(package) fun verify_protocol_cap(
 
 public(package) fun set_approved_upgrade_by_cap(
     self: &mut SystemInner,
-    cap: &ProtocolCap,
     package_id: ID,
     digest: Option<vector<u8>>,
+    cap: &ProtocolCap,
 ) {
     self.verify_protocol_cap_impl(cap);
     self.set_approved_upgrade(package_id, digest);
@@ -962,9 +983,9 @@ public(package) fun set_approved_upgrade_by_cap(
 
 public(package) fun set_or_remove_witness_approving_advance_epoch_by_cap(
     self: &mut SystemInner,
-    cap: &ProtocolCap,
     witness_type: String,
     remove: bool,
+    cap: &ProtocolCap,
 ) {
     self.verify_protocol_cap_impl(cap);
     self.set_or_remove_witness_approving_advance_epoch(witness_type, remove);
@@ -972,8 +993,8 @@ public(package) fun set_or_remove_witness_approving_advance_epoch_by_cap(
 
 public(package) fun process_checkpoint_message_by_cap(
     self: &mut SystemInner,
-    cap: &ProtocolCap,
     message: vector<u8>,
+    cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     self.verify_protocol_cap_impl(cap);
@@ -1012,11 +1033,11 @@ fun set_or_remove_witness_approving_advance_epoch(
     witness_type: String,
     remove: bool,
 ) {
-    let (found, index) = self.witness_approving_advance_epoch.index_of(&witness_type);
+    let (found, index) = self.witnesses_approving_advance_epoch.index_of(&witness_type);
     if (remove && found) {
-        self.witness_approving_advance_epoch.remove(index);
+        self.witnesses_approving_advance_epoch.remove(index);
     } else if (!found) {
-        self.witness_approving_advance_epoch.push_back(witness_type);
+        self.witnesses_approving_advance_epoch.push_back(witness_type);
     };
     event::emit(SetOrRemoveWitnessApprovingAdvanceEpochEvent {
         epoch: self.epoch,

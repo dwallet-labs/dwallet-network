@@ -1369,7 +1369,7 @@ pub fn write_transaction_response_without_transaction_data(
     let mut writer = String::new();
     for line in lines {
         let colorized_line = if success { line.green() } else { line.red() };
-        writeln!(writer, "{}", colorized_line)?;
+        writeln!(writer, "{colorized_line}")?;
     }
     Ok(writer)
 }
