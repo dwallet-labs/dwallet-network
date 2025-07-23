@@ -1067,9 +1067,9 @@ impl IkaValidatorCommand {
                 if response.status_ok().is_some() && response.status_ok().unwrap() {
                     // Save the new seed to mpc-root.seed file (override if exists)
                     let dir = std::env::current_dir()?;
-                    let class_groups_key_file = dir.join("mpc-root.seed");
-                    mpc_root_seed.save_to_file(class_groups_key_file.clone())?;
-                    println!("Generated new class groups seed file: {class_groups_key_file:?}.");
+                    let mpc_root_seed_file_path = dir.join("mpc-root.seed");
+                    mpc_root_seed.save_to_file(mpc_root_seed_file_path.clone())?;
+                    println!("Generated new MPC root seed file: {mpc_root_seed_file_path:?}.");
                 }
 
                 IkaValidatorCommandResponse::SetNextEpochMPCData(response)
