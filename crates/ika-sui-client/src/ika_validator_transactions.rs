@@ -1671,7 +1671,7 @@ pub async fn set_pricing_vote(
         SET_PRICING_VOTE_FUNCTION_NAME.to_owned(),
         vec![],
         args,
-    ));
+    );
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
