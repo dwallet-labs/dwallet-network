@@ -1,6 +1,8 @@
-use anyhow::bail;
+use std::collections::HashMap;
+use anyhow::{bail, Error};
 use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
 use fastcrypto::traits::ToFromBytes;
+use itertools::Itertools;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
@@ -42,7 +44,7 @@ use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOption
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::collection_types::Entry;
+use sui_types::collection_types::{Entry, VecMap};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
@@ -1612,55 +1614,12 @@ pub async fn set_pricing_vote(
 
     let sender = context.active_address()?;
 
-    let dwallet_2pc_mpc_coordinator = ptb.input(
-        get_dwallet_2pc_mpc_coordinator_call_arg(
-            context,
-            ika_dwallet_2pc_mpc_coordinator_object_id,
-        )
-        .await?,
-    )?;
+    let dwallet_2pc_mpc_coordinator = ptb.input(get_dwallet_2pc_mpc_coordinator_call_arg(
+        context,
+        ika_dwallet_2pc_mpc_coordinator_object_id,
+    ).await?)?;
 
-    let pricing_info = ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_package_id,
-        ident_str!("pricing").into(),
-        ident_str!("empty").into(),
-        vec![],
-        vec![],
-    );
-    let none_bcs = bcs::to_bytes(&None::<u32>)?;
-
-    for entry in new_value {
-        let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
-        let signature_algo_bcs = match &entry.key.signature_algorithm {
-            None => none_bcs.clone(),
-            Some(signature_algo) => bcs::to_bytes(&Some(*signature_algo))?,
-        };
-        let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
-        let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
-        let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
-        let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
-            &entry.value.gas_fee_reimbursement_sui,
-        )?))?;
-        let gas_fee_reimbursement_sui_for_system_calls = ptb.input(CallArg::Pure(
-            bcs::to_bytes(&entry.value.gas_fee_reimbursement_sui_for_system_calls)?,
-        ))?;
-        let args = vec![
-            pricing_info,
-            curve,
-            signature_algo,
-            protocol,
-            fee_ika,
-            gas_fee_reimbursement_sui,
-            gas_fee_reimbursement_sui_for_system_calls,
-        ];
-        ptb.command(Command::move_call(
-            ika_dwallet_2pc_mpc_package_id,
-            PRICING_MODULE_NAME.into(),
-            INSERT_OR_UPDATE_PRICING_FUNCTION_NAME.into(),
-            vec![],
-            args,
-        ));
-    }
+    let pricing_info = new_pricing_info(ika_dwallet_2pc_mpc_package_id, new_value, &mut ptb).await?;
 
     let args = vec![
         dwallet_2pc_mpc_coordinator,
@@ -1678,6 +1637,53 @@ pub async fn set_pricing_vote(
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
     execute_transaction(context, tx_data).await
+}
+
+async fn new_pricing_info(ika_dwallet_2pc_mpc_package_id: ObjectID, pricing_info: Vec<Entry<PricingInfoKey, PricingInfoValue>>, ptb: &mut ProgrammableTransactionBuilder) -> Result<Argument, Error> {
+
+    let pricing_info_arg = ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_package_id,
+        ident_str!("pricing").into(),
+        ident_str!("empty").into(),
+        vec![],
+        vec![],
+    );
+    let none_bcs = bcs::to_bytes(&None::<u32>)?;
+
+    for entry in pricing_info {
+        let curve = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.curve)?))?;
+        let signature_algo_bcs = match &entry.key.signature_algorithm {
+            None => none_bcs.clone(),
+            Some(signature_algo) => bcs::to_bytes(&Some(*signature_algo))?,
+        };
+        let signature_algo = ptb.input(CallArg::Pure(signature_algo_bcs))?;
+        let protocol = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.key.protocol)?))?;
+        let fee_ika = ptb.input(CallArg::Pure(bcs::to_bytes(&entry.value.fee_ika)?))?;
+        let gas_fee_reimbursement_sui = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &entry.value.gas_fee_reimbursement_sui,
+        )?))?;
+        let gas_fee_reimbursement_sui_for_system_calls = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&entry.value.gas_fee_reimbursement_sui_for_system_calls)?,
+        ))?;
+        let args = vec![
+            pricing_info_arg,
+            curve,
+            signature_algo,
+            protocol,
+            fee_ika,
+            gas_fee_reimbursement_sui,
+            gas_fee_reimbursement_sui_for_system_calls,
+        ];
+        ptb.command(Command::move_call(
+            ika_dwallet_2pc_mpc_package_id,
+            PRICING_MODULE_NAME.into(),
+            INSERT_OR_UPDATE_PRICING_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        ));
+    }
+
+    Ok(pricing_info_arg)
 }
 
 async fn get_dwallet_2pc_mpc_coordinator_call_arg(
@@ -1820,8 +1826,8 @@ pub async fn set_supported_and_pricing(
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
     ika_common_package_id: ObjectID,
     system_object_cap_id: ObjectID,
-    default_pricing: String,
-    supported_curves_to_signature_algorithms_to_hash_schemes: String,
+    default_pricing: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
+    supported_curves_to_signature_algorithms_to_hash_schemes: bool,
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1834,7 +1840,12 @@ pub async fn set_supported_and_pricing(
     )
     .await?;
 
-    let default_pricing = ptb.input(CallArg::Pure(bcs::to_bytes(&default_pricing)?))?;
+    let default_pricing = new_pricing_info(
+        ika_dwallet_2pc_mpc_coordinator_package_id,
+        default_pricing,
+        &mut ptb,
+    ).await?;
+
     let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.input(CallArg::Pure(
         bcs::to_bytes(&supported_curves_to_signature_algorithms_to_hash_schemes)?,
     ))?;
@@ -1894,3 +1905,65 @@ async fn get_verified_protocol_cap(
 
     Ok(verified_protocol_cap)
 }
+
+
+// fn new_supported_curves_to_signature_algorithms_to_hash_schemes(
+//     ptb: &mut ProgrammableTransactionBuilder,
+//     supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
+// ) -> Result<Argument, anyhow::Error> {
+//     let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
+//     let zero_and_one_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u32, 1u32]])?))?;
+//
+//     let supported_curves_to_signature_algorithms_to_hash_schemes_args = supported_curves_to_signature_algorithms_to_hash_schemes.iter().map(|(curve, signature_algorithms_to_hash_schemes)| {
+//
+//             let keys = ptb.input(CallArg::Pure(bcs::to_bytes(&signature_algorithms_to_hash_schemes.keys().collect_vec())?))?;
+//             let value = ptb.input(CallArg::Pure(bcs::to_bytes(hash_schemes)?))?;
+//             let args= ptb.programmable_move_call(
+//                 SUI_FRAMEWORK_PACKAGE_ID,
+//                 ident_str!("vec_map").into(),
+//                 ident_str!("from_keys_values").into(),
+//                 vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+//                 vec![key, value],
+//             )
+//     })?;
+//
+//
+//     let supported_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
+//         SUI_FRAMEWORK_PACKAGE_ID,
+//         ident_str!("vec_map").into(),
+//         ident_str!("from_keys_values").into(),
+//         vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+//         vec![zero_key, zero_and_one_value],
+//     );
+//
+//     let supported_signature_algorithms_to_hash_schemes_vec = ptb.programmable_move_call(
+//         MOVE_STDLIB_PACKAGE_ID,
+//         ident_str!("vector").into(),
+//         ident_str!("singleton").into(),
+//         vec![TypeTag::Struct(Box::new(StructTag {
+//             address: SUI_FRAMEWORK_PACKAGE_ID.into(),
+//             module: ident_str!("vec_map").into(),
+//             name: ident_str!("VecMap").into(),
+//             type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+//         }))],
+//         vec![supported_signature_algorithms_to_hash_schemes],
+//     );
+//
+//     let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
+//         SUI_FRAMEWORK_PACKAGE_ID,
+//         ident_str!("vec_map").into(),
+//         ident_str!("from_keys_values").into(),
+//         vec![
+//             TypeTag::U32,
+//             TypeTag::Struct(Box::new(StructTag {
+//                 address: SUI_FRAMEWORK_PACKAGE_ID.into(),
+//                 module: ident_str!("vec_map").into(),
+//                 name: ident_str!("VecMap").into(),
+//                 type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+//             })),
+//         ],
+//         vec![zero_key, supported_signature_algorithms_to_hash_schemes_vec],
+//     );
+//
+//     Ok(supported_curves_to_signature_algorithms_to_hash_schemes)
+// }

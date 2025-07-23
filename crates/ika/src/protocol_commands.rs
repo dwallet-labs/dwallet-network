@@ -7,7 +7,8 @@ use std::{
     fmt::{Debug, Display, Formatter, Write},
     path::PathBuf,
 };
-
+use std::fs::File;
+use std::io::BufReader;
 use clap::Subcommand;
 use colored::Colorize;
 // use hex;
@@ -21,6 +22,8 @@ use sui_config::PersistedConfig;
 use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
+use sui_types::collection_types::Entry;
+use ika_types::sui::{PricingInfoKey, PricingInfoValue};
 
 const DEFAULT_GAS_BUDGET: u64 = 200_000_000;
 
@@ -61,12 +64,12 @@ pub enum IkaProtocolCommand {
         #[clap(name = "protocol-cap-id", long)]
         system_object_cap_id: ObjectID,
         #[clap(name = "default-pricing", long)]
-        default_pricing: String,
+        default_pricing_yaml: PathBuf,
         #[clap(
             name = "supported-curves-to-signature-algorithms-to-hash-schemes",
             long
         )]
-        supported_curves_to_signature_algorithms_to_hash_schemes: String,
+        supported_curves_to_signature_algorithms_to_hash_schemes: PathBuf,
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
     },
@@ -148,7 +151,7 @@ impl IkaProtocolCommand {
             IkaProtocolCommand::SetSupportedAndPricing {
                 gas_budget,
                 system_object_cap_id,
-                default_pricing,
+                default_pricing_yaml,
                 supported_curves_to_signature_algorithms_to_hash_schemes,
                 ika_sui_config,
             } => {
@@ -161,14 +164,17 @@ impl IkaProtocolCommand {
                         ))
                     })?;
 
+                let default_pricing_yaml: Vec<Entry<PricingInfoKey, PricingInfoValue>> =
+                    serde_yaml::from_reader(BufReader::new(File::open(default_pricing_yaml)?))?;
+
                 let response = set_supported_and_pricing(
                     context,
                     config.ika_dwallet_2pc_mpc_package_id,
                     config.ika_dwallet_coordinator_object_id,
                     config.ika_common_package_id,
                     system_object_cap_id,
-                    default_pricing,
-                    supported_curves_to_signature_algorithms_to_hash_schemes,
+                    default_pricing_yaml,
+                    false,
                     gas_budget,
                 )
                 .await?;
