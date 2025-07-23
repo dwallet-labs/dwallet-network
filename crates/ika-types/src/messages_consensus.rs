@@ -193,12 +193,16 @@ impl ConsensusTransaction {
         session_identifier: SessionIdentifier,
         message: Vec<u8>,
         round_number: u64,
+        attempt_number: u64,
+        is_threshold_not_reached: bool
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         authority.hash(&mut hasher);
         session_identifier.hash(&mut hasher);
         message.hash(&mut hasher);
         round_number.hash(&mut hasher);
+        attempt_number.hash(&mut hasher);
+        is_threshold_not_reached.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -207,6 +211,8 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_identifier,
+                attempt_number,
+                is_threshold_not_reached
             }),
         }
     }

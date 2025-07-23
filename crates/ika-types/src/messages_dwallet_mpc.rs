@@ -316,6 +316,8 @@ pub struct DWalletMPCMessage {
     pub session_identifier: SessionIdentifier,
     /// The MPC round number starts from 0.
     pub round_number: u64,
+    pub attempt_number: u64,
+    pub is_threshold_not_reached: bool
 }
 
 /// The message unique key in the consensus network.

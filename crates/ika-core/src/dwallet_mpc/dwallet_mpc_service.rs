@@ -490,6 +490,7 @@ impl DWalletMPCService {
         for (computation_id, computation_result) in completed_computation_results {
             let session_identifier = computation_id.session_identifier;
             let mpc_round = computation_id.mpc_round;
+            let attempt_number = computation_id.attempt_number;
             let consensus_adapter = self.consensus_adapter.clone();
             let epoch_store = self.epoch_store.clone();
 
@@ -508,9 +509,15 @@ impl DWalletMPCService {
                                     ?mpc_round,
                                     "Advanced MPC session"
                                 );
+
+                                // We don't support sending threshold not reached messages in this version.
+                                // We will in future ones.
+                                let is_threshold_not_reached = false;
                                 let message = self.new_dwallet_mpc_message(
                                     session_identifier,
                                     mpc_round,
+                                    attempt_number,
+                                    is_threshold_not_reached,
                                     message,
                                 );
 
@@ -667,6 +674,8 @@ impl DWalletMPCService {
         &self,
         session_identifier: SessionIdentifier,
         mpc_round: u64,
+        attempt_number: u64,
+        is_threshold_not_reached: bool,
         message: MPCMessage,
     ) -> ConsensusTransaction {
         ConsensusTransaction::new_dwallet_mpc_message(
@@ -674,6 +683,8 @@ impl DWalletMPCService {
             session_identifier,
             message,
             mpc_round,
+            attempt_number,
+            is_threshold_not_reached
         )
     }
 
