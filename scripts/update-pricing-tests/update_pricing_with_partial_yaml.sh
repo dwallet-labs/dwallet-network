@@ -15,7 +15,7 @@
 # Then query the new current price with `./target/debug/ika validator get-current-pricing-info` & verify the
 # new ika fee has been updated correctly.
 
-NEW_IKA_FEE_PER_VALIDATOR="900 900 900 900"
+NEW_IKA_FEE_PER_VALIDATOR="250 250 250 250"
 
 OPERATORS_CAP_IDS="0x5be562316735e388da26a102f73cbceb45dfb8d6099e28ef930d896729575f49 \
 0x4eb389561653b11265c504eec739b66732c0189595d685393db542b60753f1a3 \
@@ -24,15 +24,31 @@ OPERATORS_CAP_IDS="0x5be562316735e388da26a102f73cbceb45dfb8d6099e28ef930d8967295
 
 yq -P -o yaml ./ika_config.json > /Users/itaylevy/.ika/ika_config/ika_sui_config.yaml
 ./target/debug/ika validator get-current-pricing-info
-cat >> current_pricing.yaml <<EOF
+cat > current_pricing.yaml <<EOF
 - key:
-    curve: 20
-    signature_algorithm: 21
-    protocol: 19
+    curve: 0
+    signature_algorithm: null
+    protocol: 0
   value:
-    fee_ika: 300
-    gas_fee_reimbursement_sui: 300
-    gas_fee_reimbursement_sui_for_system_calls: 300
+    fee_ika: 900
+    gas_fee_reimbursement_sui: 900
+    gas_fee_reimbursement_sui_for_system_calls: 900
+- key:
+    curve: 0
+    signature_algorithm: null
+    protocol: 1
+  value:
+    fee_ika: 900
+    gas_fee_reimbursement_sui: 900
+    gas_fee_reimbursement_sui_for_system_calls: 900
+- key:
+    curve: 0
+    signature_algorithm: null
+    protocol: 2
+  value:
+    fee_ika: 900
+    gas_fee_reimbursement_sui: 900
+    gas_fee_reimbursement_sui_for_system_calls: 900
 EOF
 
 grep "account_key_pair: A" ~/.ika/ika_config/network.yaml | awk '{print $2}' | while read key; do
