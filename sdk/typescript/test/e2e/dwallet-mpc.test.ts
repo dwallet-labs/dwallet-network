@@ -115,6 +115,7 @@ describe('Test dWallet MPC', () => {
 
 	it('should launch DKG first round with given coins', async () => {
 		console.log('Creating dWallet...');
+		// loop while true
 		await launchDKGFirstRoundWithGivenCoins(
 			conf,
 			'0xb95fb6971af6769848be326e9428c7843ad4dd76481cf0f1a2d11d42f0a07406',
@@ -350,26 +351,29 @@ describe('tests that do not require faucet requests', () => {
 	});
 
 	it('should print the fees collection objects', async () => {
-		const dynamicFields = await conf.client.getDynamicFields({
-			parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
-		});
-		const coordinatorInner = await conf.client.getDynamicFieldObject({
-			parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
-			name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-		});
-		if (!isCoordinatorInner(coordinatorInner.data?.content)) {
-			throw new Error('Invalid coordinator inner');
+		while (true) {
+			const dynamicFields = await conf.client.getDynamicFields({
+				parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
+			});
+			const coordinatorInner = await conf.client.getDynamicFieldObject({
+				parentId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
+				name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+			});
+			if (!isCoordinatorInner(coordinatorInner.data?.content)) {
+				throw new Error('Invalid coordinator inner');
+			}
+			console.log({
+				fee_charged_ika:
+					coordinatorInner.data.content.fields.value.fields.pricing_and_fee_manager.fields
+						.fee_charged_ika,
+				gas_fee_reimbursement_sui_system_call_value:
+					coordinatorInner.data.content.fields.value.fields.pricing_and_fee_manager.fields
+						.gas_fee_reimbursement_sui_system_call_value,
+				gas_fee_reimbursement_sui_system_call_balance:
+					coordinatorInner.data.content.fields.value.fields.pricing_and_fee_manager.fields
+						.gas_fee_reimbursement_sui_system_call_balance,
+			});
+			await delay(100);
 		}
-		console.log({
-			fee_charged_ika:
-				coordinatorInner.data.content.fields.value.fields.pricing_and_fee_manager.fields
-					.fee_charged_ika,
-			gas_fee_reimbursement_sui_system_call_value:
-				coordinatorInner.data.content.fields.value.fields.pricing_and_fee_manager.fields
-					.gas_fee_reimbursement_sui_system_call_value,
-			gas_fee_reimbursement_sui_system_call_balance:
-				coordinatorInner.data.content.fields.value.fields.pricing_and_fee_manager.fields
-					.gas_fee_reimbursement_sui_system_call_balance,
-		});
 	});
 });
