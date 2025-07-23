@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
 use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
-use ika_sui_client::ika_validator_transactions::{
+use ika_sui_client::ika_protocol_transactions::{
     set_gas_fee_reimbursement_sui_system_call_value_by_cap,
     set_paused_curves_and_signature_algorithms, set_supported_and_pricing,
 };

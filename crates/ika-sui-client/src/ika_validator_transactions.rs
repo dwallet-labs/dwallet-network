@@ -15,21 +15,19 @@ use ika_types::sui::{
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_REMOVE_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
     REQUEST_WITHDRAW_STAKE_FUNCTION_NAME, ROTATE_COMMISSION_CAP_FUNCTION_NAME,
-    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME,
-    SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_BY_CAP_FUNCTION_NAME,
-    SET_NEXT_COMMISSION_FUNCTION_NAME, SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
+    ROTATE_OPERATION_CAP_FUNCTION_NAME, SET_NEXT_COMMISSION_FUNCTION_NAME,
+    SET_NEXT_EPOCH_CONSENSUS_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_CONSENSUS_PUBKEY_BYTES_FUNCTION_NAME,
     SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_NETWORK_ADDRESS_FUNCTION_NAME,
     SET_NEXT_EPOCH_NETWORK_PUBKEY_BYTES_FUNCTION_NAME, SET_NEXT_EPOCH_P2P_ADDRESS_FUNCTION_NAME,
-    SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME,
-    SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME,
-    SET_SUPPORTED_AND_PRICING_FUNCTION_NAME, SET_VALIDATOR_METADATA_FUNCTION_NAME,
-    SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME, TABLE_VEC_MODULE_NAME,
-    TABLE_VEC_STRUCT_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME, VALIDATOR_CAP_MODULE_NAME,
-    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME, VALIDATOR_METADATA_FUNCTION_NAME,
-    VALIDATOR_METADATA_MODULE_NAME, VALIDATOR_OPERATION_STRUCT_NAME,
-    VERIFY_COMMISSION_CAP_FUNCTION_NAME, VERIFY_OPERATION_CAP_FUNCTION_NAME,
-    VERIFY_VALIDATOR_CAP_FUNCTION_NAME, WITHDRAW_STAKE_FUNCTION_NAME,
+    SET_NEXT_EPOCH_PROTOCOL_PUBKEY_BYTES_FUNCTION_NAME, SET_PRICING_VOTE_FUNCTION_NAME,
+    SET_VALIDATOR_METADATA_FUNCTION_NAME, SET_VALIDATOR_NAME_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    TABLE_VEC_MODULE_NAME, TABLE_VEC_STRUCT_NAME, UNDO_REPORT_VALIDATOR_FUNCTION_NAME,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_COMMISSION_STRUCT_NAME,
+    VALIDATOR_METADATA_FUNCTION_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    VALIDATOR_OPERATION_STRUCT_NAME, VERIFY_COMMISSION_CAP_FUNCTION_NAME,
+    VERIFY_OPERATION_CAP_FUNCTION_NAME, VERIFY_VALIDATOR_CAP_FUNCTION_NAME,
+    WITHDRAW_STAKE_FUNCTION_NAME,
 };
 
 use move_core_types::ident_str;
@@ -37,7 +35,6 @@ use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::Serialize;
 use shared_crypto::intent::Intent;
-use std::collections::HashMap;
 use sui::client_commands::{SuiClientCommandResult, execute_dry_run};
 use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
@@ -51,7 +48,6 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction, TransactionKind};
 use sui_types::transaction::{Command, TransactionData};
 use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID};
-
 #[derive(Serialize)]
 pub struct BecomeCandidateValidatorData {
     pub validator_id: ObjectID,
@@ -735,51 +731,7 @@ async fn construct_unsigned_ika_system_txn(
         .map_err(|e| e.into())
 }
 
-async fn add_ika_system_command_to_ptb(
-    context: &mut WalletContext,
-    function: &IdentStr,
-    call_args: Vec<Argument>,
-    ika_system_object_id: ObjectID,
-    ika_system_package_id: ObjectID,
-    ptb: &mut ProgrammableTransactionBuilder,
-) -> anyhow::Result<Argument> {
-    let Some(Owner::Shared {
-        initial_shared_version,
-    }) = context
-        .get_client()
-        .await?
-        .read_api()
-        .get_object_with_options(
-            ika_system_object_id,
-            SuiObjectDataOptions::new().with_owner(),
-        )
-        .await?
-        .data
-        .ok_or(anyhow::Error::msg("failed to get object data"))?
-        .owner
-    else {
-        bail!("Failed to get owner of object")
-    };
-
-    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: ika_system_object_id,
-        initial_shared_version,
-        mutable: true,
-    }))?];
-
-    args.extend(call_args);
-
-    let return_arg = ptb.command(sui_types::transaction::Command::move_call(
-        ika_system_package_id,
-        SYSTEM_MODULE_NAME.into(),
-        function.to_owned(),
-        vec![],
-        args,
-    ));
-    Ok(return_arg)
-}
-
-async fn construct_unsigned_txn(
+pub(crate) async fn construct_unsigned_txn(
     context: &mut WalletContext,
     sender: SuiAddress,
     gas_budget: u64,
@@ -1641,7 +1593,7 @@ pub async fn set_pricing_vote(
     execute_transaction(context, tx_data).await
 }
 
-async fn new_pricing_info(
+pub(crate) async fn new_pricing_info(
     ika_dwallet_2pc_mpc_package_id: ObjectID,
     pricing_info: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
     ptb: &mut ProgrammableTransactionBuilder,
@@ -1691,7 +1643,7 @@ async fn new_pricing_info(
     Ok(pricing_info_arg)
 }
 
-async fn get_dwallet_2pc_mpc_coordinator_call_arg(
+pub(crate) async fn get_dwallet_2pc_mpc_coordinator_call_arg(
     context: &mut WalletContext,
     ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
 ) -> anyhow::Result<CallArg> {
@@ -1720,316 +1672,46 @@ async fn get_dwallet_2pc_mpc_coordinator_call_arg(
     }))
 }
 
-// === Protocol Commands ===
-
-/// Set approved upgrade by cap
-pub async fn set_approved_upgrade_by_cap(
+pub async fn add_ika_system_command_to_ptb(
     context: &mut WalletContext,
-    ika_system_package_id: ObjectID,
+    function: &IdentStr,
+    call_args: Vec<Argument>,
     ika_system_object_id: ObjectID,
-    protocol_cap_id: ObjectID,
-    package_id: ObjectID,
-    digest: Option<Vec<u8>>,
-    gas_budget: u64,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let client = context.get_client().await?;
-    let protocol_cap_ref = client
-        .transaction_builder()
-        .get_object_ref(protocol_cap_id)
-        .await?;
-
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    let package_id = ptb.input(CallArg::Pure(bcs::to_bytes(&package_id)?))?;
-    let digest = ptb.input(CallArg::Pure(bcs::to_bytes(&digest)?))?;
-    let call_args = vec![
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            protocol_cap_ref,
-        )))?,
-        package_id,
-        digest,
-    ];
-
-    let sender = context.active_address()?;
-
-    add_ika_system_command_to_ptb(
-        context,
-        SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME,
-        call_args,
-        ika_system_object_id,
-        ika_system_package_id,
-        &mut ptb,
-    )
-    .await?;
-
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    execute_transaction(context, tx_data).await
-}
-
-/// Set paused curves and signature algorithms
-pub async fn set_paused_curves_and_signature_algorithms(
-    context: &mut WalletContext,
-    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
-    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
     ika_system_package_id: ObjectID,
-    ika_system_object_id: ObjectID,
-    protocol_cap_id: ObjectID,
-    paused_curves: Vec<u32>,
-    paused_signature_algorithms: Vec<u32>,
-    paused_hash_schemes: Vec<u32>,
-    gas_budget: u64,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let mut ptb = ProgrammableTransactionBuilder::new();
-
-    let verified_protocol_cap = get_verified_protocol_cap(
-        context,
-        ika_system_package_id,
-        ika_system_object_id,
-        protocol_cap_id,
-        &mut ptb,
-    )
-    .await?;
-
-    let paused_curves = ptb.input(CallArg::Pure(bcs::to_bytes(&paused_curves)?))?;
-    let paused_signature_algorithms =
-        ptb.input(CallArg::Pure(bcs::to_bytes(&paused_signature_algorithms)?))?;
-    let paused_hash_schemes = ptb.input(CallArg::Pure(bcs::to_bytes(&paused_hash_schemes)?))?;
-
-    let dwallet_2pc_mpc_coordinator = ptb.input(
-        get_dwallet_2pc_mpc_coordinator_call_arg(
-            context,
-            ika_dwallet_2pc_mpc_coordinator_object_id,
-        )
-        .await?,
-    )?;
-
-    let args = vec![
-        dwallet_2pc_mpc_coordinator,
-        paused_curves,
-        paused_signature_algorithms,
-        paused_hash_schemes,
-        verified_protocol_cap,
-    ];
-
-    ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-        SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME.to_owned(),
-        vec![],
-        args,
-    );
-
-    let sender = context.active_address()?;
-
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    execute_transaction(context, tx_data).await
-}
-
-/// Set supported and pricing
-pub async fn set_supported_and_pricing(
-    context: &mut WalletContext,
-    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
-    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
-    ika_system_package_id: ObjectID,
-    ika_system_object_id: ObjectID,
-    protocol_cap_id: ObjectID,
-    default_pricing: Vec<Entry<PricingInfoKey, PricingInfoValue>>,
-    supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
-    gas_budget: u64,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let mut ptb = ProgrammableTransactionBuilder::new();
-
-    let verified_protocol_cap = get_verified_protocol_cap(
-        context,
-        ika_system_package_id,
-        ika_system_object_id,
-        protocol_cap_id,
-        &mut ptb,
-    )
-    .await?;
-
-    let default_pricing = new_pricing_info(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        default_pricing,
-        &mut ptb,
-    )
-    .await?;
-
-    let supported_curves_to_signature_algorithms_to_hash_schemes =
-        new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
-            &mut ptb,
-            supported_curves_to_signature_algorithms_to_hash_schemes,
-        )?;
-
-    let dwallet_2pc_mpc_coordinator = ptb.input(
-        get_dwallet_2pc_mpc_coordinator_call_arg(
-            context,
-            ika_dwallet_2pc_mpc_coordinator_object_id,
-        )
-        .await?,
-    )?;
-
-    let args = vec![
-        dwallet_2pc_mpc_coordinator,
-        default_pricing,
-        supported_curves_to_signature_algorithms_to_hash_schemes,
-        verified_protocol_cap,
-    ];
-    ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-        SET_SUPPORTED_AND_PRICING_FUNCTION_NAME.to_owned(),
-        vec![],
-        args,
-    );
-
-    let sender = context.active_address()?;
-
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    execute_transaction(context, tx_data).await
-}
-
-pub async fn set_gas_fee_reimbursement_sui_system_call_value_by_cap(
-    context: &mut WalletContext,
-    ika_dwallet_2pc_mpc_coordinator_package_id: ObjectID,
-    ika_dwallet_2pc_mpc_coordinator_object_id: ObjectID,
-    ika_system_package_id: ObjectID,
-    ika_system_object_id: ObjectID,
-    protocol_cap_id: ObjectID,
-    gas_fee_reimbursement_sui_system_call_value: u64,
-    gas_budget: u64,
-) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
-    let mut ptb = ProgrammableTransactionBuilder::new();
-
-    let verified_protocol_cap = get_verified_protocol_cap(
-        context,
-        ika_system_package_id,
-        ika_system_object_id,
-        protocol_cap_id,
-        &mut ptb,
-    )
-    .await?;
-
-    let gas_fee_reimbursement_sui_system_call_value = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &gas_fee_reimbursement_sui_system_call_value,
-    )?))?;
-
-    let dwallet_2pc_mpc_coordinator = ptb.input(
-        get_dwallet_2pc_mpc_coordinator_call_arg(
-            context,
-            ika_dwallet_2pc_mpc_coordinator_object_id,
-        )
-        .await?,
-    )?;
-
-    ptb.programmable_move_call(
-        ika_dwallet_2pc_mpc_coordinator_package_id,
-        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-        SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_BY_CAP_FUNCTION_NAME.to_owned(),
-        vec![],
-        vec![
-            dwallet_2pc_mpc_coordinator,
-            gas_fee_reimbursement_sui_system_call_value,
-            verified_protocol_cap,
-        ],
-    );
-
-    let sender = context.active_address()?;
-    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
-
-    execute_transaction(context, tx_data).await
-}
-
-async fn get_verified_protocol_cap(
-    context: &mut WalletContext,
-    ika_system_package_id: ObjectID,
-    ika_system_object_id: ObjectID,
-    protocol_cap_id: ObjectID,
     ptb: &mut ProgrammableTransactionBuilder,
-) -> Result<Argument, anyhow::Error> {
-    let client = context.get_client().await?;
-    let protocol_cap_ref = client
-        .transaction_builder()
-        .get_object_ref(protocol_cap_id)
-        .await?;
-
-    let args = vec![ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-        protocol_cap_ref,
-    )))?];
-
-    add_ika_system_command_to_ptb(
-        context,
-        move_core_types::ident_str!("verify_protocol_cap"),
-        args,
-        ika_system_object_id,
-        ika_system_package_id,
-        ptb,
-    )
-    .await
-}
-
-fn new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
-    ptb: &mut ProgrammableTransactionBuilder,
-    supported_curves_to_signature_algorithms_to_hash_schemes: HashMap<u32, HashMap<u32, Vec<u32>>>,
 ) -> anyhow::Result<Argument> {
-    let supported_curves_to_signature_algorithms_to_hash_schemes_arg = ptb.programmable_move_call(
-        SUI_FRAMEWORK_PACKAGE_ID,
-        ident_str!("vec_map").into(),
-        ident_str!("empty").into(),
-        vec![
-            TypeTag::U32,
-            TypeTag::Struct(Box::new(StructTag {
-                address: SUI_FRAMEWORK_PACKAGE_ID.into(),
-                module: ident_str!("vec_map").into(),
-                name: ident_str!("VecMap").into(),
-                type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-            })),
-        ],
+    let Some(Owner::Shared {
+        initial_shared_version,
+    }) = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            ika_system_object_id,
+            SuiObjectDataOptions::new().with_owner(),
+        )
+        .await?
+        .data
+        .ok_or(anyhow::Error::msg("failed to get object data"))?
+        .owner
+    else {
+        bail!("Failed to get owner of object")
+    };
+
+    let mut args = vec![ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version,
+        mutable: true,
+    }))?];
+
+    args.extend(call_args);
+
+    let return_arg = ptb.command(sui_types::transaction::Command::move_call(
+        ika_system_package_id,
+        SYSTEM_MODULE_NAME.into(),
+        function.to_owned(),
         vec![],
-    );
-
-    supported_curves_to_signature_algorithms_to_hash_schemes
-        .into_iter()
-        .map(|(curve, signature_algorithms_to_hash_schemes)| {
-            let (keys, values): (Vec<u32>, Vec<Vec<u32>>) =
-                signature_algorithms_to_hash_schemes.into_iter().unzip();
-            let keys = ptb.input(CallArg::Pure(bcs::to_bytes(&keys)?))?;
-            let values = ptb.input(CallArg::Pure(bcs::to_bytes(&values)?))?;
-
-            let signature_algorithms_to_hash_schemes_arg = ptb.programmable_move_call(
-                SUI_FRAMEWORK_PACKAGE_ID,
-                ident_str!("vec_map").into(),
-                ident_str!("from_keys_values").into(),
-                vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-                vec![keys, values],
-            );
-
-            let key = ptb.input(CallArg::Pure(bcs::to_bytes(&curve)?))?;
-            ptb.programmable_move_call(
-                SUI_FRAMEWORK_PACKAGE_ID,
-                ident_str!("vec_map").into(),
-                ident_str!("insert").into(),
-                vec![
-                    TypeTag::U32,
-                    TypeTag::Struct(Box::new(StructTag {
-                        address: SUI_FRAMEWORK_PACKAGE_ID.into(),
-                        module: ident_str!("vec_map").into(),
-                        name: ident_str!("VecMap").into(),
-                        type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
-                    })),
-                ],
-                vec![
-                    supported_curves_to_signature_algorithms_to_hash_schemes_arg,
-                    key,
-                    signature_algorithms_to_hash_schemes_arg,
-                ],
-            );
-
-            Ok(())
-        })
-        .collect::<anyhow::Result<()>>()?;
-
-    Ok(supported_curves_to_signature_algorithms_to_hash_schemes_arg)
+        args,
+    ));
+    Ok(return_arg)
 }

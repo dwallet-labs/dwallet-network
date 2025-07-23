@@ -38,3 +38,6 @@ dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 ika-types = { workspace = true }
+
+[features]
+protocol-commands = []

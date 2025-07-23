@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use std::thread;
 use sui_config::{SUI_CLIENT_CONFIG, sui_config_dir};
 
+#[cfg(feature = "protocol-commands")]
 use crate::protocol_commands::IkaProtocolCommand;
 use crate::validator_commands::IkaValidatorCommand;
 use ika_swarm::memory::Swarm;
@@ -119,6 +120,7 @@ pub enum IkaCommand {
         accept_defaults: bool,
     },
 
+    #[cfg(feature = "protocol-commands")]
     /// A tool for protocol governance operations.
     #[clap(name = "protocol")]
     Protocol {
@@ -227,6 +229,7 @@ impl IkaCommand {
                 }
                 Ok(())
             }
+            #[cfg(feature = "protocol-commands")]
             IkaCommand::Protocol {
                 config, cmd, json, ..
             } => {
