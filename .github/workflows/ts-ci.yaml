@@ -24,39 +24,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Configure git authentication for private repositories
-        run: |
-          # Configure git credentials for private repositories
-          git config --global credential.helper store
-          echo "https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com" > ~/.git-credentials
-          
-          # Configure git to use authenticated HTTPS URLs for dwallet-labs repositories
-          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/dwallet-labs/".insteadOf "https://github.com/dwallet-labs/"
 
-      - name: Test git authentication
+      - name: Configure git with personal access token
+        if: env.GH_PRIVATE_REPO_TOKEN
         run: |
-          # Test if we can access the private repository
-          git ls-remote https://github.com/dwallet-labs/cryptography-private.git
-
-      - name: Update Cargo.toml files with authenticated URLs
-        run: |
-          # Replace all instances of the private repository URL with authenticated version
-          find . -name "Cargo.toml" -type f -exec sed -i 's|https://github.com/dwallet-labs/cryptography-private|https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/dwallet-labs/cryptography-private|g' {} \;
-          
-          # Verify changes were applied to dwallet-mpc-wasm Cargo.toml
-          echo "Checking dwallet-mpc-wasm Cargo.toml:"
-          grep "cryptography-private" sdk/dwallet-mpc-wasm/Cargo.toml || echo "No cryptography-private found in dwallet-mpc-wasm"
-
-      - name: Configure cargo authentication for private repositories
-        run: |
-          mkdir -p ~/.cargo
-          cat > ~/.cargo/config.toml << EOF
-          [net]
-          git-fetch-with-cli = true
-
-          [registries.crates-io]
-          protocol = "sparse"
-          EOF
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
