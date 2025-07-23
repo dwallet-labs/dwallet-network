@@ -161,7 +161,7 @@ export async function getAllChildObjectsIDs(c: Config, parentID: string): Promis
 			parentId: parentID,
 			cursor,
 		});
-		if (dynamicFieldPage.data.length == 0) {
+		if (dynamicFieldPage.data.length === 0) {
 			break;
 		}
 		for (const field of dynamicFieldPage.data) {
