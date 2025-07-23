@@ -4,6 +4,13 @@
 use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
+use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
+use ika_sui_client::ika_validator_transactions::{
+    set_gas_fee_reimbursement_sui_system_call_value_by_cap,
+    set_paused_curves_and_signature_algorithms, set_supported_and_pricing,
+};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::sui::{PricingInfoKey, PricingInfoValue};
 use std::fs::File;
 use std::io::BufReader;
 use std::{
@@ -11,14 +18,6 @@ use std::{
     fmt::{Debug, Display, Formatter, Write},
     path::PathBuf,
 };
-// use hex;
-use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
-use ika_sui_client::ika_validator_transactions::{
-    set_approved_upgrade_by_cap, set_gas_fee_reimbursement_sui_system_call_value_by_cap,
-    set_paused_curves_and_signature_algorithms, set_supported_and_pricing,
-};
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
-use ika_types::sui::{PricingInfoKey, PricingInfoValue};
 use sui_config::PersistedConfig;
 use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
@@ -29,30 +28,17 @@ const DEFAULT_GAS_BUDGET: u64 = 200_000_000;
 
 #[derive(Subcommand)]
 pub enum IkaProtocolCommand {
-    // #[clap(name = "set-approved-upgrade-by-cap")]
-    // SetApprovedUpgradeByCap {
-    //     #[clap(name = "gas-budget", long)]
-    //     gas_budget: Option<u64>,
-    //     #[clap(name = "protocol-cap-id", long)]
-    //     protocol_cap_id: ObjectID,
-    //     #[clap(name = "package-id", long)]
-    //     package_id: ObjectID,
-    //     #[clap(name = "digest", long)]
-    //     digest: Option<String>,
-    //     #[clap(name = "ika-sui-config", long)]
-    //     ika_sui_config: Option<PathBuf>,
-    // },
     #[clap(name = "set-paused-curves-and-signature-algorithms")]
     SetPausedCurvesAndSignatureAlgorithms {
         #[clap(name = "gas-budget", long)]
         gas_budget: Option<u64>,
         #[clap(name = "protocol-cap-id", long)]
         protocol_cap_id: ObjectID,
-        #[clap(name = "paused-curves", long)]
+        #[clap(name = "paused-curves", long, use_value_delimiter = true)]
         paused_curves: Vec<u32>,
-        #[clap(name = "paused-signature-algorithms", long)]
+        #[clap(name = "paused-signature-algorithms", long, use_value_delimiter = true)]
         paused_signature_algorithms: Vec<u32>,
-        #[clap(name = "paused-hash-schemes", long)]
+        #[clap(name = "paused-hash-schemes", long, use_value_delimiter = true)]
         paused_hash_schemes: Vec<u32>,
         #[clap(name = "ika-sui-config", long)]
         ika_sui_config: Option<PathBuf>,
@@ -99,36 +85,6 @@ impl IkaProtocolCommand {
         context: &mut WalletContext,
     ) -> Result<IkaProtocolCommandResponse, anyhow::Error> {
         let response = match self {
-            // IkaProtocolCommand::SetApprovedUpgradeByCap {
-            //     gas_budget,
-            //     protocol_cap_id,
-            //     package_id,
-            //     digest,
-            //     ika_sui_config,
-            // } => {
-            //     let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
-            //    let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-            //                 let config: IkaPackagesConfig =
-            //                     PersistedConfig::read(&config_path).map_err(|err| {
-            //                         err.context(format!(
-            //                             "Cannot open Ika network config file at {config_path:?}"
-            //                         ))
-            //                     })?;
-            //
-            //     let digest_bytes = digest.map(|d| hex::decode(d).unwrap_or_default());
-            //
-            //     let response = set_approved_upgrade_by_cap(
-            //         context,
-            //         config.ika_system_package_id,
-            //         config.ika_system_object_id,
-            //         protocol_cap_id,
-            //         package_id,
-            //         digest_bytes,
-            //         gas_budget,
-            //     )
-            //     .await?;
-            //     IkaProtocolCommandResponse::SetApprovedUpgradeByCap(response)
-            // }
             IkaProtocolCommand::SetPausedCurvesAndSignatureAlgorithms {
                 gas_budget,
                 protocol_cap_id,
