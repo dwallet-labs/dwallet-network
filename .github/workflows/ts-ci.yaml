@@ -26,8 +26,22 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure git with personal access token
         run: |
-          git config --global url."https://x-access-token:${GH_PRIVATE_REPO_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
+      - name: Configure cargo authentication for private repositories
+        run: |
+          mkdir -p ~/.cargo
+          cat > ~/.cargo/config.toml << EOF
+          [net]
+          git-fetch-with-cli = true
+
+          [registries.crates-io]
+          protocol = "sparse"
+          EOF
+          
+          # Also configure git credentials helper to ensure token is available
+          git config --global credential.helper store
+          echo "https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com" > ~/.git-credentials
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
