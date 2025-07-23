@@ -111,11 +111,12 @@ describe('Test dWallet MPC', () => {
 		console.timeEnd('Step 3: Sign Phase');
 	});
 
-	it('should create DWallet with given coins', async () => {
+	it('should launch DKG first round with given coins', async () => {
 		console.log('Creating dWallet...');
 		await launchDKGFirstRoundWithGivenCoins(
 			conf,
-			'0x1f0ad22ea5e04232a31de8bdec9506f8961f925a28ead54ac60420405a397bd6',
+			'0x17984da221bd6af5ecb756e50adc5de79fb6ab77bc476722fc5477c542d832c6',
+			'0xb55fe7cc317f5c30f343b4c219c587eeb78180e4169950722a23a56bb8feb1b6',
 		);
 	});
 
