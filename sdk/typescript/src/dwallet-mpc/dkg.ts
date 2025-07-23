@@ -292,9 +292,9 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 }
 
 /**
- * Starts the first round of the DKG protocol to create a new dWallet.
- * The output of this function is being used to generate the input for the second round,
- * and as input for the centralized party round.
+ * Starts the first round of the DKG protocol to create a new dWallet with given coins.
+ *
+ * TODO (#1321): Allow running all MPC flows with given coins IDs.
  */
 export async function launchDKGFirstRoundWithGivenCoins(
 	c: Config,
