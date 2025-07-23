@@ -2,6 +2,10 @@
 
 # This script allows running a pricing update experiment for Ika using Swarm.
 # You set the new Ika fee per validator in the NEW_IKA_FEE_PER_VALIDATOR variable.
+
+# Then, run the "should fetch all the validator operator cap ids from Sui" TS test, and update the OPERATORS_CAP_IDS
+# with it.
+
 # Then, when running this script, it will send a pricing vote from each operator to its ika fee,
 # i.e. using the below value, from validator 1 it will send a vote to set the ika fee to 100,
 # from validator 2 it will send a vote to set the ika fee to 200, etc.
