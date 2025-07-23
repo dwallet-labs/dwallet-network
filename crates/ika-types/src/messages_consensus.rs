@@ -194,7 +194,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         round_number: u64,
         attempt_number: u64,
-        is_threshold_not_reached: bool
+        is_threshold_not_reached: bool,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         authority.hash(&mut hasher);
@@ -212,7 +212,7 @@ impl ConsensusTransaction {
                 round_number,
                 session_identifier,
                 attempt_number,
-                is_threshold_not_reached
+                is_threshold_not_reached,
             }),
         }
     }

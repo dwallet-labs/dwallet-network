@@ -111,7 +111,7 @@ impl DWalletMPCManager {
             dwallet_mpc_metrics,
         )
         .unwrap_or_else(|err| {
-            error!(?err, "Failed to create DWalletMPCManager.");
+            error!(error=?err, "Failed to create DWalletMPCManager.");
             // We panic on purpose, this should not happen.
             panic!("DWalletMPCManager initialization failed: {err:?}");
         })
@@ -510,7 +510,7 @@ impl DWalletMPCManager {
                 }
             }
             Err(err) => {
-                error!(?err, "failed to check next epoch committee receiver");
+                error!(error=?err, "failed to check next epoch committee receiver");
             }
         }
 
@@ -552,7 +552,7 @@ impl DWalletMPCManager {
                             }
                             Err(err) => {
                                 error!(
-                                    ?err,
+                                    error=?err,
                                     key_id=?key_id,
                                     "failed to instantiate network decryption key shares from public output for"
                                 );
@@ -566,7 +566,7 @@ impl DWalletMPCManager {
                 }
             }
             Err(err) => {
-                error!(?err, "failed to check network keys receiver");
+                error!(error=?err, "failed to check network keys receiver");
 
                 vec![]
             }

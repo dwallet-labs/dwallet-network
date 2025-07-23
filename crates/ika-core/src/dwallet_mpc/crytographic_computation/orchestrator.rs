@@ -260,7 +260,7 @@ impl CryptographicComputationsOrchestrator {
                     })
                     .await
                 {
-                    error!(?err, "failed to send a computation completion update");
+                    error!(error=?err, "failed to send a computation completion update");
                 }
             });
         });

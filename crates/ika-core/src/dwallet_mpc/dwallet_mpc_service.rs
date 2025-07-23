@@ -170,7 +170,7 @@ impl DWalletMPCService {
                 }
                 Err(err) => {
                     warn!(
-                        err=?err,
+                        error=?err,
                         authority=?self.epoch_store.name,
                         our_epoch_id=self.dwallet_mpc_manager.epoch_id,
                         "DWalletMPCService exit channel was shutdown incorrectly"
@@ -421,7 +421,7 @@ impl DWalletMPCService {
                         .insert_pending_dwallet_checkpoint(pending_checkpoint)
                     {
                         error!(
-                                err=?e,
+                                error=?e,
                                 ?consensus_round,
                                 ?checkpoint_messages,
                                 "failed to insert pending checkpoint into the local DB"
@@ -438,7 +438,7 @@ impl DWalletMPCService {
                     // pending checkpoints.
                     if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
                         error!(
-                            err=?e,
+                            error=?e,
                             ?consensus_round,
                             "failed to notify checkpoint service about new pending checkpoint(s)"
                         );
@@ -455,7 +455,7 @@ impl DWalletMPCService {
                     .insert_dwallet_mpc_computation_completed_sessions(&completed_sessions)
                 {
                     error!(
-                        err=?e,
+                        error=?e,
                         ?consensus_round,
                         ?completed_sessions,
                         "failed to insert computation completed MPC sessions into the local (perpetual tables) DB"
@@ -529,7 +529,7 @@ impl DWalletMPCService {
                                         ?session_identifier,
                                         validator=?validator_name,
                                         ?mpc_round,
-                                        err=?err,
+                                        error=?err,
                                         "failed to submit an MPC message to consensus"
                                     );
                                 }
@@ -583,14 +583,14 @@ impl DWalletMPCService {
                                     error!(
                                         ?session_identifier,
                                         validator=?validator_name,
-                                        err=?err,
+                                        error=?err,
                                         "failed to submit an MPC output message to consensus",
                                     );
                                 }
                             }
                             Err(DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached)) => {
                                 error!(
-                                    err=?DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached),
+                                    error=?DwalletMPCError::MPCError(mpc::Error::ThresholdNotReached),
                                         ?session_identifier,
                                     validator=?validator_name,
                                     mpc_round,
@@ -684,7 +684,7 @@ impl DWalletMPCService {
             message,
             mpc_round,
             attempt_number,
-            is_threshold_not_reached
+            is_threshold_not_reached,
         )
     }
 

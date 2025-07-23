@@ -630,7 +630,7 @@ impl ComputationRequest {
                     }),
                     Err(err) => {
                         error!(
-                            ?err,
+                            error=?err,
                             session_identifier=?computation_id.session_identifier,
                             validator=?self.validator_name,
                             mpc_round=?computation_id.mpc_round,

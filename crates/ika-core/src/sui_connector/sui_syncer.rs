@@ -132,7 +132,7 @@ where
             };
             let committee_epoch = committee.epoch();
             if let Err(err) = next_epoch_committee_sender.send(committee) {
-                error!(?err, committee_epoch=?committee_epoch, "failed to send the next epoch committee to the channel");
+                error!(error=?err, committee_epoch=?committee_epoch, "failed to send the next epoch committee to the channel");
             } else {
                 info!(committee_epoch=?committee_epoch, "The next epoch committee was sent successfully");
             }
@@ -253,7 +253,7 @@ where
                         error!(
                             key=?key_id,
                             current_epoch=?current_epoch,
-                            err=?err,
+                            error=?err,
                             "failed to get network decryption key data, retrying...",
                         );
                         continue 'sync_network_keys;
@@ -261,7 +261,7 @@ where
                 }
             }
             if let Err(err) = network_keys_sender.send(Arc::new(all_fetched_network_keys_data)) {
-                error!(?err, "failed to send network keys data to the channel",);
+                error!(error=?err, "failed to send network keys data to the channel",);
             }
         }
     }
@@ -311,7 +311,7 @@ where
                     .is_none()
             {
                 if let Err(err) = end_of_publish_sender.send(Some(system_inner_v1.epoch)) {
-                    error!(?err, "failed to send end of publish epoch to the channel");
+                    error!(error=?err, "failed to send end of publish epoch to the channel");
                 }
             }
         }

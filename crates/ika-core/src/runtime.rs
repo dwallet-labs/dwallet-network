@@ -25,7 +25,7 @@ impl IkaRuntimes {
             builder = builder.num_threads(Self::calculate_num_of_computations_cores());
         }
         if let Err(err) = builder.build_global() {
-            error!(?err, "failed to create rayon thread pool");
+            error!(error=?err, "failed to create rayon thread pool");
             panic!("Failed to create rayon thread pool");
         }
         let ika_node = tokio::runtime::Builder::new_multi_thread()

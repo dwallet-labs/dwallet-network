@@ -121,7 +121,7 @@ async fn get_decryption_key_shares_from_public_output(
         };
 
         if let Err(err) = key_shares_sender.send(res) {
-            error!(?err, "failed to send key shares");
+            error!(error=?err, "failed to send key shares");
         }
     });
 
@@ -410,7 +410,7 @@ pub(crate) async fn instantiate_dwallet_mpc_network_encryption_key_public_data_f
         };
 
         if let Err(err) = key_public_data_sender.send(res) {
-            error!(?err, "failed to send a network encryption key ");
+            error!(error=?err, "failed to send a network encryption key ");
         }
     });
 

@@ -1056,7 +1056,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(result) => Ok(result),
             Err(err) => {
-                error!(?err, "failed to submit dwallet checkpoint to sui",);
+                error!(error=?err, "failed to submit dwallet checkpoint to sui",);
                 metrics.dwallet_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
@@ -1134,7 +1134,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(_) => Ok(()),
             Err(err) => {
-                error!(?err, "failed to submit a system checkpoint to consensus");
+                error!(error=?err, "failed to submit a system checkpoint to consensus");
                 metrics.system_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
