@@ -4,6 +4,10 @@
 module ika_dwallet_2pc_mpc::coordinator;
 
 use ika::ika::IKA;
+use ika_common::advance_epoch_approver::AdvanceEpochApprover;
+use ika_common::protocol_cap::VerifiedProtocolCap;
+use ika_common::system_current_status_info::SystemCurrentStatusInfo;
+use ika_common::validator_cap::VerifiedValidatorOperationCap;
 use ika_dwallet_2pc_mpc::coordinator_inner::{
     Self,
     DWalletCap,
@@ -18,14 +22,11 @@ use ika_dwallet_2pc_mpc::coordinator_inner::{
 };
 use ika_dwallet_2pc_mpc::pricing::PricingInfo;
 use ika_dwallet_2pc_mpc::sessions_manager::SessionIdentifier;
-use ika_system::advance_epoch_approver::AdvanceEpochApprover;
-use ika_system::protocol_cap::VerifiedProtocolCap;
-use ika_system::system_current_status_info::SystemCurrentStatusInfo;
-use ika_system::validator_cap::VerifiedValidatorOperationCap;
 use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::sui::SUI;
 use sui::vec_map::VecMap;
+use ika_common::upgrade_package_approver::UpgradePackageApprover;
 
 // === Errors ===
 
@@ -83,15 +84,9 @@ public fun process_checkpoint_message_by_quorum(
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
-    mut message: vector<u8>,
-    message2: vector<u8>,
-    message3: vector<u8>,
-    message4: vector<u8>,
+    message: vector<u8>,
     ctx: &mut TxContext,
 ): Coin<SUI> {
-    message.append(message2);
-    message.append(message3);
-    message.append(message4);
     let dwallet_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx)
 }
@@ -121,6 +116,7 @@ public fun advance_epoch(
     advance_epoch_approver: &mut AdvanceEpochApprover,
 ) {
     self.inner_mut().advance_epoch(advance_epoch_approver);
+    self.try_migrate();
 }
 
 public fun request_dwallet_network_encryption_key_dkg_by_cap(
@@ -130,6 +126,23 @@ public fun request_dwallet_network_encryption_key_dkg_by_cap(
     ctx: &mut TxContext,
 ) {
     self.inner_mut().request_dwallet_network_encryption_key_dkg(params_for_network, cap, ctx);
+}
+
+public fun process_checkpoint_message_by_cap(
+    self: &mut DWalletCoordinator,
+    message: vector<u8>,
+    cap: &VerifiedProtocolCap,
+    ctx: &mut TxContext,
+): Coin<SUI> {
+    self.inner_mut().process_checkpoint_message_by_cap(message, cap, ctx)
+}
+
+public fun set_gas_fee_reimbursement_sui_system_call_value_by_cap(
+    self: &mut DWalletCoordinator,
+    gas_fee_reimbursement_sui_system_call_value: u64,
+    cap: &VerifiedProtocolCap,
+) {
+    self.inner_mut().set_gas_fee_reimbursement_sui_system_call_value_by_cap(gas_fee_reimbursement_sui_system_call_value, cap);
 }
 
 public fun set_supported_and_pricing(
@@ -632,24 +645,40 @@ public fun subsidize_coordinator_with_ika(self: &mut DWalletCoordinator, ika: Co
     self.inner_mut().subsidize_coordinator_with_ika(ika);
 }
 
-/// Migrate the dwallet_2pc_mpc_coordinator object to the new package id.
+public fun commit_upgrade(self: &mut DWalletCoordinator, upgrade_package_approver: &mut UpgradePackageApprover) {
+    upgrade_package_approver.approve_upgrade_package_by_witness(coordinator_inner::dwallet_coordinator_witness());
+    if (self.package_id == upgrade_package_approver.old_package_id()) {
+        self.new_package_id = option::some(upgrade_package_approver.new_package_id());
+    };
+}
+
+/// Try to migrate the coordinator object to the new package id using a cap.
 ///
 /// This function sets the new package id and version and can be modified in future versions
-/// to migrate changes in the `dwallet_2pc_mpc_coordinator_inner` object if needed.
-public fun migrate(self: &mut DWalletCoordinator) {
+/// to migrate changes in the `coordinator_inner` object if needed.
+public fun try_migrate_by_cap(self: &mut DWalletCoordinator, _: &VerifiedProtocolCap) {
     assert!(self.version < VERSION, EInvalidMigration);
-
-    // Move the old system state inner to the new version.
-    let dwallet_2pc_mpc_coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(
-        &mut self.id,
-        self.version,
-    );
-    dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_coordinator_inner);
-    self.version = VERSION;
-
-    // Set the new package id.
     assert!(self.new_package_id.is_some(), EInvalidMigration);
-    self.package_id = self.new_package_id.extract();
+    self.try_migrate();
+}
+
+/// Migrate the coordinator object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `coordinator_inner` object if needed.
+fun try_migrate(self: &mut DWalletCoordinator) {
+    if (self.version < VERSION && self.new_package_id.is_some()) {
+        // Move the old coordinator inner to the new version.
+        let coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
+        dynamic_field::add(&mut self.id, VERSION, coordinator_inner);
+        self.version = VERSION;
+
+        self.package_id = self.new_package_id.extract();
+    }
+}
+
+public fun version(self: &DWalletCoordinator): u64 {
+    self.version
 }
 
 // === Internals ===

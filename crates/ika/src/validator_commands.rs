@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::{
+    fmt,
     fmt::{Debug, Display, Formatter, Write},
     fs,
     path::PathBuf,
@@ -224,20 +225,12 @@ impl IkaValidatorCommand {
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
 
-                let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
-                    context.active_address()?,
-                    context,
-                    config.ika_common_package_id,
-                    validator_info.class_groups_public_key_and_proof.clone(),
-                    gas_budget,
-                ).await?;
-
                 let (res, validator_id, validator_cap_id) = request_add_validator_candidate(
                     context,
                     &validator_info,
                     config.ika_system_package_id,
                     config.ika_system_object_id,
-                    class_groups_keypair_and_proof_obj_ref,
+                    config.ika_common_package_id,
                     gas_budget,
                 )
                 .await?;
@@ -341,7 +334,11 @@ impl Display for IkaValidatorCommandResponse {
                     validator_cap_id,
                 },
             ) => {
-                write!(writer, "{}", write_transaction_response(response)?)?;
+                write!(
+                    writer,
+                    "{}",
+                    write_transaction_response_without_transaction_data(response)?
+                )?;
                 writeln!(writer, "Validator ID: {validator_id}")?;
                 writeln!(writer, "Validator Cap ID: {validator_cap_id}")?;
             }
@@ -434,4 +431,23 @@ fn read_or_generate_seed_and_class_groups_key(
     let class_groups_public_key_and_proof = Box::new(ClassGroupsKeyPairAndProof::from_seed(&seed));
 
     Ok(class_groups_public_key_and_proof)
+}
+
+pub fn write_transaction_response_without_transaction_data(
+    response: &SuiTransactionBlockResponse,
+) -> Result<String, fmt::Error> {
+    // we requested with for full_content, so the following content should be available.
+    let success = response.status_ok().unwrap();
+    let lines = vec![
+        String::from("----- Transaction Digest ----"),
+        response.digest.to_string(),
+        String::from("----- Transaction Effects ----"),
+        response.effects.as_ref().unwrap().to_string(),
+    ];
+    let mut writer = String::new();
+    for line in lines {
+        let colorized_line = if success { line.green() } else { line.red() };
+        writeln!(writer, "{colorized_line}")?;
+    }
+    Ok(writer)
 }

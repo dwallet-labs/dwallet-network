@@ -110,16 +110,12 @@
 module ika_system::system;
 
 use ika::ika::IKA;
+use ika_common::advance_epoch_approver::AdvanceEpochApprover;
 use ika_common::bls_committee::BlsCommittee;
-use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::advance_epoch_approver::AdvanceEpochApprover;
-use ika_system::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
-use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::staked_ika::StakedIka;
-use ika_system::system_current_status_info::SystemCurrentStatusInfo;
-use ika_system::system_inner::{Self, SystemInner};
-use ika_system::token_exchange_rate::TokenExchangeRate;
-use ika_system::validator_cap::{
+use ika_common::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
+use ika_common::system_current_status_info::SystemCurrentStatusInfo;
+use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::validator_cap::{
     ValidatorCap,
     ValidatorCommissionCap,
     ValidatorOperationCap,
@@ -127,6 +123,10 @@ use ika_system::validator_cap::{
     VerifiedValidatorCommissionCap,
     VerifiedValidatorOperationCap
 };
+use ika_system::protocol_treasury::ProtocolTreasury;
+use ika_system::staked_ika::StakedIka;
+use ika_system::system_inner::{Self, SystemInner};
+use ika_system::token_exchange_rate::TokenExchangeRate;
 use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::validator_set::ValidatorSet;
 use std::string::String;
@@ -135,6 +135,8 @@ use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::package::{UpgradeCap, UpgradeReceipt, UpgradeTicket};
 use sui::table::Table;
+use sui::table_vec::TableVec;
+use ika_common::upgrade_package_approver::UpgradePackageApprover;
 
 // === Errors ===
 
@@ -192,6 +194,7 @@ public struct System has key {
 /// then wraps it in a versioned System object and makes it shared for network access.
 public(package) fun create(
     package_id: ID,
+    system_object_cap: SystemObjectCap,
     upgrade_caps: vector<UpgradeCap>,
     validators: ValidatorSet,
     protocol_version: u64,
@@ -202,6 +205,7 @@ public(package) fun create(
     ctx: &mut TxContext,
 ): ProtocolCap {
     let (system_state, protocol_cap) = system_inner::create(
+        system_object_cap,
         upgrade_caps,
         validators,
         protocol_version,
@@ -251,7 +255,7 @@ public fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    mpc_data_bytes: TableVec<vector<u8>>,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -267,7 +271,7 @@ public fun request_add_validator_candidate(
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             consensus_pubkey_bytes,
-            class_groups_pubkey_and_proof_bytes,
+            mpc_data_bytes,
             proof_of_possession_bytes,
             network_address,
             p2p_address,
@@ -468,16 +472,14 @@ public fun set_next_epoch_consensus_pubkey_bytes(
     self.inner_mut().set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
 }
 
-/// Sets a validator's public key of class groups key and its associated proof.
+/// Sets a validator's MPC public data.
 /// The change will only take effects starting from the next epoch.
-public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+public fun set_next_epoch_mpc_data_bytes(
     self: &mut System,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    mpc_data: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
-) {
-    self
-        .inner_mut()
-        .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
+): Option<TableVec<vector<u8>>> {
+    self.inner_mut().set_next_epoch_mpc_data_bytes(mpc_data, cap)
 }
 
 /// Get the pool token exchange rate of a validator. Works for both active and inactive pools.
@@ -523,6 +525,7 @@ public fun advance_epoch(
 ) {
     let inner_system = self.inner_mut();
     inner_system.advance_epoch(advance_epoch_approver, clock, ctx);
+    self.try_migrate();
 }
 
 public fun verify_validator_cap(self: &System, cap: &ValidatorCap): VerifiedValidatorCap {
@@ -549,12 +552,17 @@ public fun authorize_upgrade(self: &mut System, package_id: ID): UpgradeTicket {
     self.inner_mut().authorize_upgrade(package_id)
 }
 
-public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt) {
+public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt): UpgradePackageApprover {
     let new_package_id = receipt.package();
-    let old_package_id = self.inner_mut().commit_upgrade(receipt);
-    if (self.package_id == old_package_id) {
+    let approver = self.inner_mut().commit_upgrade(receipt);
+    if (self.package_id == approver.old_package_id()) {
         self.new_package_id = option::some(new_package_id);
-    }
+    };
+    approver
+}
+
+public fun finalize_upgrade(self: &mut System, upgrade_package_approver: UpgradePackageApprover) {
+    self.inner().finalize_upgrade(upgrade_package_approver);
 }
 
 public fun process_checkpoint_message_by_quorum(
@@ -569,8 +577,8 @@ public fun process_checkpoint_message_by_quorum(
 
 // === Protocol Cap Functions ===
 
-public fun add_upgrade_cap_by_cap(self: &mut System, cap: &ProtocolCap, upgrade_cap: UpgradeCap) {
-    self.inner_mut().add_upgrade_cap_by_cap(cap, upgrade_cap);
+public fun add_upgrade_cap_by_cap(self: &mut System, upgrade_cap: UpgradeCap, cap: &ProtocolCap) {
+    self.inner_mut().add_upgrade_cap_by_cap(upgrade_cap, cap);
 }
 
 public fun verify_protocol_cap(self: &System, cap: &ProtocolCap): VerifiedProtocolCap {
@@ -579,53 +587,63 @@ public fun verify_protocol_cap(self: &System, cap: &ProtocolCap): VerifiedProtoc
 
 public fun process_checkpoint_message_by_cap(
     self: &mut System,
-    cap: &ProtocolCap,
     message: vector<u8>,
+    cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().process_checkpoint_message_by_cap(cap, message, ctx);
+    self.inner_mut().process_checkpoint_message_by_cap(message, cap, ctx);
 }
 
 public fun set_approved_upgrade_by_cap(
     self: &mut System,
-    cap: &ProtocolCap,
     package_id: ID,
     digest: Option<vector<u8>>,
+    cap: &ProtocolCap,
 ) {
-    self.inner_mut().set_approved_upgrade_by_cap(cap, package_id, digest);
+    self.inner_mut().set_approved_upgrade_by_cap(package_id, digest, cap);
 }
 
 public fun set_or_remove_witness_approving_advance_epoch_by_cap(
     self: &mut System,
-    cap: &ProtocolCap,
     witness_type: String,
     remove: bool,
+    cap: &ProtocolCap,
 ) {
     self
         .inner_mut()
-        .set_or_remove_witness_approving_advance_epoch_by_cap(cap, witness_type, remove);
+        .set_or_remove_witness_approving_advance_epoch_by_cap(witness_type, remove, cap);
 }
 
-/// Migrate the staking object to the new package id.
+/// Try to migrate the system object to the new package id using a cap.
 ///
 /// This function sets the new package id and version and can be modified in future versions
 /// to migrate changes in the `system_inner` object if needed.
-public fun migrate(self: &mut System) {
+public fun try_migrate_by_cap(self: &mut System, cap: &ProtocolCap) {
+    let _ = self.inner().verify_protocol_cap(cap);
     assert!(self.version < VERSION, EInvalidMigration);
-
-    // Move the old system state inner to the new version.
-    let system_inner: SystemInner = dynamic_field::remove(&mut self.id, self.version);
-    dynamic_field::add(&mut self.id, VERSION, system_inner);
-    self.version = VERSION;
-
-    // Set the new package id.
     assert!(self.new_package_id.is_some(), EInvalidMigration);
-    self.package_id = self.new_package_id.extract();
+    self.try_migrate();
+}
+
+
+fun try_migrate(self: &mut System) {
+    if (self.version < VERSION && self.new_package_id.is_some()) {
+        // Move the old system inner to the new version.
+        let system_inner: SystemInner = dynamic_field::remove(&mut self.id, self.version);
+        dynamic_field::add(&mut self.id, VERSION, system_inner);
+        self.version = VERSION;
+
+        self.package_id = self.new_package_id.extract();
+    }
+}
+
+public fun version(self: &System): u64 {
+    self.version
 }
 
 // === Utility functions ===
 
-/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// Calculates the rewards for an amount with value `staked_principal`, staked in the validator with
 /// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
 ///
 /// This function can be used with `dev_inspect` to calculate the expected rewards for a `StakedIka`
@@ -683,7 +701,6 @@ public fun validator_stake_amount(self: &mut System, validator_id: ID): u64 {
 
 #[test_only]
 use sui::vec_set::VecSet;
-
 #[test_only]
 /// Returns all the validators who are currently reporting `validator_id`
 public fun get_reporters_of(self: &mut System, validator_id: ID): VecSet<ID> {

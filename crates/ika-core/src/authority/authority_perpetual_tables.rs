@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::*;
+use std::collections::HashMap;
 use std::path::Path;
 use typed_store::traits::Map;
 
@@ -84,15 +85,21 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn is_dwallet_mpc_session_completed(
+    pub fn get_dwallet_mpc_sessions_completed_status(
         &self,
-        session_identifier: &SessionIdentifier,
-    ) -> IkaResult<bool> {
-        let entry = self
+        session_identifiers: Vec<SessionIdentifier>,
+    ) -> IkaResult<HashMap<SessionIdentifier, bool>> {
+        let multi_get_result = self
             .dwallet_mpc_computation_completed_sessions
-            .get(session_identifier)?;
+            .multi_get(&session_identifiers)?;
 
-        Ok(entry.is_some())
+        let mpc_session_identifier_to_computation_completed = session_identifiers
+            .into_iter()
+            .zip(multi_get_result)
+            .map(|(session_identifier, res)| (session_identifier, res.is_some()))
+            .collect();
+
+        Ok(mpc_session_identifier_to_computation_completed)
     }
 
     pub fn insert_dwallet_mpc_computation_completed_sessions(
