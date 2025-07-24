@@ -711,11 +711,9 @@ impl DWalletMPCService {
         );
         match &request_input {
             MPCRequestInput::DKGFirst(request_input) => {
-                    let mut bla = request_input.event_data.dwallet_id.to_vec();
-                bla.swap(1, 2);
                 let tx = DWalletCheckpointMessageKind::RespondDWalletDKGFirstRoundOutput(
                     DKGFirstRoundOutput {
-                        dwallet_id: bla,
+                        dwallet_id: request_input.event_data.dwallet_id.to_vec(),
                         output,
                         session_sequence_number: request_input.session_sequence_number,
                         rejected,
