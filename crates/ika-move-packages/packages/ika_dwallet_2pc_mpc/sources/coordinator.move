@@ -689,7 +689,9 @@ fun try_migrate_impl(self: &mut DWalletCoordinator) {
 
     self.package_id = self.new_package_id.extract();
     // empty the migration epoch
-    self.migration_epoch.extract_or!(0);
+    if (self.migration_epoch.is_some()) {
+        let _ = self.migration_epoch.extract();
+    };
 }
 
 public fun version(self: &DWalletCoordinator): u64 {
