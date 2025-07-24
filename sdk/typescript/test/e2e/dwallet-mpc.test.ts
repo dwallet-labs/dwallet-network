@@ -1,6 +1,9 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import path from 'path';
 import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
@@ -64,12 +67,15 @@ async function createConf(
 	const address = keypair.getPublicKey().toSuiAddress();
 	console.log(`Address: ${address}`);
 	// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-	const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
-	await requestSuiFromFaucetWithRetry(
-		// host: getFaucetHost('localnet'),
-		'https://faucet.sui.beta.devnet.ika-network.net',
-		address,
-	);
+
+	// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+	// await requestSuiFromFaucetWithRetry(
+	// 	// host: getFaucetHost('localnet'),
+	// 	'https://faucet.sui.beta.devnet.ika-network.net',
+	// 	address,
+	// );
+
+	const suiClient = new SuiClient({ url: 'https://ikafn-on-sui-testnet.ika-network.net/' });
 
 	return {
 		suiClientKeypair: keypair,
@@ -138,14 +144,14 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 30;
-			const maxDelayBeforeMPCRequestSec = 1000 * 5 * 0;
+			const iterations = 100;
+			const delayBeforeMPCRequestSec = 1000 * 5;
 			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 
 			// Create a new configuration for each iteration
 			const configs = await Promise.all(
-				Array.from({ length: iterations }, () =>
-					createConf(crypto.getRandomValues(new Uint8Array(32)), null),
+				Array.from({ length: iterations }, (_, k) =>
+					createConf(new Uint8Array(32).fill(10 + k), (k + 3).toString()),
 				),
 			);
 
@@ -161,7 +167,7 @@ describe('Test dWallet MPC', () => {
 				dkgFirstTasks.push(
 					(async () => {
 						await dkgFirstStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(getRandomDelay(delayBeforeMPCRequestSec));
 						console.time(`DKG first round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const dkgFirstRoundOutput = await executeDKGFirstRoundTransaction(cfg, tx);
 						console.timeEnd(
@@ -211,7 +217,7 @@ describe('Test dWallet MPC', () => {
 					(async () => {
 						await dkgSeconsStartSignal.promise;
 						const centralizedSecretKeyShare = centralizedPartyOutputs[i].centralizedSecretKeyShare;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(delayBeforeMPCRequestSec);
 						console.time(`DKG second round: ${cfg.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 						const secondRoundResponse = await executeDKGSecondRoundTransaction(
 							cfg,
@@ -252,7 +258,7 @@ describe('Test dWallet MPC', () => {
 				presignTasks.push(
 					(async () => {
 						await presignStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						await delay(delayBeforeMPCRequestSec);
 						return executePresignTransaction(cfg, tx);
 					})(),
 				);
@@ -297,7 +303,7 @@ describe('Test dWallet MPC', () => {
 				signAndSendTasks.push(
 					(async () => {
 						await startSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
+						// await delay(delayBeforeMPCRequestSec);
 						console.time(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
 						const signRes = await executeSignTransaction(signTx, cfg);
 						console.timeEnd(`Sign: ${cfg.suiClientKeypair.toSuiAddress()}`);
@@ -312,6 +318,37 @@ describe('Test dWallet MPC', () => {
 		},
 		70 * 1000 * 60,
 	);
+
+	it('faucet for parallel test', async () => {
+		const max_parallel = 105;
+
+		const tx = new Transaction();
+		tx.setSender(conf.suiClientKeypair.toSuiAddress());
+
+		for (let i = 0; i < max_parallel; i++) {
+			const recipient = Ed25519Keypair.deriveKeypairFromSeed((i + 3).toString());
+
+			tx.transferObjects(
+				[
+					coinWithBalance({ balance: 1_000_000_000 }),
+				],
+				recipient.toSuiAddress(),
+			);
+		}
+
+		// Sign and send the transaction
+		const result = await conf.client.signAndExecuteTransaction({
+			signer: conf.suiClientKeypair,
+			transaction: tx,
+			options: {
+				showInput: true,
+				showEffects: true,
+			},
+		});
+
+		console.log(`:white_check_mark: Funded ${max_parallel} addresses in one tx`);
+		console.log(`  Tx Digest: ${result.digest}`);
+	});
 
 	it('read the network decryption key', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
