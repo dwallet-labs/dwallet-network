@@ -304,6 +304,8 @@ pub trait EpochStartValidatorInfoTrait {
     fn authority_name(&self) -> AuthorityName;
     fn get_name(&self) -> String;
     fn get_network_pubkey(&self) -> NetworkPublicKey;
+    fn get_consensus_pubkey(&self) -> NetworkPublicKey;
+    fn get_mpc_data(&self) -> Option<VersionedMPCData>;
 }
 
 #[enum_dispatch(EpochStartValidatorInfoTrait)]
@@ -337,5 +339,13 @@ impl EpochStartValidatorInfoTrait for EpochStartValidatorInfoV1 {
 
     fn get_network_pubkey(&self) -> NetworkPublicKey {
         self.network_pubkey.clone()
+    }
+
+    fn get_consensus_pubkey(&self) -> NetworkPublicKey {
+        self.consensus_pubkey.clone()
+    }
+
+    fn get_mpc_data(&self) -> Option<VersionedMPCData> {
+        self.mpc_data.clone()
     }
 }
