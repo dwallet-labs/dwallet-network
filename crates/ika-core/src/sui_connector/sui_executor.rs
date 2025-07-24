@@ -723,22 +723,25 @@ where
                         .await?;
 
                     if !result.errors.is_empty() {
-                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
-                            "{:?}",
-                            result.errors
-                        ))
+                        return Err(IkaError::SuiClientTxFailureGeneric(
+                            result.digest,
+                            format!("{:?}", result.errors),
+                        )
                         .into());
                     }
 
                     let Some(tx_effects) = result.effects.clone() else {
                         return Err(IkaError::SuiClientTxFailureGeneric(
+                            result.digest,
                             "Transaction effects are missing".to_string(),
                         )
                         .into());
                     };
 
                     if let SuiExecutionStatus::Failure { error } = tx_effects.status() {
-                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
+                        return Err(IkaError::SuiClientTxFailureGeneric(
+                            result.digest,
+                            format!(
                             "Transaction executed successfully, but it failed with an error: {:?}",
                             error
                         ))
