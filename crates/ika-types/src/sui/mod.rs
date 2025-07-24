@@ -116,8 +116,8 @@ pub const OPTION_MODULE_NAME: &IdentStr = ident_str!("option");
 pub const OPTION_DESTROY_NONE_FUNCTION_NAME: &IdentStr = ident_str!("destroy_none");
 pub const OPTION_DESTROY_SOME_FUNCTION_NAME: &IdentStr = ident_str!("destroy_some");
 
-pub const PRICING_MODULE_NAME: &'static IdentStr = ident_str!("pricing");
-pub const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &'static IdentStr =
+pub const PRICING_MODULE_NAME: &IdentStr = ident_str!("pricing");
+pub const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &IdentStr =
     ident_str!("insert_or_update_pricing");
 
 pub const VEC_MAP_MODULE_NAME: &IdentStr = ident_str!("vec_map");

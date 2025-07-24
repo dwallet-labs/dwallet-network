@@ -272,7 +272,7 @@ fn new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
 
     supported_curves_to_signature_algorithms_to_hash_schemes
         .into_iter()
-        .map(|(curve, signature_algorithms_to_hash_schemes)| {
+        .try_for_each(|(curve, signature_algorithms_to_hash_schemes)| {
             let (keys, values): (Vec<u32>, Vec<Vec<u32>>) =
                 signature_algorithms_to_hash_schemes.into_iter().unzip();
             let keys = ptb.input(CallArg::Pure(bcs::to_bytes(&keys)?))?;
@@ -307,9 +307,8 @@ fn new_supported_curves_to_signature_algorithms_to_hash_schemes_argument(
                 ],
             );
 
-            Ok(())
-        })
-        .collect::<anyhow::Result<()>>()?;
+            Ok::<(), anyhow::Error>(())
+        })?;
 
     Ok(supported_curves_to_signature_algorithms_to_hash_schemes_arg)
 }

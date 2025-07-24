@@ -130,7 +130,7 @@ impl DWalletMPCManager {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
         let root_seed = node_config
-            .root_seed
+            .root_seed_key_pair
             .clone()
             .ok_or(DwalletMPCError::MissingRootSeed)?
             .root_seed()

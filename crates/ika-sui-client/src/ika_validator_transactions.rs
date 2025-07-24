@@ -1,5 +1,5 @@
 use anyhow::{Error, bail};
-use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
+use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::error::{IkaError, IkaResult};
@@ -102,13 +102,7 @@ pub async fn request_add_validator_candidate(
 ) -> Result<(SuiTransactionBlockResponse, BecomeCandidateValidatorData), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let mpc_data = VersionedMPCData::V1(MPCDataV1 {
-        class_groups_public_key_and_proof: bcs::to_bytes(
-            &validator_initialization_metadata
-                .class_groups_public_key_and_proof
-                .clone(),
-        )?,
-    });
+    let mpc_data = validator_initialization_metadata.mpc_data.clone();
 
     let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &mpc_data)?;
 
@@ -1411,7 +1405,7 @@ pub async fn ptb_set_next_epoch_mpc_data_bytes_inner(
         .await?;
 
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, &next_mpc_data)?;
+    let store_mcp_data_in_table_vec = store_mcp_data_in_table_vec(&mut ptb, next_mpc_data)?;
 
     let call_args = vec![
         store_mcp_data_in_table_vec,
