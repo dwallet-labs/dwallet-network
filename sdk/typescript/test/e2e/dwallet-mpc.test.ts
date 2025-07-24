@@ -22,9 +22,12 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getAllChildObjectsIDs,
 	getDWalletSecpState,
 	getNetworkPublicParameters,
 	getObjectWithType,
+	isSystemInner,
+	isValidator,
 } from '../../src/dwallet-mpc/globals';
 import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 import {
@@ -518,5 +521,31 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 		);
 		expect(isValid).toBeTruthy();
+	});
+
+	it('should fetch all the validator operator cap ids from Sui', async () => {
+		const dynamicFields = await conf.client.getDynamicFields({
+			parentId: conf.ikaConfig.ika_system_object_id,
+		});
+		const innerCoordinatorState = await conf.client.getDynamicFieldObject({
+			parentId: conf.ikaConfig.ika_system_object_id,
+			name: dynamicFields.data[0].name,
+		});
+		const systemInner = innerCoordinatorState.data?.content;
+		if (!isSystemInner(systemInner)) {
+			console.log("couldn't fetch the inner system state");
+			return;
+		}
+		const validatorTableID =
+			systemInner.fields.value.fields.validator_set.fields.validators.fields.id.id;
+		const allValidatorsIDs = await getAllChildObjectsIDs(conf, validatorTableID);
+		const operatorCapIDs = await Promise.all(
+			allValidatorsIDs.map(async (id) => {
+				const validator = await getObjectWithType(conf, id, isValidator);
+				return validator.operation_cap_id;
+			}),
+		);
+
+		console.log({ operatorCapIDs });
 	});
 });
