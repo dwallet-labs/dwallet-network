@@ -1456,13 +1456,14 @@ impl SuiClientInner for SuiSdkClient {
         &self,
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError> {
+        let tx_digest = tx.digest().clone();
         match self.quorum_driver_api().execute_transaction_block(
             tx,
             SuiTransactionBlockResponseOptions::new().with_effects().with_events(),
             Some(sui_types::quorum_driver_types::ExecuteTransactionRequestType::WaitForEffectsCert),
         ).await {
             Ok(response) => Ok(response),
-            Err(e) => Err(IkaError::SuiClientTxFailureGeneric(e.to_string())),
+            Err(e) => Err(IkaError::SuiClientTxFailureGeneric(tx_digest, e.to_string())),
         }
     }
 
