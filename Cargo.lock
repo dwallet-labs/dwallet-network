@@ -5678,7 +5678,6 @@ dependencies = [
  "dwallet-mpc-types",
  "dwallet-rng",
  "fastcrypto",
- "hex",
  "http 1.2.0",
  "ika-config",
  "ika-sui-client",

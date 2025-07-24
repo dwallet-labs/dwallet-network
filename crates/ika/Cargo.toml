@@ -42,7 +42,6 @@ serde_yaml.workspace = true
 ika-sui-client.workspace = true
 bcs.workspace = true
 dwallet-mpc-types.workspace = true
-hex.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true

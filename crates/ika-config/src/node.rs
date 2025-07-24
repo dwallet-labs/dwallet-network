@@ -579,9 +579,7 @@ impl RootSeedWithPath {
 
     pub fn new_from_path(path: PathBuf) -> Self {
         let cell: OnceCell<RootSeed> = OnceCell::new();
-        println!("importing root seed from path: {:?}", path.to_str());
-
-        // OK to unwrap panic because class-groups should not start without all keypairs loaded.
+        // OK to unwrap panic because class_groups should not start without all keypairs loaded.
         cell.set(RootSeed::from_file(path.clone()).unwrap())
             .expect("Failed to set root seed");
         Self {
@@ -594,7 +592,6 @@ impl RootSeedWithPath {
         self.seed.get_or_init(|| match &self.location {
             RootSeedLocation::InPlace { value } => value.clone(),
             RootSeedLocation::File { path } => {
-                println!("importing root seed from path: {:?}", path.to_str());
                 // OK to unwrap panic because validator
                 // should not start without seed loaded.
                 RootSeed::from_file(path.clone()).unwrap()
