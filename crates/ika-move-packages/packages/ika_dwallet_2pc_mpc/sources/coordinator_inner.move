@@ -1656,6 +1656,10 @@ public(package) fun dwallet_coordinator_witness(): DWalletCoordinatorWitness {
     DWalletCoordinatorWitness {}
 }
 
+public(package) fun epoch(self: &DWalletCoordinatorInner): u64 {
+    self.current_epoch
+}
+
 /// Locks the last active session sequence number to prevent further updates.
 ///
 /// This function is called before epoch transitions to ensure session scheduling
