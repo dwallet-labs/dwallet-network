@@ -3,6 +3,8 @@ use crate::ika_validator_transactions::{
     add_ika_system_command_to_ptb, construct_unsigned_txn,
     get_dwallet_2pc_mpc_coordinator_call_arg, new_pricing_info,
 };
+use fastcrypto::encoding::Base64;
+use fastcrypto::encoding::Encoding;
 use ika_types::messages_dwallet_mpc::DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME;
 use ika_types::sui::{
     PricingInfoKey, PricingInfoValue, VEC_MAP_FROM_KEYS_VALUES_FUNCTION_NAME,
@@ -26,6 +28,10 @@ const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
     ident_str!("set_paused_curves_and_signature_algorithms");
 const SET_APPROVED_UPGRADE_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("set_approved_upgrade_by_cap");
+const AUTHORIZE_UPGRADE_FUNCTION_NAME: &IdentStr = ident_str!("authorize_upgrade");
+const COMMIT_UPGRADE_FUNCTION_NAME: &IdentStr = ident_str!("commit_upgrade");
+const FINALIZE_UPGRADE_FUNCTION_NAME: &IdentStr = ident_str!("finalize_upgrade");
+const TRY_MIGRATE_FUNCTION_NAME: &IdentStr = ident_str!("try_migrate");
 const SET_SUPPORTED_AND_PRICING_FUNCTION_NAME: &IdentStr = ident_str!("set_supported_and_pricing");
 const SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("set_gas_fee_reimbursement_sui_system_call_value_by_cap");
@@ -50,11 +56,11 @@ pub async fn set_approved_upgrade_by_cap(
     let package_id = ptb.input(CallArg::Pure(bcs::to_bytes(&package_id)?))?;
     let digest = ptb.input(CallArg::Pure(bcs::to_bytes(&digest)?))?;
     let call_args = vec![
+        package_id,
+        digest,
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
             protocol_cap_ref,
         )))?,
-        package_id,
-        digest,
     ];
 
     let sender = context.active_address()?;
@@ -68,6 +74,144 @@ pub async fn set_approved_upgrade_by_cap(
         &mut ptb,
     )
     .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    ika_validator_transactions::execute_transaction(context, tx_data).await
+}
+
+/// Perform approved upgrade
+pub async fn perform_approved_upgrade(
+    context: &mut WalletContext,
+    ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
+    ika_dwallet_coordinator_object_id: ObjectID,
+    package_id: ObjectID,
+    modules: Vec<String>,
+    dependencies: Vec<ObjectID>,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+    let package_id_arg = ptb.input(CallArg::Pure(bcs::to_bytes(&package_id)?))?;
+
+    let sender = context.active_address()?;
+
+    let authorized_upgrade = add_ika_system_command_to_ptb(
+        context,
+        AUTHORIZE_UPGRADE_FUNCTION_NAME,
+        vec![package_id_arg],
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let Argument::Result(authorized_upgrade) = authorized_upgrade else {
+        return Err(anyhow::anyhow!("Expected an result argument form calling authorize upgrade"));
+    };
+
+    let upgrade_ticket = Argument::NestedResult(authorized_upgrade, 0);
+    let approver = Argument::NestedResult(authorized_upgrade, 1);
+
+    let modules = modules
+        .iter()
+        .map(|m| Base64::decode(m))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let upgrade_recipient = ptb.upgrade(package_id, upgrade_ticket, dependencies, modules);
+
+   add_ika_system_command_to_ptb(
+        context,
+        COMMIT_UPGRADE_FUNCTION_NAME,
+        vec![
+            upgrade_recipient,
+            approver
+        ],
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(context, ika_dwallet_coordinator_object_id)
+            .await?,
+    )?;
+
+    ptb.programmable_move_call(
+        ika_dwallet_2pc_mpc_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        COMMIT_UPGRADE_FUNCTION_NAME.to_owned(),
+        vec![],
+        vec![coordinator, approver],
+    );
+
+    add_ika_system_command_to_ptb(
+        context,
+        FINALIZE_UPGRADE_FUNCTION_NAME,
+        vec![approver],
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    ika_validator_transactions::execute_transaction(context, tx_data).await
+}
+
+/// Try to migrate the system to a new package
+pub async fn try_migrate_system(
+    context: &mut WalletContext,
+    new_ika_system_package_id: ObjectID,
+    ika_system_object_id: ObjectID,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let sender = context.active_address()?;
+
+    add_ika_system_command_to_ptb(
+        context,
+        TRY_MIGRATE_FUNCTION_NAME,
+        vec![],
+        ika_system_object_id,
+        new_ika_system_package_id,
+        &mut ptb,
+    )
+        .await?;
+
+    let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    ika_validator_transactions::execute_transaction(context, tx_data).await
+}
+
+/// Try to migrate the coordinator to a new package
+pub async fn try_migrate_coordinator(
+    context: &mut WalletContext,
+    new_ika_dwallet_2pc_mpc_package_id: ObjectID,
+    ika_dwallet_coordinator_object_id: ObjectID,
+    gas_budget: u64,
+) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let sender = context.active_address()?;
+
+
+    let coordinator = ptb.input(
+        get_dwallet_2pc_mpc_coordinator_call_arg(context, ika_dwallet_coordinator_object_id)
+            .await?,
+    )?;
+
+    ptb.programmable_move_call(
+        new_ika_dwallet_2pc_mpc_package_id,
+        DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
+        TRY_MIGRATE_FUNCTION_NAME.to_owned(),
+        vec![],
+        vec![coordinator],
+    );
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
