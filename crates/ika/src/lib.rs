@@ -1,7 +1,9 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, IkaPackagesConfigFile};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use sui_config::PersistedConfig;
 use sui_sdk::wallet_context::WalletContext;
@@ -11,6 +13,11 @@ pub mod ika_commands;
 #[cfg(feature = "protocol-commands")]
 pub(crate) mod protocol_commands;
 pub(crate) mod validator_commands;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct IkaPackagesConfigFile(pub HashMap<String, IkaPackagesConfig>);
+
+impl sui_config::Config for IkaPackagesConfigFile {}
 
 pub(crate) fn read_ika_sui_config_yaml(
     context: &WalletContext,

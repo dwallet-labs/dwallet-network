@@ -11,7 +11,7 @@ use std::{
 use sui_config::Config;
 use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
-use crate::read_ika_sui_config_yaml;
+use crate::{IkaPackagesConfigFile, read_ika_sui_config_yaml};
 use clap::*;
 use colored::Colorize;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
@@ -35,7 +35,7 @@ use ika_sui_client::ika_validator_transactions::{
 };
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_types::crypto::generate_proof_of_possession;
-use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, IkaPackagesConfigFile};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, PricingInfoKey, PricingInfoValue};
 use serde::Serialize;
 use sui::validator_commands::write_transaction_response;
