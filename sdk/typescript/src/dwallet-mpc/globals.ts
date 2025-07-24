@@ -349,6 +349,7 @@ export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array>
 	const currentEpoch = await getNetworkCurrentEpochNumber(c);
 	const cachedPP = getCachedPublicParameters(networkDecryptionKeyPublicOutputID, currentEpoch);
 	if (cachedPP) {
+		console.log(`Using a cached network encryption key public output for epoch ${currentEpoch}`);
 		return cachedPP;
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
