@@ -1,6 +1,6 @@
 use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
-use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
+use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::Config;
 use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
@@ -16,12 +16,12 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
     DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME, INIT_CAP_STRUCT_NAME,
     INIT_MODULE_NAME, INITIALIZE_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME,
-    PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
     REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, System,
     TABLE_VEC_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
     VALIDATOR_METADATA_MODULE_NAME,
@@ -1256,13 +1256,7 @@ async fn request_add_validator_candidate(
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let mpc_data = VersionedMPCData::V1(MPCDataV1 {
-        class_groups_public_key_and_proof: bcs::to_bytes(
-            &validator_initialization_metadata
-                .class_groups_public_key_and_proof
-                .clone(),
-        )?,
-    });
+    let mpc_data = validator_initialization_metadata.mpc_data.clone();
 
     let mpc_data_table_vec = store_mcp_data_in_table_vec(&mut ptb, mpc_data)?;
 
@@ -1579,7 +1573,7 @@ fn store_mcp_data_in_table_vec(
     let table_arg = ptb.programmable_move_call(
         SUI_FRAMEWORK_PACKAGE_ID,
         TABLE_VEC_MODULE_NAME.into(),
-        CREATE_BYTES_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
+        CREATE_BYTES_TABLE_VEC_FUNCTION_NAME.into(),
         vec![TypeTag::Vector(Box::new(TypeTag::U8))],
         vec![],
     );
@@ -1599,7 +1593,7 @@ fn store_mcp_data_in_table_vec(
         ptb.programmable_move_call(
             SUI_FRAMEWORK_PACKAGE_ID,
             TABLE_VEC_MODULE_NAME.into(),
-            PUSH_BACK_BYTES_TO_TABLE_VEC_BUILDER_FUNCTION_NAME.into(),
+            PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME.into(),
             vec![TypeTag::Vector(Box::new(TypeTag::U8))],
             vec![table_arg, slice],
         );

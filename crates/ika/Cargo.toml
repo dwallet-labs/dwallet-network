@@ -40,6 +40,8 @@ sui-sdk.workspace = true
 sui-types.workspace = true
 serde_yaml.workspace = true
 ika-sui-client.workspace = true
+bcs.workspace = true
+dwallet-mpc-types.workspace = true
 hex.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
@@ -53,3 +55,6 @@ msim.workspace = true
 
 [package.metadata.cargo-udeps.ignore]
 normal = ["jemalloc-ctl"]
+
+[features]
+protocol-commands = ['ika-sui-client/protocol-commands']
