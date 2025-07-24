@@ -40,7 +40,8 @@ use move_core_types::language_storage::TypeTag;
 use roaring::RoaringBitmap;
 use std::collections::HashMap;
 use std::sync::Arc;
-use sui_json_rpc_types::SuiTransactionBlockResponse;
+use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_json_rpc_types::{SuiExecutionStatus, SuiTransactionBlockResponse};
 use sui_macros::fail_point_async;
 use sui_types::MOVE_STDLIB_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, TransactionDigest};
@@ -703,62 +704,65 @@ where
         transaction: Transaction,
         sui_client: &Arc<SuiClient<C>>,
     ) -> DwalletMPCResult<SuiTransactionBlockResponse> {
-        loop {
-            // Small delay to avoid spamming the node.
-            tokio::time::sleep(Duration::from_millis(500)).await;
-
-            // Get exclusive access to the digest of the **last** submitted transaction.
-            let mut digest_guard = notifier_tx_lock.lock().await;
-
-            match *digest_guard {
-                // ──────────────── No previous transaction → sends the given one ────────────────
-                None => {
-                    info!(
-                        transaction_digest = ?transaction.digest(),
-                        "Submitting a transaction to Sui"
-                    );
-                    let result = sui_client
-                        .execute_transaction_block_with_effects(transaction)
-                        .await?;
-                    if !result.errors.is_empty() {
-                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
-                            "{:?}",
-                            result.errors
-                        ))
-                        .into());
-                    }
-                    *digest_guard = Some(result.digest);
-                    return Ok(result);
-                }
-
-                // ──────────────── Previous transaction exists → check its status ────────────────
-                Some(prev_digest) => {
-                    match sui_client.get_events_by_tx_digest(prev_digest).await {
-                        // Not yet processed — retry in the next loop iteration.
-                        Err(_) => {
-                            info!(
-                                transaction_digest = ?prev_digest,
-                                "The last submitted transaction has not been processed yet, retrying..."
-                            );
-                            continue;
-                        }
-
-                        // Processed — we can safely submit the next one.
-                        Ok(_events) => {
-                            info!(
-                                transaction_digest = ?prev_digest,
-                                "The last submitted transaction has been processed, submitting the next one"
-                            );
-                            let result = sui_client
-                                .execute_transaction_block_with_effects(transaction)
-                                .await?;
-                            *digest_guard = Some(result.digest);
-                            return Ok(result);
-                        }
-                    }
-                }
+        let mut last_submitted_tx_digest = notifier_tx_lock.lock().await;
+        if let Some(prev_digest) = *last_submitted_tx_digest {
+            while sui_client
+                .get_events_by_tx_digest(prev_digest)
+                .await
+                .is_err()
+            {
+                info!(
+                    transaction_digest = ?prev_digest,
+                    "The last submitted transaction has not been processed yet, retrying..."
+                );
+                // Small delay to avoid spamming the node.
+                tokio::time::sleep(Duration::from_millis(500)).await;
             }
+
+            info!(
+            transaction_digest = ?prev_digest,
+            "The last submitted transaction has been processed, submitting the next one",
+                        );
         }
+
+        info!(
+            transaction_digest = ?transaction.digest(),
+            "Submitting a transaction to Sui"
+        );
+
+        let tx_response = sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        if !tx_response.errors.is_empty() {
+            return Err(IkaError::SuiClientTxFailureGeneric(
+                tx_response.digest,
+                format!("{:?}", tx_response.errors),
+            )
+            .into());
+        }
+
+        let Some(tx_effects) = tx_response.effects.clone() else {
+            return Err(IkaError::SuiClientTxFailureGeneric(
+                tx_response.digest,
+                "Transaction effects are missing".to_string(),
+            )
+            .into());
+        };
+
+        if let SuiExecutionStatus::Failure { error } = tx_effects.status() {
+            return Err(IkaError::SuiClientTxFailureGeneric(
+                tx_response.digest,
+                format!(
+                    "Transaction executed successfully, but it failed with an error: {:?}",
+                    error
+                ),
+            )
+            .into());
+        };
+
+        *last_submitted_tx_digest = Some(tx_response.digest.clone());
+        Ok(tx_response)
     }
 
     async fn process_mid_epoch(

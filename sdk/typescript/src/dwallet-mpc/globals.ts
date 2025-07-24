@@ -120,6 +120,15 @@ interface CoordinatorInner {
 					};
 				};
 				current_epoch: number;
+				pricing_and_fee_manager: {
+					fields: {
+						gas_fee_reimbursement_sui_system_call_value: number;
+						/// SUI balance for gas fee reimbursement to fund network tx responses
+						gas_fee_reimbursement_sui_system_call_balance: number;
+						/// IKA fees charged for consensus validation
+						fee_charged_ika: number;
+					};
+				};
 			};
 		};
 	};
