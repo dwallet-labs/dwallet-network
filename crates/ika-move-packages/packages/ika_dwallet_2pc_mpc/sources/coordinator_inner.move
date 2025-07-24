@@ -1651,6 +1651,11 @@ public(package) fun create(
     inner
 }
 
+/// Get a witness for the coordinator.
+public(package) fun dwallet_coordinator_witness(): DWalletCoordinatorWitness {
+    DWalletCoordinatorWitness {}
+}
+
 /// Locks the last active session sequence number to prevent further updates.
 ///
 /// This function is called before epoch transitions to ensure session scheduling
@@ -2078,12 +2083,12 @@ public(package) fun advance_epoch(
 
     self.sessions_manager.advance_epoch();
 
-    self.current_epoch = self.current_epoch + 1;
+    self.current_epoch = advance_epoch_approver.new_epoch();
 
     self.active_committee = self.next_epoch_active_committee.extract();
 
     let balance = self.pricing_and_fee_manager.advance_epoch();
-    advance_epoch_approver.approve_advance_epoch_by_witness(DWalletCoordinatorWitness {}, balance);
+    advance_epoch_approver.approve_advance_epoch_by_witness(dwallet_coordinator_witness(), balance);
 }
 
 /// Gets an immutable reference to a dWallet by ID.
@@ -4672,6 +4677,36 @@ fun set_gas_fee_reimbursement_sui_system_call_value(
     event::emit(SetGasFeeReimbursementSuiSystemCallValueEvent {
         gas_fee_reimbursement_sui_system_call_value,
     });
+}
+
+
+/// This function is used to process a checkpoint message by cap.
+///
+/// ### Parameters
+/// - **`message`**: The message to process.
+/// - **`cap`**: The capability to use to process the message.
+///
+/// ### Returns
+/// The coin of SUI that was charged for the gas fee reimbursement system call.
+public(package) fun process_checkpoint_message_by_cap(
+    self: &mut DWalletCoordinatorInner,
+    message: vector<u8>,
+    _: &VerifiedProtocolCap,
+    ctx: &mut TxContext,
+): Coin<SUI> {
+    self.process_checkpoint_message(message, ctx)
+}
+
+/// Sets the gas fee reimbursement SUI system call value.
+///
+/// ### Parameters
+/// - **`gas_fee_reimbursement_sui_system_call_value`**: The gas fee reimbursement SUI system call value.
+public(package) fun set_gas_fee_reimbursement_sui_system_call_value_by_cap(
+    self: &mut DWalletCoordinatorInner,
+    gas_fee_reimbursement_sui_system_call_value: u64,
+    _: &VerifiedProtocolCap,
+) {
+    self.set_gas_fee_reimbursement_sui_system_call_value(gas_fee_reimbursement_sui_system_call_value);
 }
 
 /// Sets the supported curves, signature algorithms and hash schemes, and the default pricing.

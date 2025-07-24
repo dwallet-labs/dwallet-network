@@ -27,6 +27,7 @@ ika-types.workspace = true
 sui-types.workspace = true
 sui-config.workspace = true
 base64.workspace = true
+dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 sui-types = { workspace = true }

@@ -1,6 +1,6 @@
 use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
-use dwallet_mpc_types::dwallet_mpc::{MPCDataV1, VersionedMPCData};
+use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::Config;
 use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
@@ -885,9 +885,9 @@ pub async fn ika_system_set_witness_approving_advance_epoch(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             witness_type_arg,
             false_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -958,8 +958,8 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             ika_common_package_upgrade_cap_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -970,8 +970,8 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             ika_dwallet_2pc_mpc_package_upgrade_cap_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -1256,13 +1256,7 @@ async fn request_add_validator_candidate(
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let mpc_data = VersionedMPCData::V1(MPCDataV1 {
-        class_groups_public_key_and_proof: bcs::to_bytes(
-            &validator_initialization_metadata
-                .class_groups_public_key_and_proof
-                .clone(),
-        )?,
-    });
+    let mpc_data = validator_initialization_metadata.mpc_data.clone();
 
     let mpc_data_table_vec = store_mcp_data_in_table_vec(&mut ptb, mpc_data)?;
 

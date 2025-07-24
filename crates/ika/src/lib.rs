@@ -3,4 +3,6 @@
 
 #[macro_use]
 pub mod ika_commands;
-mod validator_commands;
+#[cfg(feature = "protocol-commands")]
+pub(crate) mod protocol_commands;
+pub(crate) mod validator_commands;
