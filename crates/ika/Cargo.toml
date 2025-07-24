@@ -54,3 +54,6 @@ msim.workspace = true
 
 [package.metadata.cargo-udeps.ignore]
 normal = ["jemalloc-ctl"]
+
+[features]
+protocol-commands = ['ika-sui-client/protocol-commands']

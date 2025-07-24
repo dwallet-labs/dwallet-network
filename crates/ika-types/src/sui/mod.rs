@@ -98,8 +98,6 @@ pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &Iden
     ident_str!("request_dwallet_network_encryption_key_dkg_by_cap");
 pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_pricing");
 pub const SET_PRICING_VOTE_FUNCTION_NAME: &IdentStr = ident_str!("set_pricing_vote");
-pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
-    ident_str!("set_paused_curves_and_signature_algorithms");
 pub const SET_NEXT_EPOCH_MPC_DATA_BYTES_FUNCTION_NAME: &IdentStr =
     ident_str!("set_next_epoch_mpc_data_bytes");
 
@@ -117,6 +115,16 @@ pub const APPEND_VECTOR_FUNCTION_NAME: &IdentStr = ident_str!("append");
 pub const OPTION_MODULE_NAME: &IdentStr = ident_str!("option");
 pub const OPTION_DESTROY_NONE_FUNCTION_NAME: &IdentStr = ident_str!("destroy_none");
 pub const OPTION_DESTROY_SOME_FUNCTION_NAME: &IdentStr = ident_str!("destroy_some");
+
+pub const PRICING_MODULE_NAME: &IdentStr = ident_str!("pricing");
+pub const INSERT_OR_UPDATE_PRICING_FUNCTION_NAME: &IdentStr =
+    ident_str!("insert_or_update_pricing");
+
+pub const VEC_MAP_MODULE_NAME: &IdentStr = ident_str!("vec_map");
+pub const VEC_MAP_STRUCT_NAME: &IdentStr = ident_str!("VecMap");
+pub const VEC_MAP_NEW_FUNCTION_NAME: &IdentStr = ident_str!("empty");
+pub const VEC_MAP_INSERT_FUNCTION_NAME: &IdentStr = ident_str!("insert");
+pub const VEC_MAP_FROM_KEYS_VALUES_FUNCTION_NAME: &IdentStr = ident_str!("from_keys_values");
 
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_V1: u64 = 18446744073709551605; // u64::MAX - 10
