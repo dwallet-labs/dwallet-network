@@ -144,20 +144,6 @@ impl DWalletMPCManager {
 
         let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(&root_seed);
 
-        // Verify that the validators local class-groups key is the
-        // same as stored in the system state object onchain.
-        // This makes sure the seed we are using is the same seed we used at setup
-        // to create the encryption key, and thus it assures we will generate the same decryption key too.
-        let onchain_class_groups_encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof =
-            committee.class_groups_public_key_and_proof(&validator_name)?;
-        if onchain_class_groups_encryption_key_and_proof
-            != class_groups_key_pair.encryption_key_and_proof()
-        {
-            return Err(DwalletMPCError::MPCManagerError(
-                "validator's class-groups key does not match the one stored in the system state object".to_string(),
-            ));
-        }
-
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
             class_groups_decryption_key: class_groups_key_pair.decryption_key(),

@@ -287,6 +287,7 @@ impl IkaNode {
         let epoch_start_system_state = sui_client
             .must_get_epoch_start_system(&latest_system_state)
             .await;
+
         let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
         let previous_epoch_last_dwallet_checkpoint_sequence_number =
             dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
@@ -894,6 +895,7 @@ impl IkaNode {
 
         let (dwallet_mpc_service_exit_sender, dwallet_mpc_service_exit_receiver) =
             watch::channel(());
+        // DWalletMPCService::verify_validator_keys(epoch_store.epoch_start_state(), config)?;
         let mut dwallet_mpc_service = DWalletMPCService::new(
             epoch_store.clone(),
             dwallet_mpc_service_exit_receiver,
