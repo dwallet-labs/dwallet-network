@@ -8,8 +8,8 @@ use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_protocol_transactions::{
     perform_approved_upgrade, set_approved_upgrade_by_cap,
     set_gas_fee_reimbursement_sui_system_call_value_by_cap,
-    set_paused_curves_and_signature_algorithms, set_supported_and_pricing,
-    try_migrate_system, try_migrate_coordinator
+    set_paused_curves_and_signature_algorithms, set_supported_and_pricing, try_migrate_coordinator,
+    try_migrate_system,
 };
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::{PricingInfoKey, PricingInfoValue};

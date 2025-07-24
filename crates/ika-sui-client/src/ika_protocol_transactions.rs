@@ -108,7 +108,9 @@ pub async fn perform_approved_upgrade(
     .await?;
 
     let Argument::Result(authorized_upgrade) = authorized_upgrade else {
-        return Err(anyhow::anyhow!("Expected an result argument form calling authorize upgrade"));
+        return Err(anyhow::anyhow!(
+            "Expected an result argument form calling authorize upgrade"
+        ));
     };
 
     let upgrade_ticket = Argument::NestedResult(authorized_upgrade, 0);
@@ -121,13 +123,10 @@ pub async fn perform_approved_upgrade(
 
     let upgrade_recipient = ptb.upgrade(package_id, upgrade_ticket, dependencies, modules);
 
-   add_ika_system_command_to_ptb(
+    add_ika_system_command_to_ptb(
         context,
         COMMIT_UPGRADE_FUNCTION_NAME,
-        vec![
-            upgrade_recipient,
-            approver
-        ],
+        vec![upgrade_recipient, approver],
         ika_system_object_id,
         ika_system_package_id,
         &mut ptb,
@@ -181,7 +180,7 @@ pub async fn try_migrate_system(
         new_ika_system_package_id,
         &mut ptb,
     )
-        .await?;
+    .await?;
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
@@ -198,7 +197,6 @@ pub async fn try_migrate_coordinator(
     let mut ptb = ProgrammableTransactionBuilder::new();
 
     let sender = context.active_address()?;
-
 
     let coordinator = ptb.input(
         get_dwallet_2pc_mpc_coordinator_call_arg(context, ika_dwallet_coordinator_object_id)
