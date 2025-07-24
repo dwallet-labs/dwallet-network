@@ -62,7 +62,7 @@ echo "🔐 Deploying validator keys to GCP secrets..."
 pushd "$SUBDOMAIN"
 
 # List of key files.
-KEY_FILES=("consensus.key" "network.key" "protocol.key" "class-groups.seed")
+KEY_FILES=("consensus.key" "network.key" "protocol.key" "root-seed.key")
 VALIDATOR_NAME_PREFIX="val"
 
 # Maximum parallel jobs
