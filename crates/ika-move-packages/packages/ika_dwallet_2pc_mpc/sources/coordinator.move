@@ -46,6 +46,7 @@ public struct DWalletCoordinator has key {
     version: u64,
     package_id: ID,
     new_package_id: Option<ID>,
+    migration_epoch: Option<u64>,
 }
 
 // === Functions that can only be called by init ===
@@ -72,6 +73,7 @@ public(package) fun create(
         version: VERSION,
         package_id,
         new_package_id: option::none(),
+        migration_epoch: option::none(),
     };
     dynamic_field::add(&mut self.id, VERSION, dwallet_coordinator_inner);
     transfer::share_object(self);
@@ -116,7 +118,6 @@ public fun advance_epoch(
     advance_epoch_approver: &mut AdvanceEpochApprover,
 ) {
     self.inner_mut().advance_epoch(advance_epoch_approver);
-    self.try_migrate();
 }
 
 public fun request_dwallet_network_encryption_key_dkg_by_cap(
@@ -646,9 +647,10 @@ public fun subsidize_coordinator_with_ika(self: &mut DWalletCoordinator, ika: Co
 }
 
 public fun commit_upgrade(self: &mut DWalletCoordinator, upgrade_package_approver: &mut UpgradePackageApprover) {
-    upgrade_package_approver.approve_upgrade_package_by_witness(coordinator_inner::dwallet_coordinator_witness());
+    let new_package_id = upgrade_package_approver.approve_upgrade_package_by_witness(coordinator_inner::dwallet_coordinator_witness());
     if (self.package_id == upgrade_package_approver.old_package_id()) {
-        self.new_package_id = option::some(upgrade_package_approver.new_package_id());
+        self.migration_epoch = option::some(upgrade_package_approver.migration_epoch());
+        self.new_package_id = option::some(new_package_id);
     };
 }
 
@@ -656,25 +658,38 @@ public fun commit_upgrade(self: &mut DWalletCoordinator, upgrade_package_approve
 ///
 /// This function sets the new package id and version and can be modified in future versions
 /// to migrate changes in the `coordinator_inner` object if needed.
+/// This function can be called immediately after the upgrade is committed.
 public fun try_migrate_by_cap(self: &mut DWalletCoordinator, _: &VerifiedProtocolCap) {
     assert!(self.version < VERSION, EInvalidMigration);
     assert!(self.new_package_id.is_some(), EInvalidMigration);
-    self.try_migrate();
+    self.try_migrate_impl();
+}
+
+/// Try to migrate the coordinator object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `coordinator_inner` object if needed.
+/// Call this function after the migration epoch is reached.
+public fun try_migrate(self: &mut DWalletCoordinator) {
+    assert!(self.version < VERSION, EInvalidMigration);
+    assert!(self.new_package_id.is_some(), EInvalidMigration);
+    assert!(self.migration_epoch.is_some_and!(|e| self.inner_without_version_check().epoch() >= *e), EInvalidMigration);
+    self.try_migrate_impl();
 }
 
 /// Migrate the coordinator object to the new package id.
 ///
 /// This function sets the new package id and version and can be modified in future versions
 /// to migrate changes in the `coordinator_inner` object if needed.
-fun try_migrate(self: &mut DWalletCoordinator) {
-    if (self.version < VERSION && self.new_package_id.is_some()) {
-        // Move the old coordinator inner to the new version.
-        let coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
-        dynamic_field::add(&mut self.id, VERSION, coordinator_inner);
-        self.version = VERSION;
+fun try_migrate_impl(self: &mut DWalletCoordinator) {
+    // Move the old coordinator inner to the new version.
+    let coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
+    dynamic_field::add(&mut self.id, VERSION, coordinator_inner);
+    self.version = VERSION;
 
-        self.package_id = self.new_package_id.extract();
-    }
+    self.package_id = self.new_package_id.extract();
+    // empty the migration epoch
+    self.migration_epoch.extract_or!(0);
 }
 
 public fun version(self: &DWalletCoordinator): u64 {
@@ -693,6 +708,11 @@ public(package) fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordi
 public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
+}
+
+/// Get an immutable reference to `DWalletCoordinatorInner` from the `DWalletCoordinator` without checking the version.
+fun inner_without_version_check(self: &DWalletCoordinator): &DWalletCoordinatorInner {
+    dynamic_field::borrow(&self.id, self.version)
 }
 
 // === Test Functions ===

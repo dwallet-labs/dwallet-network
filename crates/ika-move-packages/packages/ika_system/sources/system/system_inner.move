@@ -775,29 +775,31 @@ public(package) fun add_upgrade_cap_by_cap(
     self.upgrade_caps.push_back(upgrade_cap);
 }
 
-public(package) fun authorize_upgrade(self: &mut SystemInner, package_id: ID): UpgradeTicket {
+public(package) fun authorize_upgrade(self: &mut SystemInner, package_id: ID): (UpgradeTicket, UpgradePackageApprover) {
     assert!(self.approved_upgrades.contains(&package_id), EApprovedUpgradeNotFound);
     let (_, digest) = self.approved_upgrades.remove(&package_id);
     let index = self.upgrade_caps.find_index!(|c| c.package() == package_id).extract();
     let policy = self.upgrade_caps[index].policy();
-    self.upgrade_caps[index].authorize(policy, digest)
+    let upgrade_ticket = self.upgrade_caps[index].authorize(policy, digest);
+    let upgrade_package_approver =     upgrade_package_approver::create(
+        object::id(&self.upgrade_caps[index]),
+        self.witnesses_approving_advance_epoch,
+        package_id,
+        self.epoch + 1,
+        &self.system_object_cap,
+    );
+    (upgrade_ticket, upgrade_package_approver)
 }
 
 public(package) fun commit_upgrade(
     self: &mut SystemInner,
     receipt: UpgradeReceipt,
-): UpgradePackageApprover {
-    let new_package_id = receipt.package();
+    upgrade_package_approver: &mut UpgradePackageApprover,
+) {
+    upgrade_package_approver.commit(&receipt, &self.system_object_cap);
     let receipt_cap_id = receipt.cap();
     let index = self.upgrade_caps.find_index!(|c| object::id(c) == receipt_cap_id).extract();
-    let old_package_id = self.upgrade_caps[index].package();
     self.upgrade_caps[index].commit(receipt);
-    upgrade_package_approver::create(
-        self.witnesses_approving_advance_epoch,
-        new_package_id,
-        old_package_id,
-        &self.system_object_cap,
-    )
 }
 
 public(package) fun finalize_upgrade(

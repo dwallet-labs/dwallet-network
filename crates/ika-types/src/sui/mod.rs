@@ -28,8 +28,8 @@ use self::simtest_ika_system_state_inner::{
 
 /// Default computation price of 1000 NIka
 pub const DEFAULT_VALIDATOR_COMPUTATION_PRICE: u64 = 1000;
-/// Default commission rate of 2%
-pub const DEFAULT_COMMISSION_RATE: u16 = 200;
+/// Default commission rate of 10%
+pub const DEFAULT_COMMISSION_RATE: u16 = 1000;
 
 pub const INIT_CAP_STRUCT_NAME: &IdentStr = ident_str!("InitCap");
 pub const SYSTEM_STRUCT_NAME: &IdentStr = ident_str!("System");
@@ -145,6 +145,7 @@ pub struct System {
     pub version: u64,
     pub package_id: ObjectID,
     pub new_package_id: Option<ObjectID>,
+    pub migration_epoch: Option<u64>,
 }
 
 /// Rust version of the Move DWalletCoordinator type
@@ -154,6 +155,7 @@ pub struct DWalletCoordinator {
     pub version: u64,
     pub package_id: ObjectID,
     pub new_package_id: Option<ObjectID>,
+    pub migration_epoch: Option<u64>,
 }
 
 impl System {
