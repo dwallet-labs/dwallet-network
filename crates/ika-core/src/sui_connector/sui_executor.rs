@@ -40,7 +40,8 @@ use move_core_types::language_storage::TypeTag;
 use roaring::RoaringBitmap;
 use std::collections::HashMap;
 use std::sync::Arc;
-use sui_json_rpc_types::SuiTransactionBlockResponse;
+use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_json_rpc_types::{SuiExecutionStatus, SuiTransactionBlockResponse};
 use sui_macros::fail_point_async;
 use sui_types::MOVE_STDLIB_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, TransactionDigest};
@@ -720,6 +721,7 @@ where
                     let result = sui_client
                         .execute_transaction_block_with_effects(transaction)
                         .await?;
+
                     if !result.errors.is_empty() {
                         return Err(IkaError::SuiClientTxFailureGeneric(format!(
                             "{:?}",
@@ -727,6 +729,22 @@ where
                         ))
                         .into());
                     }
+
+                    let Some(tx_effects) = result.effects.clone() else {
+                        return Err(IkaError::SuiClientTxFailureGeneric(
+                            "Transaction effects are missing".to_string(),
+                        )
+                        .into());
+                    };
+
+                    if let SuiExecutionStatus::Failure { error } = tx_effects.status() {
+                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
+                            "Transaction executed successfully, but it failed with an error: {:?}",
+                            error
+                        ))
+                        .into());
+                    };
+
                     *digest_guard = Some(result.digest);
                     return Ok(result);
                 }
