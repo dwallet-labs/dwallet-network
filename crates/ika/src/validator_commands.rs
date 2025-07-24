@@ -35,7 +35,7 @@ use ika_sui_client::ika_validator_transactions::{
 };
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_types::crypto::generate_proof_of_possession;
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::IkaNetworkConfig;
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, PricingInfoKey, PricingInfoValue};
 use serde::Serialize;
 use sui::validator_commands::write_transaction_response;
@@ -471,19 +471,21 @@ impl IkaValidatorCommand {
                 ika_system_object_id,
                 ika_dwallet_coordinator_object_id,
             } => {
-                let config = IkaPackagesConfig {
+                let config = IkaNetworkConfig::new(
                     ika_package_id,
                     ika_common_package_id,
                     ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
                     ika_dwallet_coordinator_object_id,
-                };
+                );
 
                 let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
-                let mut final_config = IkaPackagesConfigFile(HashMap::new());
+                let mut full_config = IkaPackagesConfigFile {
+                    envs: HashMap::new(),
+                };
                 if config_path.exists() {
-                    final_config = PersistedConfig::read(&config_path).map_err(|err| {
+                    full_config = PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
                             "Cannot open Ika network config file at {config_path:?}"
                         ))
@@ -491,8 +493,8 @@ impl IkaValidatorCommand {
                 }
 
                 let sui_env = context.get_active_env()?.alias.clone();
-                final_config.0.insert(sui_env.clone(), config);
-                final_config.save(&config_path)?;
+                full_config.envs.insert(sui_env.clone(), config);
+                full_config.save(&config_path)?;
 
                 IkaValidatorCommandResponse::ConfigEnv(config_path)
             }
@@ -512,9 +514,9 @@ impl IkaValidatorCommand {
                 let (res, validator_caps) = request_add_validator_candidate(
                     context,
                     &validator_info,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
-                    config.ika_common_package_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
+                    config.packages.ika_common_package_id,
                     gas_budget,
                 )
                 .await?;
@@ -531,8 +533,8 @@ impl IkaValidatorCommand {
 
                 let response = request_add_validator(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -552,8 +554,8 @@ impl IkaValidatorCommand {
 
                 let res = stake_ika(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     ika_supply_id,
                     validator_id,
                     stake_amount,
@@ -573,8 +575,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = request_remove_validator(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -591,8 +593,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = request_remove_validator_candidate(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -610,8 +612,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_commission(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     new_commission_rate,
                     gas_budget,
@@ -629,8 +631,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = withdraw_stake(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     staked_ika_id,
                     gas_budget,
                 )
@@ -647,8 +649,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = request_withdraw_stake(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     staked_ika_id,
                     gas_budget,
                 )
@@ -666,8 +668,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = report_validator(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     reportee_id,
                     gas_budget,
@@ -686,8 +688,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = undo_report_validator(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     reportee_id,
                     gas_budget,
@@ -705,8 +707,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = rotate_operation_cap(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -723,8 +725,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = rotate_commission_cap(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -742,8 +744,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = collect_commission(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_commission_cap_id,
                     amount,
                     gas_budget,
@@ -762,8 +764,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_validator_name(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     name,
                     gas_budget,
@@ -781,8 +783,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = validator_metadata(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_id,
                     gas_budget,
                 )
@@ -800,8 +802,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_validator_metadata(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     metadata,
                     gas_budget,
@@ -820,8 +822,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_epoch_network_address(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     network_address,
                     gas_budget,
@@ -840,8 +842,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_epoch_p2p_address(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     p2p_address,
                     gas_budget,
@@ -860,8 +862,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_epoch_consensus_address(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     consensus_address,
                     gas_budget,
@@ -882,8 +884,8 @@ impl IkaValidatorCommand {
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
                 let response = set_next_epoch_protocol_pubkey_bytes(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     validator_info.protocol_public_key.as_bytes().to_vec(),
                     validator_info.proof_of_possession.as_ref().to_vec(),
@@ -905,8 +907,8 @@ impl IkaValidatorCommand {
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
                 let response = set_next_epoch_network_pubkey_bytes(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     validator_info.network_public_key.as_bytes().to_vec(),
                     gas_budget,
@@ -927,8 +929,8 @@ impl IkaValidatorCommand {
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
                 let response = set_next_epoch_consensus_pubkey_bytes(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     validator_info.consensus_public_key.as_bytes().to_vec(),
                     gas_budget,
@@ -956,8 +958,8 @@ impl IkaValidatorCommand {
 
                 let response = set_next_epoch_mpc_data_bytes(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     mpc_data,
                     gas_budget,
@@ -984,8 +986,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = verify_validator_cap(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -1002,8 +1004,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = verify_operation_cap(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_operation_cap_id,
                     gas_budget,
                 )
@@ -1020,8 +1022,8 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = verify_commission_cap(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
                     validator_commission_cap_id,
                     gas_budget,
                 )
@@ -1042,10 +1044,10 @@ impl IkaValidatorCommand {
                 let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_pricing_vote(
                     context,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
-                    config.ika_dwallet_2pc_mpc_package_id,
-                    config.ika_dwallet_coordinator_object_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
+                    config.packages.ika_dwallet_2pc_mpc_package_id,
+                    config.objects.ika_dwallet_coordinator_object_id,
                     validator_operation_cap_id,
                     new_pricing,
                     gas_budget,
@@ -1060,12 +1062,12 @@ impl IkaValidatorCommand {
                 let client = SuiClient::new(
                     &context.get_active_env()?.rpc,
                     SuiClientMetrics::new_for_testing(),
-                    config.ika_package_id,
-                    config.ika_common_package_id,
-                    config.ika_dwallet_2pc_mpc_package_id,
-                    config.ika_system_package_id,
-                    config.ika_system_object_id,
-                    config.ika_dwallet_coordinator_object_id,
+                    config.packages.ika_package_id,
+                    config.packages.ika_common_package_id,
+                    config.packages.ika_dwallet_2pc_mpc_package_id,
+                    config.packages.ika_system_package_id,
+                    config.objects.ika_system_object_id,
+                    config.objects.ika_dwallet_coordinator_object_id,
                 )
                 .await?;
                 let current_pricing_info = client.get_pricing_info().await;
