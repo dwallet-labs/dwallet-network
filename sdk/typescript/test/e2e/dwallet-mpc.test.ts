@@ -3,8 +3,8 @@
 
 import path from 'path';
 import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
+import { SuiClient } from '@mysten/sui/client';
+import { requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -34,21 +34,24 @@ import {
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
-const fiveMinutes = 5 * 60 * 1000;
+const fiveMinutes = 10000000 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
-		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x1');
-		const dWalletSeed = new Uint8Array(32).fill(8);
+		// todo(zeev): Think key is probably incorrect, check it.
+		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x2');
+		const dWalletSeed = new Uint8Array(32).fill(9);
 		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
 			Buffer.from(dWalletSeed).toString('hex'),
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 		await requestSuiFromFaucetV2({
-			host: getFaucetHost('localnet'),
+			// host: getFaucetHost('localnet'),
+			host: 'https://faucet.sui.beta.devnet.ika-network.net',
 			recipient: address,
 		});
 
@@ -56,6 +59,7 @@ describe('Test dWallet MPC', () => {
 			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
+			// todo(zeev): fix this, bad parsing, bad path, needs to be localized.
 			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
 			dWalletSeed,
 			encryptedSecretShareSigningKeypair,
@@ -71,7 +75,7 @@ describe('Test dWallet MPC', () => {
 	it('should create a dWallet (DKG)', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 	});
 
 	it('should run presign', async () => {
@@ -111,11 +115,50 @@ describe('Test dWallet MPC', () => {
 		console.timeEnd('Step 3: Sign Phase');
 	});
 
+	it(
+		'should sign full flow 100000 times without timeout',
+		async () => {
+			const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
+			for (let i = 0; i < 100000; i++) {
+				console.log(`Iteration: ${i + 1}`);
+				console.log('Creating dWallet...');
+				console.time('Step 1: dWallet Creation');
+				const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+				console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+				console.timeEnd('Step 1: dWallet Creation');
+				await delay(checkpointCreationTime);
+				console.log('Running Presign...');
+				console.time('Step 2: Presign Phase');
+				const completedPresign = await presign(conf, dwallet.dwalletID);
+				console.timeEnd('Step 2: Presign Phase');
+				console.log(`Step 2: Presign completed | presignID = ${completedPresign.id.id}`);
+				await delay(checkpointCreationTime);
+				console.log('Running Sign...');
+				console.time('Step 3: Sign Phase');
+				const signRes = await sign(
+					conf,
+					completedPresign.id.id,
+					dwallet.dwallet_cap_id,
+					Buffer.from('hello world'),
+					dwallet.secret_share,
+					networkDecryptionKeyPublicOutput,
+					Hash.KECCAK256,
+				);
+				console.log(`Sign completed successfully: ${signRes.id.id}`);
+				console.timeEnd('Step 3: Sign Phase');
+			}
+		},
+		{ timeout: 0 },
+	);
+
 	it('should create a dwallet and publish its secret share', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
-		console.log('Creating dWallet...');
+
+		console.log('Step 1: dWallet Creation');
+		console.time('Step 1: dWallet Creation');
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
+		console.log(`Step 1: dWallet created | dWalletID = ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
 		console.log('Running publish secret share...');
 		await makeDWalletUserSecretKeySharesPublicRequestEvent(

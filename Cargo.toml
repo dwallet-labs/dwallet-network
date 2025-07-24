@@ -97,6 +97,10 @@ axum = { version = "0.8", default-features = false, features = [
     "query",
     "ws",
 ] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
+axum-server = { git = "https://github.com/bmwill/axum-server.git", rev = "f44323e271afdd1365fd0c8b0a4c0bbdf4956cb7", version = "0.6", default-features = false, features = [
+    "tls-rustls",
+] }
 backoff = { version = "0.4.0", features = [
     "futures",
     "futures-core",
@@ -293,6 +297,7 @@ ika-config = { path = "crates/ika-config" }
 ika-core = { path = "crates/ika-core" }
 ika-node = { path = "crates/ika-node" }
 ika-sui-client = { path = "crates/ika-sui-client" }
+#ika-porxy = { path = "crates/ika-proxy" }
 ika-protocol-config = { path = "crates/ika-protocol-config" }
 ika-swarm = { path = "crates/ika-swarm" }
 ika-swarm-config = { path = "crates/ika-swarm-config" }
