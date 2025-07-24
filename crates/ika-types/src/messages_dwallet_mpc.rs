@@ -8,6 +8,7 @@ use move_core_types::language_storage::StructTag;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display};
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -654,6 +655,11 @@ impl DWalletSessionEventTrait for PresignRequestEvent {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct IkaPackagesConfigFile(pub HashMap<String, IkaPackagesConfig>);
+
+impl sui_config::Config for IkaPackagesConfigFile {}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct IkaPackagesConfig {

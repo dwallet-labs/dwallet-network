@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::{
@@ -10,6 +11,7 @@ use std::{
 use sui_config::Config;
 use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
+use crate::read_ika_sui_config_yaml;
 use clap::*;
 use colored::Colorize;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
@@ -33,7 +35,7 @@ use ika_sui_client::ika_validator_transactions::{
 };
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_types::crypto::generate_proof_of_possession;
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, IkaPackagesConfigFile};
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, PricingInfoKey, PricingInfoValue};
 use serde::Serialize;
 use sui::validator_commands::write_transaction_response;
@@ -78,6 +80,8 @@ pub enum IkaValidatorCommand {
         ika_system_package_id: ObjectID,
         #[clap(name = "ika-system-object-id", long)]
         ika_system_object_id: ObjectID,
+        #[clap(name = "ika-dwallet-coordinator-object-id", long)]
+        ika_dwallet_coordinator_object_id: ObjectID,
     },
     #[clap(name = "become-candidate")]
     BecomeCandidate {
@@ -465,6 +469,7 @@ impl IkaValidatorCommand {
                 ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
             } => {
                 let config = IkaPackagesConfig {
                     ika_package_id,
@@ -472,13 +477,23 @@ impl IkaValidatorCommand {
                     ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
-                    // This is done on purpose,
-                    // there is no ika_dwallet_coordinator_object_id at this stage.
-                    ika_dwallet_coordinator_object_id: ObjectID::ZERO,
+                    ika_dwallet_coordinator_object_id,
                 };
 
                 let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
-                config.save(&config_path)?;
+                let mut final_config = IkaPackagesConfigFile(HashMap::new());
+                if config_path.exists() {
+                    final_config = PersistedConfig::read(&config_path).map_err(|err| {
+                        err.context(format!(
+                            "Cannot open Ika network config file at {config_path:?}"
+                        ))
+                    })?;
+                }
+
+                let sui_env = context.get_active_env()?.alias.clone();
+                final_config.0.insert(sui_env.clone(), config);
+                final_config.save(&config_path)?;
+
                 IkaValidatorCommandResponse::ConfigEnv(config_path)
             }
             IkaValidatorCommand::BecomeCandidate {
@@ -489,12 +504,7 @@ impl IkaValidatorCommand {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let ika_on_sui_config_path =
                     ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig = PersistedConfig::read(&ika_on_sui_config_path)
-                    .map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {ika_on_sui_config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &ika_on_sui_config_path)?;
 
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
@@ -517,12 +527,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let response = request_add_validator(
                     context,
@@ -543,12 +548,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let res = stake_ika(
                     context,
@@ -570,12 +570,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = request_remove_validator(
                     context,
                     config.ika_system_package_id,
@@ -593,12 +588,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = request_remove_validator_candidate(
                     context,
                     config.ika_system_package_id,
@@ -617,12 +607,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_commission(
                     context,
                     config.ika_system_package_id,
@@ -641,12 +626,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = withdraw_stake(
                     context,
                     config.ika_system_package_id,
@@ -664,12 +644,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = request_withdraw_stake(
                     context,
                     config.ika_system_package_id,
@@ -688,12 +663,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = report_validator(
                     context,
                     config.ika_system_package_id,
@@ -713,12 +683,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = undo_report_validator(
                     context,
                     config.ika_system_package_id,
@@ -737,12 +702,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = rotate_operation_cap(
                     context,
                     config.ika_system_package_id,
@@ -760,12 +720,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = rotate_commission_cap(
                     context,
                     config.ika_system_package_id,
@@ -784,12 +739,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = collect_commission(
                     context,
                     config.ika_system_package_id,
@@ -809,12 +759,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_validator_name(
                     context,
                     config.ika_system_package_id,
@@ -833,12 +778,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = validator_metadata(
                     context,
                     config.ika_system_package_id,
@@ -857,12 +797,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_validator_metadata(
                     context,
                     config.ika_system_package_id,
@@ -882,12 +817,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_epoch_network_address(
                     context,
                     config.ika_system_package_id,
@@ -907,12 +837,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_epoch_p2p_address(
                     context,
                     config.ika_system_package_id,
@@ -932,12 +857,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_next_epoch_consensus_address(
                     context,
                     config.ika_system_package_id,
@@ -957,12 +877,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
                 let response = set_next_epoch_protocol_pubkey_bytes(
@@ -985,12 +900,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
                 let response = set_next_epoch_network_pubkey_bytes(
@@ -1012,12 +922,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let validator_info_bytes = fs::read_to_string(validator_info_file)?;
                 let validator_info: ValidatorInfo = serde_yaml::from_str(&validator_info_bytes)?;
                 let response = set_next_epoch_consensus_pubkey_bytes(
@@ -1038,12 +943,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 // Create a new MPC root seed and class groups key
                 let mpc_root_seed = RootSeed::random_seed();
@@ -1081,12 +981,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = verify_validator_cap(
                     context,
                     config.ika_system_package_id,
@@ -1104,12 +999,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = verify_operation_cap(
                     context,
                     config.ika_system_package_id,
@@ -1127,12 +1017,7 @@ impl IkaValidatorCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = verify_commission_cap(
                     context,
                     config.ika_system_package_id,
@@ -1154,12 +1039,7 @@ impl IkaValidatorCommand {
                     serde_yaml::from_reader(file)?;
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
                 let response = set_pricing_vote(
                     context,
                     config.ika_system_package_id,
@@ -1175,12 +1055,7 @@ impl IkaValidatorCommand {
             }
             IkaValidatorCommand::GetCurrentPricingInfo { ika_sui_config } => {
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let client = SuiClient::new(
                     &context.get_active_env()?.rpc,
@@ -1261,7 +1136,7 @@ impl Display for IkaValidatorCommandResponse {
                 write!(writer, "{}", write_transaction_response(response)?)?;
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
-                writeln!(writer, "Ika Sui config file created at: {path:?}")?;
+                writeln!(writer, "Ika Sui config file saved at: {path:?}")?;
             }
             IkaValidatorCommandResponse::SetNextEpochMPCData(response) => {
                 write!(

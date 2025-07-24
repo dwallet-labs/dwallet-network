@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use crate::read_ika_sui_config_yaml;
 use anyhow::{Context, Result};
 use clap::Subcommand;
 use colored::Colorize;
@@ -11,7 +12,6 @@ use ika_sui_client::ika_protocol_transactions::{
     set_paused_curves_and_signature_algorithms, set_supported_and_pricing, try_migrate_coordinator,
     try_migrate_system,
 };
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::{PricingInfoKey, PricingInfoValue};
 use serde::Deserialize;
 use std::fs::File;
@@ -22,7 +22,6 @@ use std::{
     fs,
     path::PathBuf,
 };
-use sui_config::PersistedConfig;
 use sui_sdk::rpc_types::SuiTransactionBlockResponse;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
@@ -149,12 +148,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let bytecode_dump_base64_obj: BytecodeDumpBase64 = if let Some(json_str) =
                     bytecode_dump_base64
@@ -193,12 +187,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let bytecode_dump_base64_obj: BytecodeDumpBase64 = if let Some(json_str) =
                     bytecode_dump_base64
@@ -237,12 +226,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let response = try_migrate_system(
                     context,
@@ -260,12 +244,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let response = try_migrate_coordinator(
                     context,
@@ -286,12 +265,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let response = set_paused_curves_and_signature_algorithms(
                     context,
@@ -317,12 +291,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let default_pricing_yaml: Vec<Entry<PricingInfoKey, PricingInfoValue>> =
                     serde_yaml::from_reader(BufReader::new(File::open(default_pricing_yaml)?))?;
@@ -354,12 +323,7 @@ impl IkaProtocolCommand {
             } => {
                 let gas_budget = gas_budget.unwrap_or(DEFAULT_GAS_BUDGET);
                 let config_path = ika_sui_config.unwrap_or(ika_config_dir()?.join(IKA_SUI_CONFIG));
-                let config: IkaPackagesConfig =
-                    PersistedConfig::read(&config_path).map_err(|err| {
-                        err.context(format!(
-                            "Cannot open Ika network config file at {config_path:?}"
-                        ))
-                    })?;
+                let config = read_ika_sui_config_yaml(context, &config_path)?;
 
                 let response = set_gas_fee_reimbursement_sui_system_call_value_by_cap(
                     context,
