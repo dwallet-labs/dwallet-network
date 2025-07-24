@@ -895,7 +895,12 @@ impl IkaNode {
 
         let (dwallet_mpc_service_exit_sender, dwallet_mpc_service_exit_receiver) =
             watch::channel(());
-        DWalletMPCService::verify_validator_keys(epoch_store.epoch_start_state(), config)?;
+        if let Err(e) =
+            DWalletMPCService::verify_validator_keys(epoch_store.epoch_start_state(), config)
+        {
+            panic!("Failed to verify validator keys: {}", e);
+        };
+
         let mut dwallet_mpc_service = DWalletMPCService::new(
             epoch_store.clone(),
             dwallet_mpc_service_exit_receiver,
