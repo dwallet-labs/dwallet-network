@@ -183,6 +183,7 @@ public struct System has key {
     version: u64,
     package_id: ID,
     new_package_id: Option<ID>,
+    migration_epoch: Option<u64>,
 }
 
 // === Functions that can only be called by init ===
@@ -220,6 +221,7 @@ public(package) fun create(
         version: VERSION,
         package_id,
         new_package_id: option::none(),
+        migration_epoch: option::none(),
     };
     dynamic_field::add(&mut self.id, VERSION, system_state);
     transfer::share_object(self);
@@ -525,7 +527,6 @@ public fun advance_epoch(
 ) {
     let inner_system = self.inner_mut();
     inner_system.advance_epoch(advance_epoch_approver, clock, ctx);
-    self.try_migrate();
 }
 
 public fun verify_validator_cap(self: &System, cap: &ValidatorCap): VerifiedValidatorCap {
@@ -548,17 +549,16 @@ public fun verify_commission_cap(
 
 // === Upgrades ===
 
-public fun authorize_upgrade(self: &mut System, package_id: ID): UpgradeTicket {
+public fun authorize_upgrade(self: &mut System, package_id: ID): (UpgradeTicket, UpgradePackageApprover) {
     self.inner_mut().authorize_upgrade(package_id)
 }
 
-public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt): UpgradePackageApprover {
-    let new_package_id = receipt.package();
-    let approver = self.inner_mut().commit_upgrade(receipt);
-    if (self.package_id == approver.old_package_id()) {
-        self.new_package_id = option::some(new_package_id);
+public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt, upgrade_package_approver: &mut UpgradePackageApprover) {
+    self.inner_mut().commit_upgrade(receipt, upgrade_package_approver);
+    if (self.package_id == upgrade_package_approver.old_package_id()) {
+        self.migration_epoch = option::some(upgrade_package_approver.migration_epoch());
+        self.new_package_id = option::some(*upgrade_package_approver.new_package_id().borrow());
     };
-    approver
 }
 
 public fun finalize_upgrade(self: &mut System, upgrade_package_approver: UpgradePackageApprover) {
@@ -618,23 +618,41 @@ public fun set_or_remove_witness_approving_advance_epoch_by_cap(
 ///
 /// This function sets the new package id and version and can be modified in future versions
 /// to migrate changes in the `system_inner` object if needed.
+/// This function can be called immediately after the upgrade is committed.
 public fun try_migrate_by_cap(self: &mut System, cap: &ProtocolCap) {
     let _ = self.inner().verify_protocol_cap(cap);
     assert!(self.version < VERSION, EInvalidMigration);
     assert!(self.new_package_id.is_some(), EInvalidMigration);
-    self.try_migrate();
+    self.try_migrate_impl();
 }
 
+/// Try to migrate the system object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `system_inner` object if needed.
+/// Call this function after the migration epoch is reached.
+public fun try_migrate(self: &mut System) {
+    assert!(self.version < VERSION, EInvalidMigration);
+    assert!(self.new_package_id.is_some(), EInvalidMigration);
+    assert!(self.migration_epoch.is_some_and!(|e| self.inner_without_version_check().epoch() >= *e), EInvalidMigration);
+    self.try_migrate_impl();
+}
 
-fun try_migrate(self: &mut System) {
-    if (self.version < VERSION && self.new_package_id.is_some()) {
-        // Move the old system inner to the new version.
-        let system_inner: SystemInner = dynamic_field::remove(&mut self.id, self.version);
-        dynamic_field::add(&mut self.id, VERSION, system_inner);
-        self.version = VERSION;
+/// Try to migrate the system object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `system_inner` object if needed.
+fun try_migrate_impl(self: &mut System) {
+    // Move the old system inner to the new version.
+    let system_inner: SystemInner = dynamic_field::remove(&mut self.id, self.version);
+    dynamic_field::add(&mut self.id, VERSION, system_inner);
+    self.version = VERSION;
 
-        self.package_id = self.new_package_id.extract();
-    }
+    self.package_id = self.new_package_id.extract();
+    // empty the migration epoch
+    if (self.migration_epoch.is_some()) {
+        let _ = self.migration_epoch.extract();
+    };
 }
 
 public fun version(self: &System): u64 {
@@ -675,6 +693,11 @@ fun inner_mut(self: &mut System): &mut SystemInner {
 fun inner(self: &System): &SystemInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
+}
+
+/// Get an immutable reference to `SystemInner` from the `System` without checking the version.
+fun inner_without_version_check(self: &System): &SystemInner {
+    dynamic_field::borrow(&self.id, self.version)
 }
 
 // === Test Functions ===
