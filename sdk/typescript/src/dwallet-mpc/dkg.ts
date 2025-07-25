@@ -93,6 +93,35 @@ export async function createDWallet(
 		encrypted_user_secret_key_share_id:
 			secondRoundResponse.moveResponse.encrypted_user_secret_key_share_id,
 	});
+
+	console.log(`User Share: ${Buffer.from(secondRoundResponse.secretShare).toString('hex')}`);
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
+	console.log('\n');
 	return {
 		dwalletID: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
