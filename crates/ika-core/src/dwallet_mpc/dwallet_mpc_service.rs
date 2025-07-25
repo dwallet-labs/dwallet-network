@@ -932,8 +932,7 @@ impl DWalletMPCService {
             .find(|v| v.authority_name() == authority_name)
         else {
             return Err(DwalletMPCError::MPCManagerError(format!(
-                "Validator {} not found in the epoch start system state",
-                authority_name
+                "Validator {authority_name} not found in the epoch start system state"
             )));
         };
 

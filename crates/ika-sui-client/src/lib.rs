@@ -1454,7 +1454,7 @@ impl SuiClientInner for SuiSdkClient {
         &self,
         tx: Transaction,
     ) -> Result<SuiTransactionBlockResponse, IkaError> {
-        let tx_digest = tx.digest().clone();
+        let tx_digest = *tx.digest();
         match self.quorum_driver_api().execute_transaction_block(
             tx,
             SuiTransactionBlockResponseOptions::new().with_effects().with_events(),

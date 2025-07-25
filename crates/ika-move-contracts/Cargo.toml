@@ -1,5 +1,5 @@
 [package]
-name = "ika-move-packages"
+name = "ika-move-contracts"
 version = "0.1.0"
 edition = "2024"
 authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
