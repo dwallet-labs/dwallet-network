@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use super::container::Container;
 use anyhow::Result;
 use ika_config::NodeConfig;
 use ika_node::IkaNodeHandle;
@@ -9,8 +10,6 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use sui_types::base_types::ConciseableName;
 use tracing::info;
-
-use super::container::Container;
 
 #[allow(dead_code)]
 pub const IKA_VALIDATOR_SERVER_NAME: &str = "ika";
@@ -140,7 +139,7 @@ pub enum HealthCheckError {
 
 impl std::fmt::Display for HealthCheckError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -160,7 +159,7 @@ mod test {
     #[tokio::test]
     async fn start_and_stop() {
         telemetry_subscribers::init_for_testing();
-        let swarm = Swarm::builder().build();
+        let swarm = Swarm::builder().build().await.unwrap();
 
         let validator = swarm.validator_nodes().next().unwrap();
 

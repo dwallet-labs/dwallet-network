@@ -3,15 +3,16 @@ use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use merlin::Transcript;
-use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
+use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
+use zeroize::ZeroizeOnDrop;
 
 /// The Root Seed for this validator, used to deterministically derive purpose-specific child seeds
 /// for all cryptographically-secure random generation operations.
 ///
 /// SECURITY NOTICE: *MUST BE KEPT PRIVATE*.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct RootSeed([u8; RootSeed::SEED_LENGTH]);
 
 impl RootSeed {
@@ -32,10 +33,10 @@ impl RootSeed {
     pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> DwalletMPCResult<Self> {
         let contents = std::fs::read_to_string(path)
             .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
-        let decoded = Base64::decode(contents.as_str())
+        let decoded = Base64::decode(contents.as_str().trim())
             .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
         Ok(RootSeed::new(decoded.try_into().map_err(|e| {
-            DwalletMPCError::FailedToReadSeed(format!("failed to read class group seed: {:?}", e))
+            DwalletMPCError::FailedToReadSeed(format!("failed to read class group seed: {e:?}"))
         })?))
     }
 

@@ -1,26 +1,20 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module ika_dwallet_2pc_mpc::pricing_and_fee_manager;
 
-// === Imports ===
-
-use sui::{
-    table::{Self, Table},
-    balance::{Self, Balance},
-    sui::SUI,
-};
-
 use ika::ika::IKA;
-use ika_common::{
-    bls_committee::{BlsCommittee},
+use ika_common::bls_committee::BlsCommittee;
+use ika_common::validator_cap::VerifiedValidatorOperationCap;
+use ika_dwallet_2pc_mpc::pricing::{
+    Self,
+    PricingInfo,
+    PricingInfoValue,
+    PricingInfoCalculationVotes
 };
-use ika_dwallet_2pc_mpc::{
-    pricing::{Self, PricingInfo, PricingInfoValue, PricingInfoCalculationVotes},
-};
-use ika_system::{
-    validator_cap::VerifiedValidatorOperationCap,
-};
+use sui::balance::{Self, Balance};
+use sui::sui::SUI;
+use sui::table::{Self, Table};
 
 // === Errors ===
 
@@ -63,10 +57,7 @@ public struct PricingAndFeeManager has store {
 ///
 /// ### Returns
 /// A new PricingAndFeeManager instance ready for use
-public(package) fun create(
-    pricing: PricingInfo,
-    ctx: &mut TxContext
-): PricingAndFeeManager {
+public(package) fun create(pricing: PricingInfo, ctx: &mut TxContext): PricingAndFeeManager {
     PricingAndFeeManager {
         current: pricing,
         default: pricing,
@@ -96,13 +87,19 @@ public(package) fun create(
 public(package) fun charge_gas_fee_reimbursement_sui_for_system_calls(
     self: &mut PricingAndFeeManager,
 ): Balance<SUI> {
-    let gas_fee_reimbursement_sui_value = self.gas_fee_reimbursement_sui_system_call_balance.value();
+    let gas_fee_reimbursement_sui_value = self
+        .gas_fee_reimbursement_sui_system_call_balance
+        .value();
     let gas_fee_reimbursement_sui_system_call_value = self.gas_fee_reimbursement_sui_system_call_value;
-    if(gas_fee_reimbursement_sui_value > 0 && gas_fee_reimbursement_sui_system_call_value > 0) {
-        if(gas_fee_reimbursement_sui_value > gas_fee_reimbursement_sui_system_call_value) {
-            self.gas_fee_reimbursement_sui_system_call_balance.split(gas_fee_reimbursement_sui_system_call_value)
+    if (gas_fee_reimbursement_sui_value > 0 && gas_fee_reimbursement_sui_system_call_value > 0) {
+        if (gas_fee_reimbursement_sui_value > gas_fee_reimbursement_sui_system_call_value) {
+            self
+                .gas_fee_reimbursement_sui_system_call_balance
+                .split(gas_fee_reimbursement_sui_system_call_value)
         } else {
-            self.gas_fee_reimbursement_sui_system_call_balance.split(gas_fee_reimbursement_sui_value)
+            self
+                .gas_fee_reimbursement_sui_system_call_balance
+                .split(gas_fee_reimbursement_sui_value)
         }
     } else {
         balance::zero()
@@ -113,7 +110,10 @@ public(package) fun initiate_pricing_calculation(
     self: &mut PricingAndFeeManager,
     next_epoch_active_committee: BlsCommittee,
 ) {
-    let pricing_calculation_votes = pricing::new_pricing_calculation(next_epoch_active_committee, self.default);
+    let pricing_calculation_votes = pricing::new_pricing_calculation(
+        next_epoch_active_committee,
+        self.default,
+    );
     self.pricing_calculation_votes = option::some(pricing_calculation_votes);
 }
 
@@ -132,15 +132,22 @@ public(package) fun calculate_pricing_votes(
 ) {
     assert!(self.pricing_calculation_votes.is_some(), EPricingCalculationVotesHasNotBeenStarted);
     let pricing_calculation_votes = self.pricing_calculation_votes.borrow_mut();
-    let pricing_votes = pricing_calculation_votes.committee_members_for_pricing_calculation_votes().map!(|id| {
-        if (self.validator_votes.contains(id)) {
-            self.validator_votes[id]
-        } else {
-            self.default
-        }
-    });
-    pricing_calculation_votes.calculate_pricing_quorum_below(pricing_votes, curve, signature_algorithm, protocol);
-    if(pricing_calculation_votes.is_calculation_completed()) {
+    let pricing_votes = pricing_calculation_votes
+        .committee_members_for_pricing_calculation_votes()
+        .map!(|id| {
+            if (self.validator_votes.contains(id)) {
+                self.validator_votes[id]
+            } else {
+                self.default
+            }
+        });
+    pricing_calculation_votes.calculate_pricing_quorum_below(
+        pricing_votes,
+        curve,
+        signature_algorithm,
+        protocol,
+    );
+    if (pricing_calculation_votes.is_calculation_completed()) {
         self.current = pricing_calculation_votes.calculated_pricing();
         self.pricing_calculation_votes = option::none();
     }
@@ -157,9 +164,7 @@ public(package) fun calculate_pricing_votes(
 ///
 /// ### Returns
 /// IKA balance charged for consensus validation
-public(package) fun advance_epoch(
-    self: &mut PricingAndFeeManager,
-): Balance<IKA> {
+public(package) fun advance_epoch(self: &mut PricingAndFeeManager): Balance<IKA> {
     assert!(self.pricing_calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
     self.fee_charged_ika.withdraw_all()
 }
@@ -180,7 +185,9 @@ public(package) fun get_pricing_value_for_protocol(
     signature_algorithm: Option<u32>,
     protocol: u32,
 ): PricingInfoValue {
-    let mut pricing_value = self.default.try_get_pricing_value(curve, signature_algorithm, protocol);
+    let mut pricing_value = self
+        .current
+        .try_get_pricing_value(curve, signature_algorithm, protocol);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
     pricing_value.extract()
 }
@@ -206,7 +213,9 @@ public(package) fun join_gas_fee_reimbursement_sui_system_call_balance(
     self: &mut PricingAndFeeManager,
     gas_fee_reimbursement_sui_for_system_calls: Balance<SUI>,
 ) {
-    self.gas_fee_reimbursement_sui_system_call_balance.join(gas_fee_reimbursement_sui_for_system_calls);
+    self
+        .gas_fee_reimbursement_sui_system_call_balance
+        .join(gas_fee_reimbursement_sui_for_system_calls);
 }
 
 /// Sets the gas fee reimbursement SUI system call value.
@@ -251,7 +260,7 @@ public(package) fun set_pricing_vote(
 ) {
     let validator_id = cap.validator_id();
     assert!(self.pricing_calculation_votes.is_none(), ECannotSetDuringVotesCalculation);
-    if(self.validator_votes.contains(validator_id)) {
+    if (self.validator_votes.contains(validator_id)) {
         let vote = self.validator_votes.borrow_mut(validator_id);
         *vote = pricing_vote;
     } else {

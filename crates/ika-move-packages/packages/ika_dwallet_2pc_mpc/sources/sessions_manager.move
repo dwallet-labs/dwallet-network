@@ -1,22 +1,17 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module ika_dwallet_2pc_mpc::sessions_manager;
 
-// === Imports ===
-
-use sui::{
-    object_table::{Self, ObjectTable},
-    table::{Self, Table},
-    balance::{Self, Balance},
-    coin::Coin,
-    bag::{Self, Bag},
-    event,
-    sui::SUI,
-};
-
 use ika::ika::IKA;
-use ika_dwallet_2pc_mpc::pricing::{PricingInfoValue};
+use ika_dwallet_2pc_mpc::pricing::PricingInfoValue;
+use sui::bag::{Self, Bag};
+use sui::balance::{Self, Balance};
+use sui::coin::Coin;
+use sui::event;
+use sui::object_table::{Self, ObjectTable};
+use sui::sui::SUI;
+use sui::table::{Self, Table};
 
 // === Constants ===
 
@@ -80,7 +75,7 @@ public struct SessionsManager has store {
 }
 
 /// Represents an active MPC session in the Ika network.
-/// 
+///
 /// Each session tracks fees and is associated with a network encryption key.
 /// Sessions are sequentially numbered for epoch management.
 public struct DWalletSession has key, store {
@@ -98,7 +93,7 @@ public struct DWalletSession has key, store {
 }
 
 /// Type of dWallet MPC session for scheduling and epoch management.
-/// 
+///
 /// User-initiated sessions have sequence numbers for multi-epoch completion scheduling.
 /// System sessions are guaranteed to complete within their creation epoch.
 public enum SessionType has copy, drop, store {
@@ -108,18 +103,16 @@ public enum SessionType has copy, drop, store {
     System,
 }
 
-
 /// The preimage is used to create the session identifier.
 public struct SessionIdentifier has key, store {
     id: UID,
     identifier_preimage: vector<u8>,
 }
 
-
 // === Events ===
 
 /// Event emitted when a user session identifier is registered.
-/// 
+///
 /// This event signals that a new user session identifier has been registered and is
 /// ready for use in the dWallet system.
 public struct UserSessionIdentifierRegisteredEvent has copy, drop, store {
@@ -130,7 +123,7 @@ public struct UserSessionIdentifierRegisteredEvent has copy, drop, store {
 }
 
 /// Generic wrapper for dWallet-related events with session context.
-/// 
+///
 /// Provides standardized metadata for all dWallet operations including
 /// epoch information, session type, and session ID for tracking and debugging.
 public struct DWalletSessionEvent<E: copy + drop + store> has copy, drop, store {
@@ -149,10 +142,13 @@ public struct DWalletSessionEvent<E: copy + drop + store> has copy, drop, store 
 }
 
 /// The status of a dWallet session result event.
-/// 
+///
 /// This enum represents the possible outcomes of a dWallet session event.
 /// It can either be successful or rejected, with event-specific data for each case.
-public enum DWalletSessionStatusEvent<Success: copy + drop + store, Rejected: copy + drop + store> has copy, drop, store {
+public enum DWalletSessionStatusEvent<
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+> has copy, drop, store {
     /// The event was successful
     Success(Success),
     /// The event was rejected
@@ -160,11 +156,15 @@ public enum DWalletSessionStatusEvent<Success: copy + drop + store, Rejected: co
 }
 
 /// Event emitted when a dWallet session result is completed.
-/// 
+///
 /// This event signals that a dWallet session has been completed and provides
 /// the status of the session (success or rejection) along with the event-specific
 /// data for each case.
-public struct DWalletSessionResultEvent<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store> has copy, drop, store {
+public struct DWalletSessionResultEvent<
+    E: copy + drop + store,
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+> has copy, drop, store {
     /// Epoch when the event occurred
     epoch: u64,
     /// Epoch when the event was initiated
@@ -186,15 +186,13 @@ public struct DWalletSessionResultEvent<E: copy + drop + store, Success: copy + 
 // === Package Functions ===
 
 /// Creates a new SessionsManager instance.
-/// 
+///
 /// Initializes all internal data structures with default values.
-/// 
+///
 /// ### Parameters
 /// - `ctx`: Transaction context for object creation
-/// 
-public(package) fun create(
-    ctx: &mut TxContext
-): SessionsManager {
+///
+public(package) fun create(ctx: &mut TxContext): SessionsManager {
     SessionsManager {
         registered_user_session_identifiers: table::new(ctx),
         user_sessions_keeper: SessionsKeeper {
@@ -218,31 +216,38 @@ public(package) fun create(
 }
 
 /// Locks the last active user-initiated session sequence number to prevent further updates.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
-/// 
+///
 /// ### Effects
 /// - Prevents further updates to `last_user_initiated_session_to_complete_in_current_epoch`
 /// - Ensures session completion targets remain stable during epoch transitions
 public(package) fun lock_last_user_initiated_session_to_complete_in_current_epoch(
-    self: &mut SessionsManager
+    self: &mut SessionsManager,
 ) {
     self.locked_last_user_initiated_session_to_complete_in_current_epoch = true;
 }
 
 /// Registers a new session identifier.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager.
 /// - `identifier_preimage`: The preimage bytes for creating the session identifier.
 /// - `ctx`: Transaction context for object creation.
 public(package) fun register_session_identifier(
-    self: &mut SessionsManager,    identifier_preimage: vector<u8>,
+    self: &mut SessionsManager,
+    identifier_preimage: vector<u8>,
     ctx: &mut TxContext,
 ): SessionIdentifier {
-    assert!(identifier_preimage.length() == SESSION_IDENTIFIER_LENGTH, ESessionIdentifierInvalidLength);
-    assert!(!self.registered_user_session_identifiers.contains(identifier_preimage), ESessionIdentifierAlreadyRegistered);
+    assert!(
+        identifier_preimage.length() == SESSION_IDENTIFIER_LENGTH,
+        ESessionIdentifierInvalidLength,
+    );
+    assert!(
+        !self.registered_user_session_identifiers.contains(identifier_preimage),
+        ESessionIdentifierAlreadyRegistered,
+    );
     let id = object::new(ctx);
     self.registered_user_session_identifiers.add(identifier_preimage, id.to_inner());
     event::emit(UserSessionIdentifierRegisteredEvent {
@@ -256,34 +261,42 @@ public(package) fun register_session_identifier(
 }
 
 /// Advances the epoch by ensuring all current epoch sessions are completed.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
-/// 
+///
 /// ### Effects
 /// - Asserts that all current epoch sessions are completed
 /// - Unlocks the last active user-initiated session sequence number
 /// - Updates the last active user-initiated session sequence number to the latest session sequence number
-public(package) fun advance_epoch(
-    self: &mut SessionsManager,
-) {
+public(package) fun advance_epoch(self: &mut SessionsManager) {
     assert!(self.all_current_epoch_sessions_completed(), ENotAllCurrentEpochSessionsCompleted);
     self.locked_last_user_initiated_session_to_complete_in_current_epoch = false;
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
 }
 
 /// Creates a success status event for a dWallet session.
-public(package) fun create_success_status_event<Success: copy + drop + store, Rejected: copy + drop + store>(event_data: Success): DWalletSessionStatusEvent<Success, Rejected> {
+public(package) fun create_success_status_event<
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+>(
+    event_data: Success,
+): DWalletSessionStatusEvent<Success, Rejected> {
     DWalletSessionStatusEvent::Success(event_data)
 }
 
 /// Creates a rejected status event for a dWallet session.
-public(package) fun create_rejected_status_event<Success: copy + drop + store, Rejected: copy + drop + store>(event_data: Rejected): DWalletSessionStatusEvent<Success, Rejected> {
+public(package) fun create_rejected_status_event<
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+>(
+    event_data: Rejected,
+): DWalletSessionStatusEvent<Success, Rejected> {
     DWalletSessionStatusEvent::Rejected(event_data)
 }
 
 /// Initiates a user-initiated session.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
 /// - `epoch`: The epoch number
@@ -294,7 +307,7 @@ public(package) fun create_rejected_status_event<Success: copy + drop + store, R
 /// - `payment_sui`: The payment for the session in SUI
 /// - `event_data`: The event data for the session
 /// - `ctx`: The transaction context
-/// 
+///
 /// ### Returns
 /// The amount of SUI paid for gas reimbursement for system calls
 public(package) fun initiate_user_session<E: copy + drop + store>(
@@ -309,17 +322,41 @@ public(package) fun initiate_user_session<E: copy + drop + store>(
     ctx: &mut TxContext,
 ): Balance<SUI> {
     assert!(payment_ika.value() >= pricing_value.fee_ika(), EInsufficientIKAPayment);
-    assert!(payment_sui.value() >= pricing_value.gas_fee_reimbursement_sui() + pricing_value.gas_fee_reimbursement_sui_for_system_calls(), EInsufficientSUIPayment);
+    assert!(
+        payment_sui.value() >= pricing_value.gas_fee_reimbursement_sui() + pricing_value.gas_fee_reimbursement_sui_for_system_calls(),
+        EInsufficientSUIPayment,
+    );
 
     let fee_charged_ika = payment_ika.split(pricing_value.fee_ika(), ctx).into_balance();
-    let gas_fee_reimbursement_sui = payment_sui.split(pricing_value.gas_fee_reimbursement_sui(), ctx).into_balance();
-    let gas_fee_reimbursement_sui_for_system_calls = payment_sui.split(pricing_value.gas_fee_reimbursement_sui_for_system_calls(), ctx).into_balance();
+    let gas_fee_reimbursement_sui = payment_sui
+        .split(pricing_value.gas_fee_reimbursement_sui(), ctx)
+        .into_balance();
+    let gas_fee_reimbursement_sui_for_system_calls = payment_sui
+        .split(pricing_value.gas_fee_reimbursement_sui_for_system_calls(), ctx)
+        .into_balance();
 
     let identifier_preimage = session_identifier.identifier_preimage;
-    assert!(self.registered_user_session_identifiers.contains(identifier_preimage), ESessionIdentifierNotExist);
-    assert!(self.registered_user_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
+    assert!(
+        self.registered_user_session_identifiers.contains(identifier_preimage),
+        ESessionIdentifierNotExist,
+    );
+    assert!(
+        self.registered_user_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(),
+        ESessionIdentifierNotExist,
+    );
 
-    self.user_sessions_keeper.initiate_session(epoch, session_identifier, dwallet_network_encryption_key_id, SessionType::User, event_data, fee_charged_ika, gas_fee_reimbursement_sui, ctx);
+    self
+        .user_sessions_keeper
+        .initiate_session(
+            epoch,
+            session_identifier,
+            dwallet_network_encryption_key_id,
+            SessionType::User,
+            event_data,
+            fee_charged_ika,
+            gas_fee_reimbursement_sui,
+            ctx,
+        );
 
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
 
@@ -327,34 +364,40 @@ public(package) fun initiate_user_session<E: copy + drop + store>(
 }
 
 /// Completes a user-initiated session.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
 /// - `session_sequence_number`: The sequence number of the session
 /// - `status`: The status of the session
-/// 
+///
 /// ### Returns
 /// A tuple containing the amount of IKA fees paid and SUI for gas reimbursement for the session
-public(package) fun complete_user_session<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(
+public(package) fun complete_user_session<
+    E: copy + drop + store,
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+>(
     self: &mut SessionsManager,
     epoch: u64,
     session_sequence_number: u64,
     status: DWalletSessionStatusEvent<Success, Rejected>,
 ): (Balance<IKA>, Balance<SUI>) {
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.user_sessions_keeper.complete_session<E, Success, Rejected>(epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .user_sessions_keeper
+        .complete_session<E, Success, Rejected>(epoch, session_sequence_number, status);
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
     (fee_charged_ika, gas_fee_reimbursement_sui)
 }
 
 /// Initiates a system-initiated session.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
 /// - `epoch`: The epoch number
 /// - `dwallet_network_encryption_key_id`: The ID of the dWallet network encryption key
 /// - `event_data`: The event data for the session
 /// - `ctx`: The transaction context
-/// 
+///
 /// ### Effects
 /// - Creates a new system-initiated session
 /// - Emits a session event
@@ -365,45 +408,62 @@ public(package) fun initiate_system_session<E: copy + drop + store>(
     event_data: E,
     ctx: &mut TxContext,
 ) {
-    // Notice that `session_identifier_preimage` is only the pre-image. 
-    // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique). 
+    // Notice that `session_identifier_preimage` is only the pre-image.
+    // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique).
     // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide).
     // To avoid user-initiated events colliding with system events,
     // we pad the `session_identifier_preimage` differently for user and system events before hashing it.
     let session_identifier_preimage = tx_context::fresh_object_address(ctx).to_bytes();
 
-    self.system_sessions_keeper.initiate_session(epoch, SessionIdentifier {
-        id: object::new(ctx),
-        identifier_preimage: session_identifier_preimage,
-    }, dwallet_network_encryption_key_id, SessionType::System, event_data, balance::zero(), balance::zero(), ctx);
+    self
+        .system_sessions_keeper
+        .initiate_session(
+            epoch,
+            SessionIdentifier {
+                id: object::new(ctx),
+                identifier_preimage: session_identifier_preimage,
+            },
+            dwallet_network_encryption_key_id,
+            SessionType::System,
+            event_data,
+            balance::zero(),
+            balance::zero(),
+            ctx,
+        );
 }
 
 /// Completes a system-initiated session.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
 /// - `session_sequence_number`: The sequence number of the session
 /// - `status`: The status of the session
-/// 
+///
 /// ### Returns
 /// A tuple containing the amount of IKA fees paid and SUI for gas reimbursement for the session
-public(package) fun complete_system_session<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(
+public(package) fun complete_system_session<
+    E: copy + drop + store,
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+>(
     self: &mut SessionsManager,
     epoch: u64,
     session_sequence_number: u64,
     status: DWalletSessionStatusEvent<Success, Rejected>,
 ) {
-    let (fee_charged_ika, gas_fee_reimbursement_sui) = self.system_sessions_keeper.complete_session<E, Success, Rejected>(epoch, session_sequence_number, status);
+    let (fee_charged_ika, gas_fee_reimbursement_sui) = self
+        .system_sessions_keeper
+        .complete_session<E, Success, Rejected>(epoch, session_sequence_number, status);
     fee_charged_ika.destroy_zero();
     gas_fee_reimbursement_sui.destroy_zero();
 }
 
 /// Sets the maximum number of active sessions buffer.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
 /// - `max_active_sessions_buffer`: The new maximum number of active sessions buffer
-/// 
+///
 public(package) fun set_max_active_sessions_buffer(
     self: &mut SessionsManager,
     max_active_sessions_buffer: u64,
@@ -414,7 +474,7 @@ public(package) fun set_max_active_sessions_buffer(
 // === Private Functions ===
 
 /// Initiates a session.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session keeper
 /// - `epoch`: The epoch number
@@ -425,8 +485,8 @@ public(package) fun set_max_active_sessions_buffer(
 /// - `fee_charged_ika`: The amount of IKA fees paid
 /// - `gas_fee_reimbursement_sui`: The amount of SUI for gas reimbursement
 /// - `ctx`: The transaction context
-/// 
-/// ### Effects 
+///
+/// ### Effects
 /// - Creates a new session
 /// - Emits a session event
 fun initiate_session<E: copy + drop + store>(
@@ -465,20 +525,24 @@ fun initiate_session<E: copy + drop + store>(
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
     self.started_sessions_count = self.started_sessions_count + 1;
-    
+
     event::emit(event);
 }
 
 /// Completes a session.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session keeper
 /// - `session_sequence_number`: The sequence number of the session
 /// - `status`: The status of the session
-/// 
+///
 /// ### Returns
 /// A tuple containing the amount of IKA fees paid and SUI for gas reimbursement for the session
-fun complete_session<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(
+fun complete_session<
+    E: copy + drop + store,
+    Success: copy + drop + store,
+    Rejected: copy + drop + store,
+>(
     self: &mut SessionsKeeper,
     epoch: u64,
     session_sequence_number: u64,
@@ -494,7 +558,7 @@ fun complete_session<E: copy + drop + store, Success: copy + drop + store, Rejec
         gas_fee_reimbursement_sui,
         fee_charged_ika,
         id,
-        ..
+        ..,
     } = session;
 
     // Remove the corresponding event.
@@ -513,7 +577,7 @@ fun complete_session<E: copy + drop + store, Success: copy + drop + store, Rejec
     // This assures it cannot be reused for another session.
     let SessionIdentifier {
         id,
-        ..
+        ..,
     } = session_identifier;
 
     id.delete();
@@ -533,42 +597,43 @@ fun complete_session<E: copy + drop + store, Success: copy + drop + store, Rejec
 }
 
 /// Checks if all current epoch sessions are completed.
-/// 
+///
 /// ### Parameters
 /// - `self`: Reference to the session manager
-/// 
+///
 /// ### Returns
 /// `true` if all current epoch sessions are completed, `false` otherwise
-fun all_current_epoch_sessions_completed(
-    self: &SessionsManager
-): bool {
-    let user_sessions_completed = self.user_sessions_keeper.completed_sessions_count == self.last_user_initiated_session_to_complete_in_current_epoch;
-    let system_sessions_completed = self.system_sessions_keeper.completed_sessions_count == self.system_sessions_keeper.started_sessions_count;
+fun all_current_epoch_sessions_completed(self: &SessionsManager): bool {
+    let user_sessions_completed =
+        self.user_sessions_keeper.completed_sessions_count == self.last_user_initiated_session_to_complete_in_current_epoch;
+    let system_sessions_completed =
+        self.system_sessions_keeper.completed_sessions_count == self.system_sessions_keeper.started_sessions_count;
     self.locked_last_user_initiated_session_to_complete_in_current_epoch && user_sessions_completed && system_sessions_completed
 }
 
 /// Updates the last user-initiated session to complete in the current epoch.
-/// 
+///
 /// ### Parameters
 /// - `self`: Mutable reference to the session manager
-/// 
+///
 /// ### Effects
 /// - Updates the last user-initiated session to complete in the current epoch
-fun update_last_user_initiated_session_to_complete_in_current_epoch(
-    self: &mut SessionsManager
-) {
+fun update_last_user_initiated_session_to_complete_in_current_epoch(self: &mut SessionsManager) {
     // Don't update during epoch transitions when session management is locked
     if (!self.locked_last_user_initiated_session_to_complete_in_current_epoch) {
         // Calculate new target: completed + buffer, but don't exceed latest session
         let new_last_user_initiated_session_to_complete_in_current_epoch = (
-            self.user_sessions_keeper.completed_sessions_count + self.max_active_sessions_buffer
+            self.user_sessions_keeper.completed_sessions_count + self.max_active_sessions_buffer,
         ).min(
-            self.user_sessions_keeper.next_session_sequence_number - 1
+            self.user_sessions_keeper.next_session_sequence_number - 1,
         );
 
         // Sanity check: Only update if the new target is higher (prevent regression)
-        if (self.last_user_initiated_session_to_complete_in_current_epoch < new_last_user_initiated_session_to_complete_in_current_epoch) {
-            self.last_user_initiated_session_to_complete_in_current_epoch = new_last_user_initiated_session_to_complete_in_current_epoch;
+        if (
+            self.last_user_initiated_session_to_complete_in_current_epoch < new_last_user_initiated_session_to_complete_in_current_epoch
+        ) {
+            self.last_user_initiated_session_to_complete_in_current_epoch =
+                new_last_user_initiated_session_to_complete_in_current_epoch;
         };
     };
 }

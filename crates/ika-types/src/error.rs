@@ -10,6 +10,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use strum_macros::{AsRefStr, IntoStaticStr};
+use sui_types::digests::TransactionDigest;
 use thiserror::Error;
 use tonic::Status;
 use typed_store_error::TypedStoreError;
@@ -34,7 +35,7 @@ use sui_types::error::SuiError;
 
 #[macro_export]
 macro_rules! exit_main {
-    ($result:expr) => {
+    ($result:expr_2021) => {
         match $result {
             Ok(_) => (),
             Err(err) => {
@@ -48,7 +49,7 @@ macro_rules! exit_main {
 
 #[macro_export]
 macro_rules! make_invariant_violation {
-    ($($args:expr),* $(,)?) => {{
+    ($($args:expr_2021),* $(,)?) => {{
         if cfg!(debug_assertions) {
             panic!($($args),*)
         }
@@ -58,14 +59,14 @@ macro_rules! make_invariant_violation {
 
 #[macro_export]
 macro_rules! invariant_violation {
-    ($($args:expr),* $(,)?) => {
+    ($($args:expr_2021),* $(,)?) => {
         return Err(make_invariant_violation!($($args),*).into())
     };
 }
 
 #[macro_export]
 macro_rules! assert_invariant {
-    ($cond:expr, $($args:expr),* $(,)?) => {{
+    ($cond:expr_2021, $($args:expr_2021),* $(,)?) => {{
         if !$cond {
             invariant_violation!($($args),*)
         }
@@ -78,7 +79,10 @@ macro_rules! assert_invariant {
 )]
 pub enum IkaError {
     #[error("SuiError: {:?}", error)]
-    SuiError { error: SuiError },
+    SuiError { error: Box<SuiError> },
+
+    #[error("Sui SDK Error")]
+    SuiSDKError,
 
     #[error("There are too many transactions pending in consensus")]
     TooManyTransactionsPendingConsensus,
@@ -98,7 +102,11 @@ pub enum IkaError {
     SignerSignatureNumberMismatch { expected: usize, actual: usize },
     #[error("Value was not signed by the correct sender: {}", error)]
     IncorrectSigner { error: String },
-    #[error("Value was not signed by a known authority. signer: {:?}, index: {:?}, committee: {committee}", signer, index)]
+    #[error(
+        "Value was not signed by a known authority. signer: {:?}, index: {:?}, committee: {committee}",
+        signer,
+        index
+    )]
     UnknownSigner {
         signer: Option<String>,
         index: Option<u32>,
@@ -151,8 +159,8 @@ pub enum IkaError {
     #[error("Authority Error: {error:?}")]
     GenericAuthorityError { error: String },
 
-    #[error("Generic Bridge Error: {error:?}")]
-    GenericIkaError { error: String },
+    #[error("Generic Error: {error:?}")]
+    Generic { error: String },
 
     // Errors related to the authority-consensus interface.
     #[error("Failed to submit transaction to consensus: {0}")]
@@ -202,7 +210,9 @@ pub enum IkaError {
     #[error("Storage error: {0}")]
     Storage(String),
 
-    #[error("Validator cannot handle the request at the moment. Please retry after at least {retry_after_secs} seconds.")]
+    #[error(
+        "Validator cannot handle the request at the moment. Please retry after at least {retry_after_secs} seconds."
+    )]
     ValidatorOverloadedRetryAfter { retry_after_secs: u64 },
 
     #[error("Too many requests")]
@@ -215,8 +225,8 @@ pub enum IkaError {
     #[error("Sui Client internal error: {0}")]
     SuiClientInternalError(String),
 
-    #[error("Sui Client sui transaction failure due to generic error: {0}")]
-    SuiClientTxFailureGeneric(String),
+    #[error("Sui Client sui transaction {0} failure due to generic error: {1}")]
+    SuiClientTxFailureGeneric(TransactionDigest, String),
 
     // Sui Connector
     #[error("Sui Connector failure to serialize: {0}")]
@@ -233,7 +243,10 @@ pub enum IkaError {
     BCSError(String),
 
     #[error("failed to receive data: {0}")]
-    ReveiverError(String),
+    ReceiverError(String),
+
+    #[error("dry run error failed: {0}")]
+    DryRunFailed(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;
@@ -285,7 +298,9 @@ impl From<String> for IkaError {
 
 impl From<SuiError> for IkaError {
     fn from(error: SuiError) -> Self {
-        IkaError::SuiError { error }
+        IkaError::SuiError {
+            error: Box::new(error),
+        }
     }
 }
 

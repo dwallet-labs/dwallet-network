@@ -3,21 +3,21 @@
 
 use std::{sync::Arc, time::Duration};
 
-use arc_swap::{ArcSwapOption, Guard};
-use consensus_core::{ClientError, TransactionClient};
-use ika_types::{
-    error::{IkaError, IkaResult},
-    messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
-};
-use tap::prelude::*;
-use tokio::time::{sleep, Instant};
-use tracing::{error, info, warn};
-
 use crate::{
     authority::authority_per_epoch_store::AuthorityPerEpochStore,
     consensus_adapter::{BlockStatusReceiver, ConsensusClient},
     consensus_handler::SequencedConsensusTransactionKey,
 };
+use arc_swap::{ArcSwapOption, Guard};
+use consensus_core::{ClientError, TransactionClient};
+use ika_types::messages_consensus::ConsensusPosition;
+use ika_types::{
+    error::{IkaError, IkaResult},
+    messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
+};
+use tap::prelude::*;
+use tokio::time::{Instant, sleep};
+use tracing::{error, info, warn};
 
 /// Gets a client to submit transactions to Mysticeti, or waits for one to be available.
 /// This hides the complexities of async consensus initialization and submitting to different
@@ -80,7 +80,7 @@ impl ConsensusClient for LazyMysticetiClient {
         &self,
         transactions: &[ConsensusTransaction],
         _epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> IkaResult<BlockStatusReceiver> {
+    ) -> IkaResult<(Vec<ConsensusPosition>, BlockStatusReceiver)> {
         // TODO(mysticeti): confirm comment is still true
         // The retrieved TransactionClient can be from the past epoch. Submit would fail after
         // Mysticeti shuts down, so there should be no correctness issue.
@@ -89,14 +89,14 @@ impl ConsensusClient for LazyMysticetiClient {
             .iter()
             .map(|t| bcs::to_bytes(t).expect("Serializing consensus transaction cannot fail"))
             .collect::<Vec<_>>();
-        let (block_ref, status_waiter) = client
+        let (block_ref, tx_indices, status_waiter) = client
             .as_ref()
             .expect("Client should always be returned")
             .submit(transactions_bytes)
             .await
             .tap_err(|err| {
                 // Will be logged by caller as well.
-                let msg = format!("Transaction submission failed with: {:?}", err);
+                let msg = format!("Transaction submission failed with: {err:?}");
                 match err {
                     ClientError::ConsensusShuttingDown(_) => {
                         info!("{}", msg);
@@ -125,6 +125,15 @@ impl ConsensusClient for LazyMysticetiClient {
             let transaction_key = SequencedConsensusTransactionKey::External(transactions[0].key());
             tracing::info!("Transaction {transaction_key:?} was included in {block_ref}",)
         };
-        Ok(status_waiter)
+
+        // Calculate consensus tx positions
+        let mut consensus_positions = Vec::new();
+        for index in tx_indices {
+            consensus_positions.push(ConsensusPosition {
+                index,
+                block: block_ref,
+            });
+        }
+        Ok((consensus_positions, status_waiter))
     }
 }

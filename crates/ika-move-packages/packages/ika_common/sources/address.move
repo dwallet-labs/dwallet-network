@@ -1,11 +1,10 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module ika_common::address;
 
-// === Imports ===
-
-use sui::{address, hash};
+use sui::address;
+use sui::hash;
 
 // === Public Functions ===
 

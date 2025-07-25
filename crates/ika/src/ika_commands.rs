@@ -1,4 +1,4 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::{bail, ensure};
@@ -6,14 +6,16 @@ use clap::*;
 use colored::Colorize;
 use fastcrypto::traits::KeyPair;
 use ika_config::{
-    ika_config_dir, network_config_exists, Config, PersistedConfig, IKA_NETWORK_CONFIG,
+    Config, IKA_NETWORK_CONFIG, PersistedConfig, ika_config_dir, network_config_exists,
 };
 use std::net::{AddrParseError, SocketAddr};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::thread;
-use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
+use sui_config::{SUI_CLIENT_CONFIG, sui_config_dir};
 
+#[cfg(feature = "protocol-commands")]
+use crate::protocol_commands::IkaProtocolCommand;
 use crate::validator_commands::IkaValidatorCommand;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
@@ -117,6 +119,22 @@ pub enum IkaCommand {
         #[clap(short = 'y', long = "yes")]
         accept_defaults: bool,
     },
+
+    #[cfg(feature = "protocol-commands")]
+    /// A tool for protocol governance operations.
+    #[clap(name = "protocol")]
+    Protocol {
+        /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
+        #[clap(long = "client.config")]
+        config: Option<PathBuf>,
+        #[clap(subcommand)]
+        cmd: Option<IkaProtocolCommand>,
+        /// Return command outputs in JSON format.
+        #[clap(long, global = true)]
+        json: bool,
+        #[clap(short = 'y', long = "yes")]
+        accept_defaults: bool,
+    },
 }
 
 impl IkaCommand {
@@ -129,8 +147,7 @@ impl IkaCommand {
                 let config_path = config.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
                 let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network swarm config file at {:?}",
-                        config_path
+                        "Cannot open Ika network swarm config file at {config_path:?}"
                     ))
                 })?;
 
@@ -187,7 +204,7 @@ impl IkaCommand {
                 })?;
 
                 if let Err(e) = thread_join_handle.join() {
-                    eprintln!("{}", format!("[error] {:?}", e).red().bold());
+                    eprintln!("{}", format!("[error] {e:?}").red().bold());
                 }
 
                 Ok(())
@@ -209,6 +226,27 @@ impl IkaCommand {
                     let mut app: Command = IkaCommand::command();
                     app.build();
                     app.find_subcommand_mut("validator").unwrap().print_help()?;
+                }
+                Ok(())
+            }
+            #[cfg(feature = "protocol-commands")]
+            IkaCommand::Protocol {
+                config, cmd, json, ..
+            } => {
+                let config_path = config.unwrap_or(sui_config_dir()?.join(SUI_CLIENT_CONFIG));
+                let mut context = WalletContext::new(&config_path)?;
+                if let Some(cmd) = cmd {
+                    if let Ok(client) = context.get_client().await {
+                        if let Err(e) = client.check_api_version() {
+                            eprintln!("{}", format!("[warning] {e}").yellow().bold());
+                        }
+                    }
+                    cmd.execute(&mut context).await?.print(!json);
+                } else {
+                    // Print help
+                    let mut app: Command = IkaCommand::command();
+                    app.build();
+                    app.find_subcommand_mut("protocol").unwrap().print_help()?;
                 }
                 Ok(())
             }
@@ -280,8 +318,7 @@ async fn start(
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network swarm config file at {:?}",
-                        network_config_path
+                        "Cannot open Ika network swarm config file at {network_config_path:?}"
                     ))
                 })?;
 

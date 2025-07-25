@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use prometheus::{
+    Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Registry,
     register_histogram_with_registry, register_int_counter_vec_with_registry,
     register_int_counter_with_registry, register_int_gauge_vec_with_registry,
-    register_int_gauge_with_registry, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
-    Registry,
+    register_int_gauge_with_registry,
 };
 use std::sync::Arc;
 
 pub struct DWalletCheckpointMetrics {
+    pub last_dwallet_checkpoint_pending_height: IntGauge,
     pub last_certified_dwallet_checkpoint: IntGauge,
     pub last_constructed_dwallet_checkpoint: IntGauge,
     pub dwallet_checkpoint_errors: IntCounter,
@@ -31,6 +32,12 @@ pub struct DWalletCheckpointMetrics {
 impl DWalletCheckpointMetrics {
     pub fn new(registry: &Registry) -> Arc<Self> {
         let this = Self {
+            last_dwallet_checkpoint_pending_height: register_int_gauge_with_registry!(
+                "last_dwallet_checkpoint_pending_height",
+                "Last dwallet checkpoint pending height",
+                registry
+            )
+            .unwrap(),
             last_certified_dwallet_checkpoint: register_int_gauge_with_registry!(
                 "last_certified_dwallet_checkpoint",
                 "Last certified dwallet checkpoint",

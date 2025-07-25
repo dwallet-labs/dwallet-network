@@ -2,28 +2,28 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// # Ika System Module
-/// 
+///
 /// The `ika_system::system` module provides the core system state management for the Ika network.
 /// It acts as the central coordinator for validators, staking, epochs, and network governance.
-/// 
+///
 /// ## Overview
-/// 
+///
 /// The module implements a versioned wrapper pattern around the core system state:
 /// - `System`: A shared object that serves as the public interface and version manager
 /// - `SystemInner`: The actual system state implementation containing all business logic
 /// - `ProtocolCap`: Capability object for privileged system operations
-/// 
+///
 /// ## Architecture
-/// 
+///
 /// The system uses a two-layer architecture:
-/// 
+///
 /// ### System Wrapper Layer
 /// The `System` struct is a thin wrapper that:
 /// - Maintains version information for upgrades
 /// - Stores the package ID for authorization
 /// - Holds the inner system state as a dynamic field
 /// - Provides a stable public interface across versions
-/// 
+///
 /// ### SystemInner Layer
 /// The `SystemInner` struct contains all the core functionality:
 /// - Validator set management and operations
@@ -32,48 +32,48 @@
 /// - Protocol treasury and rewards distribution
 /// - dWallet network coordination
 /// - System parameter management
-/// 
+///
 /// ## Key Responsibilities
-/// 
+///
 /// ### Validator Management
 /// - Adding/removing validator candidates
 /// - Managing validator metadata and configuration
 /// - Handling validator state transitions (PreActive → Active → Withdrawing)
 /// - Processing validator reports and governance actions
-/// 
+///
 /// ### Staking Operations
 /// - Processing stake additions and withdrawals
 /// - Managing staked IKA tokens and rewards
 /// - Calculating token exchange rates across epochs
 /// - Handling delegation to validators
-/// 
+///
 /// ### Epoch Management
 /// - Coordinating epoch transitions
 /// - Processing mid-epoch reconfigurations
 /// - Managing epoch timing and duration
 /// - Distributing stake subsidies and rewards
-/// 
+///
 /// ### dWallet Integration
 /// - Coordinating with dWallet 2PC MPC system
 /// - Managing encryption keys and DKG processes
 /// - Handling pricing and curve configurations
 /// - Processing dWallet network operations
-/// 
+///
 /// ### System Governance
 /// - Managing protocol upgrades via UpgradeCap
 /// - Processing system parameter changes
 /// - Handling protocol version transitions
 /// - Coordinating checkpoint message processing
-/// 
+///
 /// ## State Management
-/// 
+///
 /// The system maintains state across multiple components:
 /// - **ValidatorSet**: Current and pending validator configurations
 /// - **ProtocolTreasury**: Rewards, subsidies, and fee management
 /// - **BLS Committee**: Cryptographic committee for consensus
 /// - **Token Exchange Rates**: Historical staking reward calculations
 /// - **Pending Values**: Future epoch configuration changes
-/// 
+///
 /// ## Ika System Upgrade Guide
 /// `System` is a versioned wrapper around `SystemInner` that provides upgrade capabilities.
 /// The `SystemInner` object is stored as a dynamic field with the version as the key.
@@ -92,7 +92,7 @@
 ///    - Applying the data migration transformation
 ///    - Adding the new inner object with the updated version
 /// 5. Update the `inner()` and `inner_mut()` functions to work with the new version.
-/// 
+///
 /// Along with the Move changes, update the Rust code:
 /// 1. Define a new `SystemInnerV2` struct that matches the Move type.
 /// 2. Update the `System` enum to include the new version variant.
@@ -103,39 +103,40 @@
 /// 2. Create migration functions to convert between validator versions.
 /// 3. Update validator creation and access functions to use the new version.
 /// 4. Update the validator set and related components to handle the new validator type.
-/// 
+///
 /// In Rust, add new cases to handle the upgraded validator types in the appropriate getter functions.
 /// Validator upgrades can be done independently of SystemInner upgrades, but ensure version consistency
 /// across related components.
 module ika_system::system;
 
-// === Imports ===
-
-use std::string::String;
 use ika::ika::IKA;
-use ika_system::{
-    protocol_treasury::ProtocolTreasury,
-    staked_ika::StakedIka,
-    system_inner::{Self, SystemInner},
-    token_exchange_rate::TokenExchangeRate,
-    validator_cap::{ValidatorCap, ValidatorCommissionCap, ValidatorOperationCap, VerifiedValidatorCap, VerifiedValidatorCommissionCap, VerifiedValidatorOperationCap},
-    validator_metadata::ValidatorMetadata,
-    validator_set::ValidatorSet,
-    protocol_cap::{VerifiedProtocolCap, ProtocolCap},
-    system_current_status_info::SystemCurrentStatusInfo,
-    advance_epoch_approver::AdvanceEpochApprover,
+use ika_common::advance_epoch_approver::AdvanceEpochApprover;
+use ika_common::bls_committee::BlsCommittee;
+use ika_common::protocol_cap::{VerifiedProtocolCap, ProtocolCap};
+use ika_common::system_current_status_info::SystemCurrentStatusInfo;
+use ika_common::system_object_cap::SystemObjectCap;
+use ika_common::validator_cap::{
+    ValidatorCap,
+    ValidatorCommissionCap,
+    ValidatorOperationCap,
+    VerifiedValidatorCap,
+    VerifiedValidatorCommissionCap,
+    VerifiedValidatorOperationCap
 };
-use ika_common::{
-    bls_committee::BlsCommittee,
-    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
-};
-use sui::{
-    clock::Clock,
-    coin::Coin,
-    dynamic_field,
-    package::{UpgradeCap, UpgradeReceipt, UpgradeTicket},
-    table::Table,
-};
+use ika_system::protocol_treasury::ProtocolTreasury;
+use ika_system::staked_ika::StakedIka;
+use ika_system::system_inner::{Self, SystemInner};
+use ika_system::token_exchange_rate::TokenExchangeRate;
+use ika_system::validator_metadata::ValidatorMetadata;
+use ika_system::validator_set::ValidatorSet;
+use std::string::String;
+use sui::clock::Clock;
+use sui::coin::Coin;
+use sui::dynamic_field;
+use sui::package::{UpgradeCap, UpgradeReceipt, UpgradeTicket};
+use sui::table::Table;
+use sui::table_vec::TableVec;
+use ika_common::upgrade_package_approver::UpgradePackageApprover;
 
 // === Errors ===
 
@@ -150,7 +151,7 @@ const EInvalidMigration: u64 = 1;
 /// Current version of the system state structure.
 /// This version corresponds to SystemInner and should be incremented
 /// when the inner system state structure changes requiring migration.
-/// 
+///
 /// Version History:
 /// - V1: Initial SystemInner implementation with core functionality
 const VERSION: u64 = 1;
@@ -158,22 +159,22 @@ const VERSION: u64 = 1;
 // === Structs ===
 
 /// The main system state object that coordinates the entire Ika network.
-/// 
+///
 /// This is a shared object that acts as the central point for all system operations.
 /// It maintains versioning information and delegates actual functionality to the
 /// inner system state stored as a dynamic field.
-/// 
+///
 /// # Fields
 /// - `id`: Unique identifier for this system object
 /// - `version`: Current version of the inner system state structure
 /// - `package_id`: ID of the current system package for upgrade authorization
 /// - `new_package_id`: ID of the new package during upgrades (if any)
-/// 
+///
 /// # Design Notes
 /// The system uses dynamic fields to store the actual state, allowing for
 /// type-safe upgrades while maintaining a stable object ID. The version field
 /// ensures that operations are performed against the correct inner state type.
-/// 
+///
 /// # Access Pattern
 /// All public functions delegate to `inner()` or `inner_mut()` which retrieve
 /// the correctly versioned SystemInner from the dynamic field storage.
@@ -182,17 +183,19 @@ public struct System has key {
     version: u64,
     package_id: ID,
     new_package_id: Option<ID>,
+    migration_epoch: Option<u64>,
 }
 
 // === Functions that can only be called by init ===
 
 /// Create a new System object and make it shared.
 /// This function will be called only once in init.
-/// 
+///
 /// Creates the initial system state with the provided validators and parameters,
 /// then wraps it in a versioned System object and makes it shared for network access.
 public(package) fun create(
     package_id: ID,
+    system_object_cap: SystemObjectCap,
     upgrade_caps: vector<UpgradeCap>,
     validators: ValidatorSet,
     protocol_version: u64,
@@ -203,6 +206,7 @@ public(package) fun create(
     ctx: &mut TxContext,
 ): ProtocolCap {
     let (system_state, protocol_cap) = system_inner::create(
+        system_object_cap,
         upgrade_caps,
         validators,
         protocol_version,
@@ -217,6 +221,7 @@ public(package) fun create(
         version: VERSION,
         package_id,
         new_package_id: option::none(),
+        migration_epoch: option::none(),
     };
     dynamic_field::add(&mut self.id, VERSION, system_state);
     transfer::share_object(self);
@@ -231,11 +236,13 @@ public fun initialize(
     cap: &ProtocolCap,
     clock: &Clock,
 ): AdvanceEpochApprover {
-    self.inner_mut().initialize(
-        max_validator_change_count,
-        cap,
-        clock,
-    )
+    self
+        .inner_mut()
+        .initialize(
+            max_validator_change_count,
+            cap,
+            clock,
+        )
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -250,7 +257,7 @@ public fun request_add_validator_candidate(
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+    mpc_data_bytes: TableVec<vector<u8>>,
     proof_of_possession_bytes: vector<u8>,
     network_address: String,
     p2p_address: String,
@@ -259,28 +266,27 @@ public fun request_add_validator_candidate(
     metadata: ValidatorMetadata,
     ctx: &mut TxContext,
 ): (ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
-    self.inner_mut().request_add_validator_candidate(
-        name,
-        protocol_pubkey_bytes,
-        network_pubkey_bytes,
-        consensus_pubkey_bytes,
-        class_groups_pubkey_and_proof_bytes,
-        proof_of_possession_bytes,
-        network_address,
-        p2p_address,
-        consensus_address,
-        commission_rate,
-        metadata,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_add_validator_candidate(
+            name,
+            protocol_pubkey_bytes,
+            network_pubkey_bytes,
+            consensus_pubkey_bytes,
+            mpc_data_bytes,
+            proof_of_possession_bytes,
+            network_address,
+            p2p_address,
+            consensus_address,
+            commission_rate,
+            metadata,
+            ctx,
+        )
 }
 
 /// Called by a validator candidate to remove themselves from the candidacy. After this call
 /// their staking pool becomes deactivate.
-public fun request_remove_validator_candidate(
-    self: &mut System,
-    cap: &ValidatorCap,
-) {
+public fun request_remove_validator_candidate(self: &mut System, cap: &ValidatorCap) {
     self.inner_mut().request_remove_validator_candidate(cap)
 }
 
@@ -288,10 +294,7 @@ public fun request_remove_validator_candidate(
 /// Aborts if the validator is a duplicate with one of the pending or active validators, or if the amount of
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
-public fun request_add_validator(
-    self: &mut System,
-    cap: &ValidatorCap,
-) {
+public fun request_add_validator(self: &mut System, cap: &ValidatorCap) {
     self.inner_mut().request_add_validator(cap)
 }
 
@@ -327,10 +330,7 @@ public fun request_add_stake(
 /// Marks the amount as a withdrawal to be processed and removes it from the stake weight of the
 /// node. Allows the user to call withdraw_stake after the epoch change to the next epoch and
 /// shard transfer is done.
-public fun request_withdraw_stake(
-    self: &mut System,
-    staked_ika: &mut StakedIka,
-) {
+public fun request_withdraw_stake(self: &mut System, staked_ika: &mut StakedIka) {
     self.inner_mut().request_withdraw_stake(staked_ika);
 }
 
@@ -349,11 +349,7 @@ public fun withdraw_stake(
 /// 2. reporter and reportee not the same address.
 /// 3. the cap object is still valid.
 /// This function is idempotent.
-public fun report_validator(
-    self: &mut System,
-    cap: &ValidatorOperationCap,
-    reportee_id: ID,
-) {
+public fun report_validator(self: &mut System, cap: &ValidatorOperationCap, reportee_id: ID) {
     self.inner_mut().report_validator(cap, reportee_id)
 }
 
@@ -361,23 +357,27 @@ public fun report_validator(
 /// 1. the reportee is not a currently active validator or
 /// 2. the sender has not previously reported the `reportee_id`, or
 /// 3. the cap is not valid
-public fun undo_report_validator(
-    self: &mut System,
-    cap: &ValidatorOperationCap,
-    reportee_id: ID,
-) {
+public fun undo_report_validator(self: &mut System, cap: &ValidatorOperationCap, reportee_id: ID) {
     self.inner_mut().undo_report_validator(cap, reportee_id)
 }
 
 // === validator metadata management functions ===
 
 /// Create a new `ValidatorOperationCap` and registers it. The original object is thus revoked.
-public fun rotate_operation_cap(self: &mut System, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
+public fun rotate_operation_cap(
+    self: &mut System,
+    cap: &ValidatorCap,
+    ctx: &mut TxContext,
+): ValidatorOperationCap {
     self.inner_mut().rotate_operation_cap(cap, ctx)
 }
 
 /// Create a new `ValidatorCommissionCap` and registers it. The original object is thus revoked.
-public fun rotate_commission_cap(self: &mut System, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
+public fun rotate_commission_cap(
+    self: &mut System,
+    cap: &ValidatorCap,
+    ctx: &mut TxContext,
+): ValidatorCommissionCap {
     self.inner_mut().rotate_commission_cap(cap, ctx)
 }
 
@@ -393,19 +393,12 @@ public fun collect_commission(
 }
 
 /// Set a validator's name.
-public fun set_validator_name(
-    self: &mut System,
-    name: String,
-    cap: &ValidatorOperationCap,
-) {
+public fun set_validator_name(self: &mut System, name: String, cap: &ValidatorOperationCap) {
     self.inner_mut().set_validator_name(name, cap);
 }
 
 /// Get a validator's metadata.
-public fun validator_metadata(
-    self: &System,
-    validator_id: ID,
-): ValidatorMetadata {
+public fun validator_metadata(self: &System, validator_id: ID): ValidatorMetadata {
     self.inner().validator_metadata(validator_id)
 }
 
@@ -456,7 +449,9 @@ public fun set_next_epoch_protocol_pubkey_bytes(
     cap: &ValidatorOperationCap,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().set_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
+    self
+        .inner_mut()
+        .set_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
 }
 
 /// Sets a validator's public key of network key.
@@ -479,21 +474,18 @@ public fun set_next_epoch_consensus_pubkey_bytes(
     self.inner_mut().set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
 }
 
-/// Sets a validator's public key of class groups key and its associated proof.
+/// Sets a validator's MPC public data.
 /// The change will only take effects starting from the next epoch.
-public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+public fun set_next_epoch_mpc_data_bytes(
     self: &mut System,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    mpc_data: TableVec<vector<u8>>,
     cap: &ValidatorOperationCap,
-) {
-    self.inner_mut().set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
+): Option<TableVec<vector<u8>>> {
+    self.inner_mut().set_next_epoch_mpc_data_bytes(mpc_data, cap)
 }
 
 /// Get the pool token exchange rate of a validator. Works for both active and inactive pools.
-public fun token_exchange_rates(
-    self: &System,
-    validator_id: ID,
-): &Table<u64, TokenExchangeRate> {
+public fun token_exchange_rates(self: &System, validator_id: ID): &Table<u64, TokenExchangeRate> {
     self.inner().token_exchange_rates(validator_id)
 }
 
@@ -508,15 +500,15 @@ public fun next_epoch_active_committee(self: &System): Option<BlsCommittee> {
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
-public fun initiate_mid_epoch_reconfiguration(
-    self: &mut System,
-    clock: &Clock,
-) {
+public fun initiate_mid_epoch_reconfiguration(self: &mut System, clock: &Clock) {
     self.inner_mut().initiate_mid_epoch_reconfiguration(clock);
 }
 
 /// Create the system current status info.
-public fun create_system_current_status_info(self: &System, clock: &Clock): SystemCurrentStatusInfo {
+public fun create_system_current_status_info(
+    self: &System,
+    clock: &Clock,
+): SystemCurrentStatusInfo {
     self.inner().create_system_current_status_info(clock)
 }
 
@@ -527,7 +519,12 @@ public fun initiate_advance_epoch(self: &System, clock: &Clock): AdvanceEpochApp
 
 /// Advances the epoch to the next epoch.
 /// Can only be called after all the witnesses have approved the advance epoch.
-public fun advance_epoch(self: &mut System, advance_epoch_approver: AdvanceEpochApprover, clock: &Clock, ctx: &mut TxContext) {
+public fun advance_epoch(
+    self: &mut System,
+    advance_epoch_approver: AdvanceEpochApprover,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
     let inner_system = self.inner_mut();
     inner_system.advance_epoch(advance_epoch_approver, clock, ctx);
 }
@@ -536,32 +533,36 @@ public fun verify_validator_cap(self: &System, cap: &ValidatorCap): VerifiedVali
     self.inner().verify_validator_cap(cap)
 }
 
-public fun verify_operation_cap(self: &System, cap: &ValidatorOperationCap): VerifiedValidatorOperationCap {
+public fun verify_operation_cap(
+    self: &System,
+    cap: &ValidatorOperationCap,
+): VerifiedValidatorOperationCap {
     self.inner().verify_operation_cap(cap)
 }
 
-public fun verify_commission_cap(self: &System, cap: &ValidatorCommissionCap): VerifiedValidatorCommissionCap {
+public fun verify_commission_cap(
+    self: &System,
+    cap: &ValidatorCommissionCap,
+): VerifiedValidatorCommissionCap {
     self.inner().verify_commission_cap(cap)
 }
 
 // === Upgrades ===
 
-public fun authorize_upgrade(
-    self: &mut System,
-    package_id: ID,
-): UpgradeTicket {
+public fun authorize_upgrade(self: &mut System, package_id: ID): (UpgradeTicket, UpgradePackageApprover) {
     self.inner_mut().authorize_upgrade(package_id)
 }
 
-public fun commit_upgrade(
-    self: &mut System,
-    receipt: UpgradeReceipt,
-) {
-    let new_package_id = receipt.package();
-    let old_package_id = self.inner_mut().commit_upgrade(receipt);
-    if (self.package_id == old_package_id) {
-        self.new_package_id = option::some(new_package_id);
-    }
+public fun commit_upgrade(self: &mut System, receipt: UpgradeReceipt, upgrade_package_approver: &mut UpgradePackageApprover) {
+    self.inner_mut().commit_upgrade(receipt, upgrade_package_approver);
+    if (self.package_id == upgrade_package_approver.old_package_id()) {
+        self.migration_epoch = option::some(upgrade_package_approver.migration_epoch());
+        self.new_package_id = option::some(*upgrade_package_approver.new_package_id().borrow());
+    };
+}
+
+public fun finalize_upgrade(self: &mut System, upgrade_package_approver: UpgradePackageApprover) {
+    self.inner().finalize_upgrade(upgrade_package_approver);
 }
 
 public fun process_checkpoint_message_by_quorum(
@@ -576,12 +577,8 @@ public fun process_checkpoint_message_by_quorum(
 
 // === Protocol Cap Functions ===
 
-public fun add_upgrade_cap_by_cap(
-    self: &mut System,
-    cap: &ProtocolCap,
-    upgrade_cap: UpgradeCap,
-) {
-    self.inner_mut().add_upgrade_cap_by_cap(cap, upgrade_cap);
+public fun add_upgrade_cap_by_cap(self: &mut System, upgrade_cap: UpgradeCap, cap: &ProtocolCap) {
+    self.inner_mut().add_upgrade_cap_by_cap(upgrade_cap, cap);
 }
 
 public fun verify_protocol_cap(self: &System, cap: &ProtocolCap): VerifiedProtocolCap {
@@ -590,53 +587,81 @@ public fun verify_protocol_cap(self: &System, cap: &ProtocolCap): VerifiedProtoc
 
 public fun process_checkpoint_message_by_cap(
     self: &mut System,
-    cap: &ProtocolCap,
     message: vector<u8>,
+    cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().process_checkpoint_message_by_cap(cap, message, ctx);
+    self.inner_mut().process_checkpoint_message_by_cap(message, cap, ctx);
 }
 
 public fun set_approved_upgrade_by_cap(
     self: &mut System,
-    cap: &ProtocolCap,
     package_id: ID,
     digest: Option<vector<u8>>,
+    cap: &ProtocolCap,
 ) {
-    self.inner_mut().set_approved_upgrade_by_cap(cap, package_id, digest);
+    self.inner_mut().set_approved_upgrade_by_cap(package_id, digest, cap);
 }
 
 public fun set_or_remove_witness_approving_advance_epoch_by_cap(
     self: &mut System,
-    cap: &ProtocolCap,
     witness_type: String,
     remove: bool,
+    cap: &ProtocolCap,
 ) {
-    self.inner_mut().set_or_remove_witness_approving_advance_epoch_by_cap(cap, witness_type, remove);
+    self
+        .inner_mut()
+        .set_or_remove_witness_approving_advance_epoch_by_cap(witness_type, remove, cap);
 }
 
-/// Migrate the staking object to the new package id.
+/// Try to migrate the system object to the new package id using a cap.
 ///
 /// This function sets the new package id and version and can be modified in future versions
 /// to migrate changes in the `system_inner` object if needed.
-public fun migrate(
-        self: &mut System,
-) {
+/// This function can be called immediately after the upgrade is committed.
+public fun try_migrate_by_cap(self: &mut System, cap: &ProtocolCap) {
+    let _ = self.inner().verify_protocol_cap(cap);
     assert!(self.version < VERSION, EInvalidMigration);
+    assert!(self.new_package_id.is_some(), EInvalidMigration);
+    self.try_migrate_impl();
+}
 
-    // Move the old system state inner to the new version.
+/// Try to migrate the system object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `system_inner` object if needed.
+/// Call this function after the migration epoch is reached.
+public fun try_migrate(self: &mut System) {
+    assert!(self.version < VERSION, EInvalidMigration);
+    assert!(self.new_package_id.is_some(), EInvalidMigration);
+    assert!(self.migration_epoch.is_some_and!(|e| self.inner_without_version_check().epoch() >= *e), EInvalidMigration);
+    self.try_migrate_impl();
+}
+
+/// Try to migrate the system object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `system_inner` object if needed.
+fun try_migrate_impl(self: &mut System) {
+    // Move the old system inner to the new version.
     let system_inner: SystemInner = dynamic_field::remove(&mut self.id, self.version);
     dynamic_field::add(&mut self.id, VERSION, system_inner);
     self.version = VERSION;
 
-    // Set the new package id.
-    assert!(self.new_package_id.is_some(), EInvalidMigration);
     self.package_id = self.new_package_id.extract();
+    // empty the migration epoch
+    if (self.migration_epoch.is_some()) {
+        let _ = self.migration_epoch.extract();
+    };
+}
+
+public fun version(self: &System): u64 {
+    self.version
 }
 
 // === Utility functions ===
 
-/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// Calculates the rewards for an amount with value `staked_principal`, staked in the validator with
 /// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
 ///
 /// This function can be used with `dev_inspect` to calculate the expected rewards for a `StakedIka`
@@ -670,6 +695,11 @@ fun inner(self: &System): &SystemInner {
     dynamic_field::borrow(&self.id, VERSION)
 }
 
+/// Get an immutable reference to `SystemInner` from the `System` without checking the version.
+fun inner_without_version_check(self: &System): &SystemInner {
+    dynamic_field::borrow(&self.id, self.version)
+}
+
 // === Test Functions ===
 
 #[test_only]
@@ -694,7 +724,6 @@ public fun validator_stake_amount(self: &mut System, validator_id: ID): u64 {
 
 #[test_only]
 use sui::vec_set::VecSet;
-
 #[test_only]
 /// Returns all the validators who are currently reporting `validator_id`
 public fun get_reporters_of(self: &mut System, validator_id: ID): VecSet<ID> {
@@ -713,10 +742,7 @@ public fun set_epoch_for_testing(self: &mut System, epoch_num: u64) {
 }
 
 #[test_only]
-public fun request_add_validator_for_testing(
-    self: &mut System,
-    cap: &ValidatorCap,
-) {
+public fun request_add_validator_for_testing(self: &mut System, cap: &ValidatorCap) {
     self.inner_mut().request_add_validator_for_testing(cap)
 }
 

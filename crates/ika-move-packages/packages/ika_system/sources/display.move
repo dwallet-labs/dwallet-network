@@ -15,17 +15,12 @@
 /// - creator
 module ika_system::display;
 
-// === Imports ===
-
-use std::{string::String, type_name};
-use ika_system::{
-    staked_ika::StakedIka
-};
-use sui::{
-    display::{Self, Display},
-    object_bag::{Self, ObjectBag},
-    package::Publisher
-};
+use ika_system::staked_ika::StakedIka;
+use std::string::String;
+use std::type_name;
+use sui::display::{Self, Display};
+use sui::object_bag::{Self, ObjectBag};
+use sui::package::Publisher;
 
 // === Structs ===
 
@@ -41,11 +36,7 @@ public struct PublisherKey() has copy, drop, store;
 // === Package Functions ===
 
 /// Creates the `ObjectDisplay` instance with default objects in it.
-public(package) fun create(
-    p: Publisher,
-    staked_ika_image_url: String,
-    ctx: &mut TxContext,
-) {
+public(package) fun create(p: Publisher, staked_ika_image_url: String, ctx: &mut TxContext) {
     let mut inner = object_bag::new(ctx);
 
     inner.add(type_name::get<StakedIka>(), init_staked_ika_display(&p, staked_ika_image_url, ctx));

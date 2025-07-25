@@ -1,3 +1,4 @@
+use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
@@ -5,22 +6,11 @@ use thiserror::Error;
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
-/// MPC session public output sent through the consensus.
-/// Used to indicate the session status.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MPCSessionPublicOutput {
-    CompletedSuccessfully(SerializedWrappedMPCPublicOutput),
-    SessionFailed,
-}
-
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
 /// The MPC Public Output.
 pub type MPCPublicOutput = Vec<u8>;
-
-/// Alias for an MPC private output.
-pub type MPCPrivateOutput = Vec<u8>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
@@ -50,7 +40,8 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Active,
-    Finished,
+    ComputationCompleted,
+    Completed,
     Failed,
 }
 
@@ -58,7 +49,8 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished => write!(f, "Finished"),
+            MPCSessionStatus::ComputationCompleted => write!(f, "Computation Completed"),
+            MPCSessionStatus::Completed => write!(f, "Completed"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }
@@ -73,7 +65,7 @@ pub enum NetworkDecryptionKeyPublicOutputType {
 /// The public output of the DKG and/or Reconfiguration protocols, which holds the (encrypted) decryption key shares.
 /// Created for each DKG protocol and modified for each Reconfiguration Protocol.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NetworkDecryptionKeyPublicData {
+pub struct NetworkEncryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
 
@@ -195,4 +187,26 @@ pub enum VersionedImportedDwalletOutgoingMessage {
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedEncryptedUserShare {
     V1(MPCPublicOutput),
+}
+
+#[enum_dispatch(MPCDataTrait)]
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
+pub enum VersionedMPCData {
+    V1(MPCDataV1),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
+pub struct MPCDataV1 {
+    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
+}
+
+#[enum_dispatch]
+pub trait MPCDataTrait {
+    fn class_groups_public_key_and_proof(&self) -> ClassGroupsPublicKeyAndProofBytes;
+}
+
+impl MPCDataTrait for MPCDataV1 {
+    fn class_groups_public_key_and_proof(&self) -> ClassGroupsPublicKeyAndProofBytes {
+        self.class_groups_public_key_and_proof.clone()
+    }
 }

@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -39,7 +42,7 @@ impl EndOfPublishSender {
         loop {
             if *self.end_of_publish_receiver.borrow() == Some(self.epoch_id) {
                 if let Err(err) = self.send_end_of_publish().await {
-                    error!(?err, "failed to send `end of publish` message");
+                    error!(error=?err, "failed to send `end of publish` message");
                 }
             }
             tokio::time::sleep(Duration::from_secs(1)).await;

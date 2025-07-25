@@ -1,9 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module ika_common::extended_field;
-
-// === Imports ===
 
 use sui::dynamic_field as df;
 

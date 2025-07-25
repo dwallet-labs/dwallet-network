@@ -8,13 +8,26 @@ use std::{
     sync::Arc,
 };
 
+use crate::system_checkpoints::SystemCheckpointService;
+use crate::{
+    authority::{
+        AuthorityMetrics, AuthorityState,
+        authority_per_epoch_store::{
+            AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndices,
+            ExecutionIndicesWithStats,
+        },
+    },
+    consensus_throughput_calculator::ConsensusThroughputCalculator,
+    consensus_types::consensus_output_api::ConsensusCommitAPI,
+    dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
+    scoring_decision::update_low_scoring_authorities,
+};
 use arc_swap::ArcSwap;
 use consensus_config::Committee as ConsensusCommittee;
 use consensus_core::CommitConsumerMonitor;
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
-use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
-use ika_types::message::DWalletMessageKind;
+use ika_types::digests::ConsensusCommitDigest;
 use ika_types::messages_consensus::{
     AuthorityIndex, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
 };
@@ -24,22 +37,6 @@ use mysten_metrics::{monitored_future, monitored_mpsc::UnboundedReceiver, monito
 use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
-
-use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::system_checkpoints::SystemCheckpointService;
-use crate::{
-    authority::{
-        authority_per_epoch_store::{
-            AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndices,
-            ExecutionIndicesWithStats,
-        },
-        AuthorityMetrics, AuthorityState,
-    },
-    consensus_throughput_calculator::ConsensusThroughputCalculator,
-    consensus_types::consensus_output_api::ConsensusCommitAPI,
-    dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
-    scoring_decision::update_low_scoring_authorities,
-};
 use tokio::task::JoinSet;
 use tracing::{debug, error, instrument, trace_span, warn};
 
@@ -50,7 +47,6 @@ pub struct ConsensusHandlerInitializer {
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
-    dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
 }
 
 impl ConsensusHandlerInitializer {
@@ -61,7 +57,6 @@ impl ConsensusHandlerInitializer {
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
-        dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
     ) -> Self {
         Self {
             state,
@@ -70,18 +65,20 @@ impl ConsensusHandlerInitializer {
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
-            dwallet_mpc_outputs_verifier,
         }
     }
 
     #[cfg(test)]
+    #[allow(dead_code)]
     pub(crate) fn new_for_testing(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<DWalletCheckpointService>,
+        system_checkpoint_service: Arc<SystemCheckpointService>,
     ) -> Self {
         Self {
             state: state.clone(),
             checkpoint_service,
+            system_checkpoint_service,
             epoch_store: state.epoch_store_for_testing().clone(),
             low_scoring_authorities: Arc::new(Default::default()),
             throughput_calculator: Arc::new(ConsensusThroughputCalculator::new(
@@ -103,7 +100,6 @@ impl ConsensusHandlerInitializer {
             consensus_committee,
             self.state.metrics.clone(),
             self.throughput_calculator,
-            self.dwallet_mpc_outputs_verifier,
         )
     }
 
@@ -135,10 +131,6 @@ pub struct ConsensusHandler<C> {
     processed_cache: LruCache<SequencedConsensusTransactionKey, ()>,
     /// Using the throughput calculator to record the current consensus throughput
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
-    /// State machine managing dWallet MPC outputs.
-    /// This state machine is used to store outputs and emit ones
-    /// where the quorum of votes is valid.
-    dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
 }
 
 const PROCESSED_CACHE_CAP: usize = 1024 * 1024;
@@ -152,7 +144,6 @@ impl<C> ConsensusHandler<C> {
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
-        dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
     ) -> Self {
         // Recover last_consensus_stats so it is consistent across validators.
         let mut last_consensus_stats = epoch_store
@@ -173,7 +164,6 @@ impl<C> ConsensusHandler<C> {
             metrics,
             processed_cache: LruCache::new(NonZeroUsize::new(PROCESSED_CACHE_CAP).unwrap()),
             throughput_calculator,
-            dwallet_mpc_outputs_verifier,
         }
     }
 
@@ -262,15 +252,13 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         {
             let span = trace_span!("ConsensusHandler::HandleCommit::process_consensus_txns");
             let _guard = span.enter();
-            for (authority_index, parsed_transactions) in consensus_commit.transactions() {
+            for (block, parsed_transactions) in consensus_commit.transactions() {
+                let author = block.author.value();
                 // TODO: consider only messages within 1~3 rounds of the leader?
-                self.last_consensus_stats
-                    .stats
-                    .inc_num_messages(authority_index as usize);
+                self.last_consensus_stats.stats.inc_num_messages(author);
                 for parsed in parsed_transactions {
-                    // Skip executing rejected transactions. Unlocking is the responsibility of the
-                    // consensus transaction handler.
                     if parsed.rejected {
+                        // Skip executing rejected transactions.
                         continue;
                     }
                     let kind = classify(&parsed.transaction);
@@ -284,7 +272,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         .observe(parsed.serialized_len as f64);
                     let transaction =
                         SequencedConsensusTransactionKind::External(parsed.transaction);
-                    transactions.push((transaction, authority_index));
+                    transactions.push((transaction, author as u32));
                 }
             }
         }
@@ -361,7 +349,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 &self.system_checkpoint_service,
                 &ConsensusCommitInfo::new(self.epoch_store.protocol_config(), &consensus_commit),
                 &self.metrics,
-                &mut self.dwallet_mpc_outputs_verifier,
             )
             .await
             .expect("Unrecoverable error in consensus handler");
@@ -381,9 +368,9 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         });
 
         fail_point_async!("crash"); // for tests that produce random crashes
-                                    //
-                                    // self.transaction_manager_sender
-                                    //     .send(executable_transactions);
+        //
+        // self.transaction_manager_sender
+        //     .send(executable_transactions);
     }
 }
 
@@ -430,10 +417,6 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
         ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
-        ConsensusTransactionKind::DWalletMPCMaliciousReport(..) => "dwallet_mpc_malicious_report",
-        ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {
-            "dwallet_mpc_threshold_not_reached"
-        }
         ConsensusTransactionKind::SystemCheckpointSignature(_) => "system_checkpoint_signature",
         ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
     }
@@ -450,7 +433,6 @@ pub struct SequencedConsensusTransaction {
 #[derive(Debug, Clone)]
 pub enum SequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(DWalletMessageKind),
 }
 
 impl Serialize for SequencedConsensusTransactionKind {
@@ -474,7 +456,6 @@ impl<'de> Deserialize<'de> for SequencedConsensusTransactionKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum SerializableSequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(DWalletMessageKind),
 }
 
 impl From<&SequencedConsensusTransactionKind> for SerializableSequencedConsensusTransactionKind {
@@ -482,9 +463,6 @@ impl From<&SequencedConsensusTransactionKind> for SerializableSequencedConsensus
         match kind {
             SequencedConsensusTransactionKind::External(ext) => {
                 SerializableSequencedConsensusTransactionKind::External(ext.clone())
-            }
-            SequencedConsensusTransactionKind::System(txn) => {
-                SerializableSequencedConsensusTransactionKind::System(txn.clone())
             }
         }
     }
@@ -496,9 +474,6 @@ impl From<SerializableSequencedConsensusTransactionKind> for SequencedConsensusT
             SerializableSequencedConsensusTransactionKind::External(ext) => {
                 SequencedConsensusTransactionKind::External(ext)
             }
-            SerializableSequencedConsensusTransactionKind::System(txn) => {
-                SequencedConsensusTransactionKind::System(txn)
-            }
         }
     }
 }
@@ -506,7 +481,6 @@ impl From<SerializableSequencedConsensusTransactionKind> for SequencedConsensusT
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Debug, Ord, PartialOrd)]
 pub enum SequencedConsensusTransactionKey {
     External(ConsensusTransactionKey),
-    System(MessageDigest),
 }
 
 impl SequencedConsensusTransactionKind {
@@ -515,16 +489,12 @@ impl SequencedConsensusTransactionKind {
             SequencedConsensusTransactionKind::External(ext) => {
                 SequencedConsensusTransactionKey::External(ext.key())
             }
-            SequencedConsensusTransactionKind::System(txn) => {
-                SequencedConsensusTransactionKey::System(txn.digest())
-            }
         }
     }
 
     pub fn get_tracking_id(&self) -> u64 {
         match self {
             SequencedConsensusTransactionKind::External(ext) => ext.get_tracking_id(),
-            SequencedConsensusTransactionKind::System(_txn) => 0,
         }
     }
 }
@@ -536,13 +506,6 @@ impl SequencedConsensusTransaction {
 
     pub fn key(&self) -> SequencedConsensusTransactionKey {
         self.transaction.key()
-    }
-
-    pub fn is_system(&self) -> bool {
-        matches!(
-            self.transaction,
-            SequencedConsensusTransactionKind::System(_)
-        )
     }
 }
 

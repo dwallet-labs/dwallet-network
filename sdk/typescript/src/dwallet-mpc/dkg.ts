@@ -169,15 +169,15 @@ export async function dkgSecondRoundMoveCall(
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
 		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+		typeArguments: [`${conf.ikaConfig.packages.ika_package_id}::ika::IKA`],
 	});
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
-		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
+		conf.ikaConfig.packages.ika_dwallet_2pc_mpc_package_id,
 	);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
+		target: `${conf.ikaConfig.packages.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
 		arguments: [
 			dwalletStateArg,
 			dwalletCapArg,
@@ -194,7 +194,7 @@ export async function dkgSecondRoundMoveCall(
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+		typeArguments: [`${conf.ikaConfig.packages.ika_package_id}::ika::IKA`],
 	});
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
@@ -236,9 +236,75 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
 		arguments: [],
-		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
+		typeArguments: [`${c.ikaConfig.packages.ika_package_id}::ika::IKA`],
 	});
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: c.ikaConfig.objects.ika_dwallet_coordinator_object_id,
+		initialSharedVersion: await getInitialSharedVersion(
+			c,
+			c.ikaConfig.objects.ika_dwallet_coordinator_object_id,
+		),
+		mutable: true,
+	});
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		c.ikaConfig.packages.ika_dwallet_2pc_mpc_package_id,
+	);
+	const dwalletCap = tx.moveCall({
+		target: `${c.ikaConfig.packages.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
+		arguments: [
+			dwalletStateArg,
+			tx.pure.id(networkDecryptionKeyID),
+			tx.pure.u32(0),
+			sessionIdentifier,
+			emptyIKACoin,
+			tx.gas,
+		],
+	});
+	tx.transferObjects([dwalletCap], c.suiClientKeypair.toSuiAddress());
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${c.ikaConfig.packages.ika_package_id}::ika::IKA`],
+	});
+	const result = await c.client.signAndExecuteTransaction({
+		signer: c.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+			showEvents: true,
+		},
+	});
+	const startDKGEvent = result.events?.at(1)?.parsedJson;
+	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
+		throw new Error('invalid start DKG first round event');
+	}
+	const dwalletID = startDKGEvent.event_data.dwallet_id;
+	const output = await waitForDKGFirstRoundOutput(c, dwalletID);
+	return {
+		sessionIdentifier: startDKGEvent.session_identifier_preimage,
+		output: output,
+		dwalletCapID: startDKGEvent.event_data.dwallet_cap_id,
+		dwalletID,
+	};
+}
+
+/**
+ * Starts the first round of the DKG protocol to create a new dWallet with given coins.
+ *
+ * TODO (#1321): Allow running all MPC flows with given coins IDs.
+ */
+export async function launchDKGFirstRoundWithGivenCoins(
+	c: Config,
+	sui_coin_id: string,
+	ika_coin_id: string = '0x9df87437f4f0fb73bffe6fc6291f568da6e59ad4ad0770743b21cd4e1c030914',
+): Promise<DKGFirstRoundOutputResult> {
+	const tx = new Transaction();
+	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
+	const ikaCoinArg = tx.object(ika_coin_id);
+	const suiCoinArg = tx.object(sui_coin_id);
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: c.ikaConfig.ika_dwallet_coordinator_object_id,
 		initialSharedVersion: await getInitialSharedVersion(
@@ -259,16 +325,11 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 			tx.pure.id(networkDecryptionKeyID),
 			tx.pure.u32(0),
 			sessionIdentifier,
-			emptyIKACoin,
-			tx.gas,
+			ikaCoinArg,
+			suiCoinArg,
 		],
 	});
 	tx.transferObjects([dwalletCap], c.suiClientKeypair.toSuiAddress());
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
-	});
 	const result = await c.client.signAndExecuteTransaction({
 		signer: c.suiClientKeypair,
 		transaction: tx,
@@ -344,7 +405,7 @@ export async function acceptEncryptedUserShare(
 	);
 	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicOutput));
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
+		target: `${conf.ikaConfig.packages.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
 		arguments: [
 			dwalletStateArg,
 			dwalletIDArg,

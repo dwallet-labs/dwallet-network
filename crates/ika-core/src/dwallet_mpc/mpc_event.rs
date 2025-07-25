@@ -1,4 +1,6 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_mpc::dwallet_dkg::{
     dwallet_dkg_first_party_session_request, dwallet_dkg_second_party_session_request,
     dwallet_imported_key_verification_request_event_session_request,
@@ -21,10 +23,11 @@ use ika_types::messages_dwallet_mpc::{
     DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
     DWalletMPCEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent,
     DWalletSessionEventTrait, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent,
-    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SignRequestEvent,
-    SESSIONS_MANAGER_MODULE_NAME,
+    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent,
+    SESSIONS_MANAGER_MODULE_NAME, SignRequestEvent,
 };
 use serde::de::DeserializeOwned;
+use std::mem;
 use std::time::Duration;
 use sui_types::dynamic_field::Field;
 use sui_types::id::ID;
@@ -45,30 +48,24 @@ impl DWalletMPCManager {
     ///
     /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
-    pub(crate) fn handle_sui_db_event_batch(
-        &mut self,
-        events: Vec<DBSuiEvent>,
-        epoch_store: &AuthorityPerEpochStore,
-    ) {
+    pub(crate) async fn handle_mpc_event_batch(&mut self, events: Vec<DWalletMPCEvent>) {
         // We only update `next_active_committee` in this block. Once it's set,
         // there will no longer be any pending events targeting it for this epoch.
         if self.next_active_committee.is_none() {
             let got_next_active_committee = self.try_receiving_next_active_committee();
             if got_next_active_committee {
-                // `..` stands for `RangeFull`, and calling `drain(..)` will drain (i.e. mutate) the vector thus removing all events from it.
-                let events_pending_for_next_active_committee: Vec<_> = self
-                    .events_pending_for_next_active_committee
-                    .drain(..)
-                    .collect();
+                let events_pending_for_next_active_committee =
+                    mem::take(&mut self.events_pending_for_next_active_committee);
 
                 for event in events_pending_for_next_active_committee {
-                    self.handle_mpc_event(event, epoch_store);
+                    self.handle_mpc_event(event);
+                    tokio::task::yield_now().await;
                 }
             }
         }
 
         // First, try to update the network keys.
-        let newly_updated_network_keys_ids = self.maybe_update_network_keys();
+        let newly_updated_network_keys_ids = self.maybe_update_network_keys().await;
 
         // Now handle events for which we've just received the corresponding public data.
         // Since events are only queued in `events_pending_for_network_key` within this function,
@@ -85,62 +82,15 @@ impl DWalletMPCManager {
                 // but it could be waiting for the next committee,
                 // in which case it would be added to that queue.
                 // in which case it would be added to that queue.
-                self.handle_mpc_event(event, epoch_store);
+                self.handle_mpc_event(event);
             }
+            tokio::task::yield_now().await;
         }
 
         for event in events {
-            self.handle_sui_event(event, epoch_store);
+            self.handle_mpc_event(event);
+            tokio::task::yield_now().await;
         }
-    }
-
-    fn handle_sui_event(&mut self, event: DBSuiEvent, epoch_store: &AuthorityPerEpochStore) {
-        if event.type_.address != *epoch_store.packages_config.ika_dwallet_2pc_mpc_package_id
-            || event.type_.module != SESSIONS_MANAGER_MODULE_NAME.into()
-        {
-            // TODO: Omer - should/can we check if it is not from any of our modules before reporting it as an error?
-            error!(
-                module=?event.type_.module,
-                address=?event.type_.address,
-                "received an event from a wrong SUI module - rejecting!"
-            );
-
-            return;
-        }
-
-        let event = match self.parse_sui_event(event.clone(), epoch_store) {
-            Ok(Some(event)) => {
-                debug!(
-                    session_identifier=?event.session_request.session_identifier,
-                    session_type=?event.session_request.session_type,
-                    mpc_protocol=?event.session_request.request_input,
-                    mpc_round=?event.session_request.request_input,
-                    current_epoch=?epoch_store.epoch(),
-                    "Successfully parsed a Sui event"
-                );
-
-                event
-            }
-            Ok(None) => {
-                debug!(
-                    event=?event,
-                    "Received an event that does not trigger the start of an MPC flow"
-                );
-
-                return;
-            }
-            Err(e) => {
-                error!(
-                    event=?event,
-                    error=?e,
-                    "Error while parsing Sui event"
-                );
-
-                return;
-            }
-        };
-
-        self.handle_mpc_event(event, epoch_store)
     }
 
     /// Handle an MPC event.
@@ -155,7 +105,7 @@ impl DWalletMPCManager {
     ///
     /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
-    fn handle_mpc_event(&mut self, event: DWalletMPCEvent, epoch_store: &AuthorityPerEpochStore) {
+    fn handle_mpc_event(&mut self, event: DWalletMPCEvent) {
         let session_identifier = event.session_request.session_identifier;
 
         // Avoid instantiation of completed events by checking they belong to the current epoch.
@@ -241,7 +191,8 @@ impl DWalletMPCManager {
 
         let mpc_event_data = match MPCEventData::try_new(
             event.clone(),
-            epoch_store,
+            &self.access_structure,
+            &self.committee,
             &self.network_keys,
             self.next_active_committee.clone(),
             self.validators_class_groups_public_keys_and_proofs.clone(),
@@ -259,28 +210,6 @@ impl DWalletMPCManager {
 
         if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
             session.mpc_event_data = Some(mpc_event_data.clone());
-
-            // It could be that this session was pending
-            // for computation but was missing the event.
-            // In that case, move it to the right queue.
-            // In that case, move it to the right queue.
-            if let Some(index) =
-                self.sessions_pending_for_events
-                    .iter()
-                    .position(|session_pending_for_event| {
-                        session_pending_for_event.session_identifier == session.session_identifier
-                    })
-            {
-                // Safe to `unwrap()`, we just got this index.
-                let mut ready_to_advance_session_copy =
-                    self.sessions_pending_for_events.remove(index).unwrap();
-
-                ready_to_advance_session_copy.mpc_event_data = Some(mpc_event_data);
-
-                self.insert_session_into_ordered_pending_for_computation_queue(
-                    ready_to_advance_session_copy,
-                );
-            }
         } else {
             self.new_mpc_session(&session_identifier, Some(mpc_event_data));
         }
@@ -290,13 +219,10 @@ impl DWalletMPCManager {
     pub(crate) fn parse_sui_event(
         &self,
         event: DBSuiEvent,
-        epoch_store: &AuthorityPerEpochStore,
     ) -> anyhow::Result<Option<DWalletMPCEvent>> {
-        let packages_config = &epoch_store.packages_config;
-
         let session_request = if event.type_
             == DWalletSessionEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(
-                packages_config,
+                &self.packages_config,
             ) {
             dwallet_imported_key_verification_request_event_session_request(
                 deserialize_event_contents::<DWalletImportedKeyVerificationRequestEvent>(
@@ -306,7 +232,7 @@ impl DWalletMPCManager {
             )
         } else if event.type_
             == DWalletSessionEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
-                packages_config,
+                &self.packages_config,
             )
         {
             make_dwallet_user_secret_key_shares_public_request_event_session_request(
@@ -316,30 +242,35 @@ impl DWalletMPCManager {
                 )?,
             )
         } else if event.type_
-            == DWalletSessionEvent::<DWalletDKGFirstRoundRequestEvent>::type_(packages_config)
+            == DWalletSessionEvent::<DWalletDKGFirstRoundRequestEvent>::type_(&self.packages_config)
         {
             dwallet_dkg_first_party_session_request(deserialize_event_contents::<
                 DWalletDKGFirstRoundRequestEvent,
             >(&event.contents, event.pulled)?)?
         } else if event.type_
-            == DWalletSessionEvent::<DWalletDKGSecondRoundRequestEvent>::type_(packages_config)
+            == DWalletSessionEvent::<DWalletDKGSecondRoundRequestEvent>::type_(
+                &self.packages_config,
+            )
         {
             dwallet_dkg_second_party_session_request(deserialize_event_contents::<
                 DWalletDKGSecondRoundRequestEvent,
             >(&event.contents, event.pulled)?)
-        } else if event.type_ == DWalletSessionEvent::<PresignRequestEvent>::type_(packages_config)
+        } else if event.type_
+            == DWalletSessionEvent::<PresignRequestEvent>::type_(&self.packages_config)
         {
             let deserialized_event: DWalletSessionEvent<PresignRequestEvent> =
                 deserialize_event_contents(&event.contents, event.pulled)?;
 
             presign_party_session_request(deserialized_event)
-        } else if event.type_ == DWalletSessionEvent::<SignRequestEvent>::type_(packages_config) {
+        } else if event.type_
+            == DWalletSessionEvent::<SignRequestEvent>::type_(&self.packages_config)
+        {
             let deserialized_event: DWalletSessionEvent<SignRequestEvent> =
                 deserialize_event_contents(&event.contents, event.pulled)?;
 
             sign_party_session_request(&deserialized_event)
         } else if event.type_
-            == DWalletSessionEvent::<FutureSignRequestEvent>::type_(packages_config)
+            == DWalletSessionEvent::<FutureSignRequestEvent>::type_(&self.packages_config)
         {
             let deserialized_event: DWalletSessionEvent<FutureSignRequestEvent> =
                 deserialize_event_contents(&event.contents, event.pulled)?;
@@ -347,7 +278,7 @@ impl DWalletMPCManager {
             get_verify_partial_signatures_session_request(&deserialized_event)
         } else if event.type_
             == DWalletSessionEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(
-                packages_config,
+                &self.packages_config,
             )
         {
             let deserialized_event: DWalletSessionEvent<
@@ -357,7 +288,7 @@ impl DWalletMPCManager {
             network_dkg_session_request(deserialized_event, DWalletMPCNetworkKeyScheme::Secp256k1)?
         } else if event.type_
             == DWalletSessionEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
-                packages_config,
+                &self.packages_config,
             )
         {
             let deserialized_event: DWalletSessionEvent<
@@ -366,7 +297,9 @@ impl DWalletMPCManager {
 
             network_decryption_key_reconfiguration_session_request_from_event(deserialized_event)
         } else if event.type_
-            == DWalletSessionEvent::<EncryptedShareVerificationRequestEvent>::type_(packages_config)
+            == DWalletSessionEvent::<EncryptedShareVerificationRequestEvent>::type_(
+                &self.packages_config,
+            )
         {
             let deserialized_event: DWalletSessionEvent<EncryptedShareVerificationRequestEvent> =
                 deserialize_event_contents(&event.contents, event.pulled)?;
@@ -382,6 +315,58 @@ impl DWalletMPCManager {
         };
 
         Ok(Some(event))
+    }
+
+    pub(crate) fn parse_sui_events(&mut self, events: Vec<DBSuiEvent>) -> Vec<DWalletMPCEvent> {
+        events
+            .into_iter()
+            .filter_map(|event| {
+                if event.type_.address
+                    != *self.packages_config.packages.ika_dwallet_2pc_mpc_package_id
+                    || event.type_.module != SESSIONS_MANAGER_MODULE_NAME.into()
+                {
+                    error!(
+                        module=?event.type_.module,
+                        address=?event.type_.address,
+                        "received an event from a wrong SUI module - rejecting!"
+                    );
+
+                    None
+                } else {
+                    match self.parse_sui_event(event.clone()) {
+                        Ok(Some(event)) => {
+                            debug!(
+                                session_identifier=?event.session_request.session_identifier,
+                                session_type=?event.session_request.session_type,
+                                mpc_protocol=?event.session_request.request_input,
+                                mpc_round=?event.session_request.request_input,
+                                current_epoch=?self.epoch_id,
+                                "Successfully parsed a Sui event"
+                            );
+
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            debug!(
+                                event=?event,
+                                "Received an event that does not trigger the start of an MPC flow"
+                            );
+
+                            None
+                        }
+                        Err(e) => {
+                            error!(
+                                event=?event,
+                                error=?e,
+                                "Error while parsing Sui event"
+                            );
+
+                            None
+                        }
+                    }
+                }
+            })
+            .collect()
     }
 }
 
@@ -443,7 +428,7 @@ impl DWalletMPCService {
                 return Ok(vec![]);
             }
             Err(e) => {
-                return Err(IkaError::ReveiverError(e.to_string()));
+                return Err(IkaError::ReceiverError(e.to_string()));
             }
         };
 

@@ -1,9 +1,7 @@
-// Copyright (c) dWallet Labs Ltd.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module ika_dwallet_2pc_mpc::support_config;
-
-// === Imports ===
 
 use sui::vec_map::VecMap;
 
@@ -53,7 +51,6 @@ public(package) fun create(
     }
 }
 
-
 /// Validates that a curve is supported and not paused.
 ///
 /// ### Parameters
@@ -63,11 +60,11 @@ public(package) fun create(
 /// ### Aborts
 /// - `EInvalidCurve`: If the curve is not supported
 /// - `ECurvePaused`: If the curve is currently paused
-public(package) fun validate_curve(
-    self: &SupportConfig,
-    curve: u32,
-) {
-    assert!(self.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve), EInvalidCurve);
+public(package) fun validate_curve(self: &SupportConfig, curve: u32) {
+    assert!(
+        self.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve),
+        EInvalidCurve,
+    );
     assert!(!self.paused_curves.contains(&curve), ECurvePaused);
 }
 
@@ -89,9 +86,17 @@ public(package) fun validate_curve_and_signature_algorithm(
     signature_algorithm: u32,
 ) {
     self.validate_curve(curve);
-    let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
-    assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-    assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
+    let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms_to_hash_schemes[
+        &curve,
+    ];
+    assert!(
+        supported_curve_to_signature_algorithms.contains(&signature_algorithm),
+        EInvalidSignatureAlgorithm,
+    );
+    assert!(
+        !self.paused_signature_algorithms.contains(&signature_algorithm),
+        ESignatureAlgorithmPaused,
+    );
 }
 
 /// Validates that a curve, signature algorithm, and hash scheme combination is supported and not paused.
@@ -116,7 +121,11 @@ public(package) fun validate_curve_and_signature_algorithm_and_hash_scheme(
     hash_scheme: u32,
 ) {
     self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
-    let supported_hash_schemes = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve][&signature_algorithm];
+    let supported_hash_schemes = self.supported_curves_to_signature_algorithms_to_hash_schemes[
+        &curve,
+    ][
+        &signature_algorithm,
+    ];
     assert!(supported_hash_schemes.contains(&hash_scheme), EInvalidHashScheme);
     assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
 }
@@ -125,24 +134,31 @@ public(package) fun validate_signature_algorithm_not_allowed_global_presign(
     self: &SupportConfig,
     signature_algorithm: u32,
 ) {
-    assert!(!self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
+    assert!(
+        !self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm),
+        EInvalidSignatureAlgorithm,
+    );
 }
 
 public(package) fun validate_signature_algorithm_allowed_global_presign(
     self: &SupportConfig,
     signature_algorithm: u32,
 ) {
-    assert!(self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
+    assert!(
+        self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm),
+        EInvalidSignatureAlgorithm,
+    );
 }
 
 public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
     self: &mut SupportConfig,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
 ) {
-    self.supported_curves_to_signature_algorithms_to_hash_schemes = supported_curves_to_signature_algorithms_to_hash_schemes;
+    self.supported_curves_to_signature_algorithms_to_hash_schemes =
+        supported_curves_to_signature_algorithms_to_hash_schemes;
 }
 
-public(package) fun set_paused( 
+public(package) fun set_paused(
     self: &mut SupportConfig,
     paused_curves: vector<u32>,
     paused_signature_algorithms: vector<u32>,

@@ -8,8 +8,8 @@ use dwallet_mpc_centralized_party::{
     network_dkg_public_output_to_protocol_pp_inner, sample_dwallet_keypair_inner,
     verify_secp_signature_inner, verify_secret_share,
 };
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
@@ -174,5 +174,5 @@ pub fn create_sign_centralized_output(
 // There is no way to implement From<anyhow::Error> for JsErr
 // since the current From<Error> is generic, and it results in a conflict.
 fn to_js_err(e: anyhow::Error) -> JsError {
-    JsError::new(format!("{}", e).as_str())
+    JsError::new(format!("{e}").as_str())
 }

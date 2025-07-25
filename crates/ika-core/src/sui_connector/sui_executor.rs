@@ -1,25 +1,25 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
 
 use crate::dwallet_checkpoints::DWalletCheckpointStore;
-use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
+use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::system_receiver::SystemReceiver;
-use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
+use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::EpochId;
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkEncryptionKeyData, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
-    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, FUTURE_SIGN_PROTOCOL_FLAG,
-    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWalletNetworkEncryptionKeyData,
+    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
@@ -28,19 +28,23 @@ use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
-    DWalletCoordinatorInner, SystemInner, SystemInnerTrait, ADVANCE_EPOCH_FUNCTION_NAME,
-    CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
-    INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, APPEND_VECTOR_FUNCTION_NAME,
+    CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, DWalletCoordinatorInner,
+    INITIATE_ADVANCE_EPOCH_FUNCTION_NAME, INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
     REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    SystemInner, SystemInnerTrait, VECTOR_MODULE_NAME,
 };
 use itertools::Itertools;
 use move_core_types::ident_str;
+use move_core_types::language_storage::TypeTag;
 use roaring::RoaringBitmap;
 use std::collections::HashMap;
 use std::sync::Arc;
-use sui_json_rpc_types::SuiTransactionBlockResponse;
+use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_json_rpc_types::{SuiExecutionStatus, SuiTransactionBlockResponse};
 use sui_macros::fail_point_async;
+use sui_types::MOVE_STDLIB_PACKAGE_ID;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
@@ -167,7 +171,9 @@ where
             && coordinator.dwallet_network_encryption_keys.size == network_encryption_key_ids.len() as u64
             && !epoch_switch_state.calculated_protocol_pricing
         {
-            info!("Running network encryption key mid-epoch reconfiguration and Calculating protocol pricing");
+            info!(
+                "Running network encryption key mid-epoch reconfiguration and Calculating protocol pricing"
+            );
             let result = retry_with_max_elapsed_time!(
                 Self::request_mid_epoch_reconfiguration_and_calculate_protocols_pricing(
                     &self.sui_client,
@@ -379,7 +385,10 @@ where
                                 Duration::from_secs(ONE_HOUR_IN_SECONDS)
                             );
                             if response.is_err() {
-                                panic!("failed to submit dwallet checkpoint for over an hour, err: {:?}", response.err());
+                                panic!(
+                                    "failed to submit dwallet checkpoint for over an hour, err: {:?}",
+                                    response.err()
+                                );
                             }
                             info!(
                                 ?next_dwallet_checkpoint_sequence_number,
@@ -454,7 +463,10 @@ where
                             .set(next_dwallet_checkpoint_sequence_number as i64);
                         last_submitted_system_checkpoint =
                             Some(next_system_checkpoint_sequence_number);
-                        info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
+                        info!(
+                            "Sui transaction successfully executed for system_checkpoint sequence number: {}",
+                            next_system_checkpoint_sequence_number
+                        );
                     }
                 }
             }
@@ -478,18 +490,40 @@ where
 
     /// Break down the message to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn break_down_checkpoint_message(message: Vec<u8>) -> Vec<CallArg> {
-        let mut slices = Vec::new();
+    fn break_down_checkpoint_message_into_vector_arg(
+        ptb: &mut ProgrammableTransactionBuilder,
+        message: Vec<u8>,
+    ) -> DwalletMPCResult<Argument> {
         // Set to 15 because the limit is up to 16 (smaller than).
         let messages = message.chunks(15 * 1024).collect_vec();
-        let empty: &[u8] = &[];
-        // `max_checkpoint_size_bytes` is 50KB, so we split the message into 4 slices.
-        for i in 0..4 {
-            // If the chunk is missing, use an empty slice, as the transaction must receive all arguments.
-            let message = messages.get(i).unwrap_or(&empty);
-            slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
+        if messages.is_empty() {
+            return Err(DwalletMPCError::CheckpointMessageIsEmpty);
         }
-        slices
+        let vector_arg = ptb
+            .input(CallArg::Pure(bcs::to_bytes(messages.first().unwrap())?))
+            .map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!("can't serialize ptb input: {e}"))
+            })?;
+
+        messages[1..].iter().try_for_each(|message| {
+            let message_arg = ptb
+                .input(CallArg::Pure(bcs::to_bytes(*message)?))
+                .map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!(
+                        "can't serialize ptb input: {e}"
+                    ))
+                })?;
+            ptb.programmable_move_call(
+                MOVE_STDLIB_PACKAGE_ID,
+                VECTOR_MODULE_NAME.into(),
+                APPEND_VECTOR_FUNCTION_NAME.into(),
+                vec![TypeTag::U8],
+                vec![vector_arg, message_arg],
+            );
+            Ok::<(), DwalletMPCError>(())
+        })?;
+
+        Ok(vector_arg)
     }
 
     async fn request_mid_epoch_reconfiguration_and_calculate_protocols_pricing(
@@ -672,62 +706,65 @@ where
         transaction: Transaction,
         sui_client: &Arc<SuiClient<C>>,
     ) -> DwalletMPCResult<SuiTransactionBlockResponse> {
-        loop {
-            // Small delay to avoid spamming the node.
-            tokio::time::sleep(Duration::from_millis(500)).await;
-
-            // Get exclusive access to the digest of the **last** submitted transaction.
-            let mut digest_guard = notifier_tx_lock.lock().await;
-
-            match *digest_guard {
-                // ──────────────── No previous transaction → sends the given one ────────────────
-                None => {
-                    info!(
-                        transaction_digest = ?transaction.digest(),
-                        "Submitting a transaction to Sui"
-                    );
-                    let result = sui_client
-                        .execute_transaction_block_with_effects(transaction)
-                        .await?;
-                    if !result.errors.is_empty() {
-                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
-                            "{:?}",
-                            result.errors
-                        ))
-                        .into());
-                    }
-                    *digest_guard = Some(result.digest);
-                    return Ok(result);
-                }
-
-                // ──────────────── Previous transaction exists → check its status ────────────────
-                Some(prev_digest) => {
-                    match sui_client.get_events_by_tx_digest(prev_digest).await {
-                        // Not yet processed — retry in the next loop iteration.
-                        Err(_) => {
-                            info!(
-                                transaction_digest = ?prev_digest,
-                                "The last submitted transaction has not been processed yet, retrying..."
-                            );
-                            continue;
-                        }
-
-                        // Processed — we can safely submit the next one.
-                        Ok(_events) => {
-                            info!(
-                                transaction_digest = ?prev_digest,
-                                "The last submitted transaction has been processed, submitting the next one"
-                            );
-                            let result = sui_client
-                                .execute_transaction_block_with_effects(transaction)
-                                .await?;
-                            *digest_guard = Some(result.digest);
-                            return Ok(result);
-                        }
-                    }
-                }
+        let mut last_submitted_tx_digest = notifier_tx_lock.lock().await;
+        if let Some(prev_digest) = *last_submitted_tx_digest {
+            while sui_client
+                .get_events_by_tx_digest(prev_digest)
+                .await
+                .is_err()
+            {
+                info!(
+                    transaction_digest = ?prev_digest,
+                    "The last submitted transaction has not been processed yet, retrying..."
+                );
+                // Small delay to avoid spamming the node.
+                tokio::time::sleep(Duration::from_millis(500)).await;
             }
+
+            info!(
+            transaction_digest = ?prev_digest,
+            "The last submitted transaction has been processed, submitting the next one",
+                        );
         }
+
+        info!(
+            transaction_digest = ?transaction.digest(),
+            "Submitting a transaction to Sui"
+        );
+
+        let tx_response = sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        if !tx_response.errors.is_empty() {
+            return Err(IkaError::SuiClientTxFailureGeneric(
+                tx_response.digest,
+                format!("{:?}", tx_response.errors),
+            )
+            .into());
+        }
+
+        let Some(tx_effects) = tx_response.effects.clone() else {
+            return Err(IkaError::SuiClientTxFailureGeneric(
+                tx_response.digest,
+                "Transaction effects are missing".to_string(),
+            )
+            .into());
+        };
+
+        if let SuiExecutionStatus::Failure { error } = tx_effects.status() {
+            return Err(IkaError::SuiClientTxFailureGeneric(
+                tx_response.digest,
+                format!(
+                    "Transaction executed successfully, but it failed with an error: {:?}",
+                    error
+                ),
+            )
+            .into());
+        };
+
+        *last_submitted_tx_digest = Some(tx_response.digest.clone());
+        Ok(tx_response)
     }
 
     async fn process_mid_epoch(
@@ -956,28 +993,7 @@ where
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
+        merge_gas_coins(&mut ptb, &gas_coins)?;
         let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
@@ -991,8 +1007,7 @@ where
             signers_bitmap
         );
 
-        let messages = Self::break_down_checkpoint_message(message);
-        let mut args = vec![
+        let args = vec![
             CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
@@ -1005,9 +1020,8 @@ where
                 ))
             })?),
         ];
-        args.extend(messages);
 
-        let args = args
+        let mut args = args
             .into_iter()
             .map(|arg| {
                 ptb.input(arg).map_err(|e| {
@@ -1015,6 +1029,10 @@ where
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
+
+        let message_arg =
+            Self::break_down_checkpoint_message_into_vector_arg(&mut ptb, message.clone());
+        args.push(message_arg?);
 
         let gas_fee_reimbursement_sui = ptb.programmable_move_call(
             ika_dwallet_2pc_mpc_package_id,
@@ -1041,7 +1059,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(result) => Ok(result),
             Err(err) => {
-                error!(?err, "failed to submit dwallet checkpoint to consensus",);
+                error!(error=?err, "failed to submit dwallet checkpoint to sui",);
                 metrics.dwallet_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
@@ -1061,28 +1079,7 @@ where
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
+        merge_gas_coins(&mut ptb, &gas_coins)?;
         let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
@@ -1105,25 +1102,28 @@ where
                     "can't serialize `signers_bitmap`: {e}"
                 ))
             })?),
-            CallArg::Pure(bcs::to_bytes(&message).map_err(|e| {
-                IkaError::SuiConnectorSerializationError(format!(
-                    "can't serialize `signers_bitmap`: {e}"
-                ))
-            })?),
         ];
 
-        ptb.move_call(
+        let mut args = args
+            .into_iter()
+            .map(|arg| {
+                ptb.input(arg).map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!("can't serialize `arg`: {e}"))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let message_arg =
+            Self::break_down_checkpoint_message_into_vector_arg(&mut ptb, message.clone());
+        args.push(message_arg?);
+
+        ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+        );
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -1137,7 +1137,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(_) => Ok(()),
             Err(err) => {
-                error!(?err, "failed to submit a system checkpoint to consensus");
+                error!(error=?err, "failed to submit a system checkpoint to consensus");
                 metrics.system_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
@@ -1145,81 +1145,38 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use roaring::RoaringBitmap;
-    use sui_sdk::SuiClient as SuiSdkClient;
-
-    /// Test helper: assert that each expected validator index has its bit set in the output bitmap.
-    fn assert_bitmap_has_indices(bitmap: &[u8], indices: &[u32]) {
-        for &i in indices {
-            let byte = bitmap[(i / 8) as usize];
-            let bit = (byte >> (i % 8)) & 1;
-            assert_eq!(bit, 1, "Bit for validator {} should be set", i);
-        }
-        println!("{:?}", bitmap);
+/// Merge multiple gas coins into one by adding a `MergeCoins` command to the
+/// provided `ProgrammableTransactionBuilder`.
+/// If `gas_coins` has zero or one element, the function is no‑op.
+fn merge_gas_coins(
+    ptb: &mut ProgrammableTransactionBuilder,
+    gas_coins: &[sui_types::base_types::ObjectRef],
+) -> IkaResult<()> {
+    if gas_coins.len() <= 1 {
+        return Ok(());
     }
 
-    #[test]
-    fn test_calculate_signers_bitmap_various_sizes() {
-        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
+    info!("More than one gas coin was found, merging them into one gas coin.");
 
-        for &num_validators in &test_cases {
-            let mut signers = RoaringBitmap::new();
-            for i in 0..num_validators {
-                signers.insert(i);
-            }
+    let coins: IkaResult<Vec<_>> = gas_coins
+        .iter()
+        .skip(1)
+        .map(|c| {
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
+                .map_err(|e| {
+                    IkaError::SuiConnectorInternalError(format!(
+                        "error merging coin ProgrammableTransactionBuilder::input: {e}"
+                    ))
+                })
+        })
+        .collect();
 
-            let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
-            println!("Bitmap: {:?}", bitmap);
+    let coins = coins?;
 
-            // Ensure the bitmap is large enough.
-            let expected_size = (num_validators / 8) as usize;
-            assert!(
-                bitmap.len() >= expected_size,
-                "Bitmap too small for {} validators: got {}, expected at least {}",
-                num_validators,
-                bitmap.len(),
-                expected_size
-            );
+    ptb.command(sui_types::transaction::Command::MergeCoins(
+        Argument::GasCoin,
+        coins,
+    ));
 
-            // Validate that all expected bits are set
-            let indices: Vec<u32> = (0..num_validators).collect();
-            // assert_bitmap_has_indices(&bitmap, &indices);
-        }
-    }
-
-    #[test]
-    fn test_calculate_signers_bitmap_with_index_exceeding_bitmap_size() {
-        // Simulate a case where there are more validators than entries in the bitmap.
-        let num_validators = 10;
-        let mut signers = RoaringBitmap::new();
-
-        // Add the 9th index (zero-based),
-        // which is out of bounds if bitmap only accounts for 8.
-        signers.insert(9);
-
-        let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
-        println!("Bitmap: {:?}", bitmap);
-
-        // Bitmap should be large enough to include index 9.
-        // Index 9 needs 2 bytes.
-        let required_length = (9 / 8) + 1;
-        assert!(
-            bitmap.len() >= required_length,
-            "Bitmap is too small: expected at least {} bytes for validator index 9, got {}",
-            required_length,
-            bitmap.len()
-        );
-
-        // Optionally: verify that the 10th bit is set
-        let byte_index = 9 / 8;
-        let bit_position = 9 % 8;
-        assert_eq!(
-            (bitmap[byte_index] >> bit_position) & 1,
-            1,
-            "Expected bit at index 9 to be set"
-        );
-    }
+    Ok(())
 }

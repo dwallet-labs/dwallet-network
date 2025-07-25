@@ -21,7 +21,7 @@ use ika_types::{
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
 use mysten_metrics::monitored_scope;
-use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
+use prometheus::{IntCounter, Registry, register_int_counter_with_registry};
 use tap::TapFallible;
 use tracing::{info, warn};
 
@@ -77,9 +77,7 @@ impl IkaTxValidator {
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
                 | ConsensusTransactionKind::EndOfPublish(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
-                | ConsensusTransactionKind::DWalletMPCOutput(..)
-                | ConsensusTransactionKind::DWalletMPCMaliciousReport(..)
-                | ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {}
+                | ConsensusTransactionKind::DWalletMPCOutput(..) => {}
                 ConsensusTransactionKind::SystemCheckpointSignature(signature) => {
                     system_checkpoints.push(signature.as_ref());
                     params_batch.push(&signature.checkpoint_message);
@@ -236,10 +234,7 @@ impl IkaTxValidator {
 fn tx_kind_from_bytes(tx: &[u8]) -> Result<ConsensusTransactionKind, ValidationError> {
     bcs::from_bytes::<ConsensusTransaction>(tx)
         .map_err(|e| {
-            ValidationError::InvalidTransaction(format!(
-                "Failed to parse transaction bytes: {:?}",
-                e
-            ))
+            ValidationError::InvalidTransaction(format!("Failed to parse transaction bytes: {e:?}"))
         })
         .map(|tx| tx.kind)
 }

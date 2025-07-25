@@ -3,32 +3,30 @@
 
 module ika_dwallet_2pc_mpc::coordinator;
 
-// === Imports ===
-
 use ika::ika::IKA;
-use sui::{coin::Coin, dynamic_field, sui::SUI, vec_map::VecMap};
-use ika_dwallet_2pc_mpc::{
-    coordinator_inner::{
-        Self,
-        DWalletCap,
-        DWalletCoordinatorInner,
-        ImportedKeyDWalletCap,
-        ImportedKeyMessageApproval,
-        MessageApproval,
-        UnverifiedPartialUserSignatureCap,
-        UnverifiedPresignCap,
-        VerifiedPartialUserSignatureCap,
-        VerifiedPresignCap,
-    },
-    sessions_manager::SessionIdentifier,
-    pricing::PricingInfo
+use ika_common::advance_epoch_approver::AdvanceEpochApprover;
+use ika_common::protocol_cap::VerifiedProtocolCap;
+use ika_common::system_current_status_info::SystemCurrentStatusInfo;
+use ika_common::validator_cap::VerifiedValidatorOperationCap;
+use ika_dwallet_2pc_mpc::coordinator_inner::{
+    Self,
+    DWalletCap,
+    DWalletCoordinatorInner,
+    ImportedKeyDWalletCap,
+    ImportedKeyMessageApproval,
+    MessageApproval,
+    UnverifiedPartialUserSignatureCap,
+    UnverifiedPresignCap,
+    VerifiedPartialUserSignatureCap,
+    VerifiedPresignCap
 };
-use ika_system::{
-    advance_epoch_approver::AdvanceEpochApprover,
-    protocol_cap::VerifiedProtocolCap,
-    system_current_status_info::SystemCurrentStatusInfo,
-    validator_cap::VerifiedValidatorOperationCap
-};
+use ika_dwallet_2pc_mpc::pricing::PricingInfo;
+use ika_dwallet_2pc_mpc::sessions_manager::SessionIdentifier;
+use sui::coin::Coin;
+use sui::dynamic_field;
+use sui::sui::SUI;
+use sui::vec_map::VecMap;
+use ika_common::upgrade_package_approver::UpgradePackageApprover;
 
 // === Errors ===
 
@@ -48,6 +46,7 @@ public struct DWalletCoordinator has key {
     version: u64,
     package_id: ID,
     new_package_id: Option<ID>,
+    migration_epoch: Option<u64>,
 }
 
 // === Functions that can only be called by init ===
@@ -60,7 +59,7 @@ public(package) fun create(
     system_current_status_info: &SystemCurrentStatusInfo,
     pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     let dwallet_coordinator_inner = coordinator_inner::create(
         advance_epoch_approver,
@@ -74,6 +73,7 @@ public(package) fun create(
         version: VERSION,
         package_id,
         new_package_id: option::none(),
+        migration_epoch: option::none(),
     };
     dynamic_field::add(&mut self.id, VERSION, dwallet_coordinator_inner);
     transfer::share_object(self);
@@ -86,15 +86,9 @@ public fun process_checkpoint_message_by_quorum(
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
-    mut message: vector<u8>,
-    message2: vector<u8>,
-    message3: vector<u8>,
-    message4: vector<u8>,
+    message: vector<u8>,
     ctx: &mut TxContext,
 ): Coin<SUI> {
-    message.append(message2);
-    message.append(message3);
-    message.append(message4);
     let dwallet_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx)
 }
@@ -111,7 +105,12 @@ public fun request_network_encryption_key_mid_epoch_reconfiguration(
     dwallet_network_encryption_key_id: ID,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_network_encryption_key_mid_epoch_reconfiguration(dwallet_network_encryption_key_id, ctx);
+    self
+        .inner_mut()
+        .request_network_encryption_key_mid_epoch_reconfiguration(
+            dwallet_network_encryption_key_id,
+            ctx,
+        );
 }
 
 public fun advance_epoch(
@@ -130,13 +129,36 @@ public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self.inner_mut().request_dwallet_network_encryption_key_dkg(params_for_network, cap, ctx);
 }
 
+public fun process_checkpoint_message_by_cap(
+    self: &mut DWalletCoordinator,
+    message: vector<u8>,
+    cap: &VerifiedProtocolCap,
+    ctx: &mut TxContext,
+): Coin<SUI> {
+    self.inner_mut().process_checkpoint_message_by_cap(message, cap, ctx)
+}
+
+public fun set_gas_fee_reimbursement_sui_system_call_value_by_cap(
+    self: &mut DWalletCoordinator,
+    gas_fee_reimbursement_sui_system_call_value: u64,
+    cap: &VerifiedProtocolCap,
+) {
+    self.inner_mut().set_gas_fee_reimbursement_sui_system_call_value_by_cap(gas_fee_reimbursement_sui_system_call_value, cap);
+}
+
 public fun set_supported_and_pricing(
     self: &mut DWalletCoordinator,
     default_pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     cap: &VerifiedProtocolCap,
 ) {
-    self.inner_mut().set_supported_and_pricing(default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, cap);
+    self
+        .inner_mut()
+        .set_supported_and_pricing(
+            default_pricing,
+            supported_curves_to_signature_algorithms_to_hash_schemes,
+            cap,
+        );
 }
 
 public fun set_paused_curves_and_signature_algorithms(
@@ -146,7 +168,14 @@ public fun set_paused_curves_and_signature_algorithms(
     paused_hash_schemes: vector<u32>,
     cap: &VerifiedProtocolCap,
 ) {
-    self.inner_mut().set_paused_curves_and_signature_algorithms(paused_curves, paused_signature_algorithms, paused_hash_schemes, cap);
+    self
+        .inner_mut()
+        .set_paused_curves_and_signature_algorithms(
+            paused_curves,
+            paused_signature_algorithms,
+            paused_hash_schemes,
+            cap,
+        );
 }
 
 public fun request_lock_epoch_sessions(
@@ -172,11 +201,7 @@ public fun register_session_identifier(
     self.inner_mut().register_session_identifier(identifier, ctx)
 }
 
-
-public fun get_active_encryption_key(
-    self: &DWalletCoordinator,
-    address: address,
-): ID {
+public fun get_active_encryption_key(self: &DWalletCoordinator, address: address): ID {
     self.inner().get_active_encryption_key(address)
 }
 
@@ -186,15 +211,17 @@ public fun register_encryption_key(
     encryption_key: vector<u8>,
     encryption_key_signature: vector<u8>,
     signer_public_key: vector<u8>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    self.inner_mut().register_encryption_key(
-        curve,
-        encryption_key,
-        encryption_key_signature,
-        signer_public_key,
-        ctx
-    )
+    self
+        .inner_mut()
+        .register_encryption_key(
+            curve,
+            encryption_key,
+            encryption_key_signature,
+            signer_public_key,
+            ctx,
+        )
 }
 
 public fun approve_message(
@@ -202,14 +229,16 @@ public fun approve_message(
     dwallet_cap: &DWalletCap,
     signature_algorithm: u32,
     hash_scheme: u32,
-    message: vector<u8>
+    message: vector<u8>,
 ): MessageApproval {
-    self.inner().approve_message(
-        dwallet_cap,
-        signature_algorithm,
-        hash_scheme,
-        message,
-    )
+    self
+        .inner()
+        .approve_message(
+            dwallet_cap,
+            signature_algorithm,
+            hash_scheme,
+            message,
+        )
 }
 
 public fun approve_imported_key_message(
@@ -217,14 +246,16 @@ public fun approve_imported_key_message(
     imported_key_dwallet_cap: &ImportedKeyDWalletCap,
     signature_algorithm: u32,
     hash_scheme: u32,
-    message: vector<u8>
+    message: vector<u8>,
 ): ImportedKeyMessageApproval {
-    self.inner().approve_imported_key_message(
-        imported_key_dwallet_cap,
-        signature_algorithm,
-        hash_scheme,
-        message,
-    )
+    self
+        .inner()
+        .approve_imported_key_message(
+            imported_key_dwallet_cap,
+            signature_algorithm,
+            hash_scheme,
+            message,
+        )
 }
 
 public fun request_dwallet_dkg_first_round(
@@ -234,16 +265,18 @@ public fun request_dwallet_dkg_first_round(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): DWalletCap {
-    self.inner_mut().request_dwallet_dkg_first_round(
-        dwallet_network_encryption_key_id,
-        curve,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx
-    )
+    self
+        .inner_mut()
+        .request_dwallet_dkg_first_round(
+            dwallet_network_encryption_key_id,
+            curve,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun request_dwallet_dkg_second_round(
@@ -257,20 +290,22 @@ public fun request_dwallet_dkg_second_round(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_dwallet_dkg_second_round(
-        dwallet_cap,
-        centralized_public_key_share_and_proof,
-        encrypted_centralized_secret_share_and_proof,
-        encryption_key_address,
-        user_public_output,
-        singer_public_key,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx
-    )
+    self
+        .inner_mut()
+        .request_dwallet_dkg_second_round(
+            dwallet_cap,
+            centralized_public_key_share_and_proof,
+            encrypted_centralized_secret_share_and_proof,
+            encryption_key_address,
+            user_public_output,
+            singer_public_key,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun calculate_pricing_votes(
@@ -294,21 +329,23 @@ public fun request_imported_key_dwallet_verification(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): ImportedKeyDWalletCap {
-    self.inner_mut().request_imported_key_dwallet_verification(
-        dwallet_network_encryption_key_id,
-        curve,
-        centralized_party_message,
-        encrypted_centralized_secret_share_and_proof,
-        encryption_key_address,
-        user_public_output,
-        signer_public_key,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_imported_key_dwallet_verification(
+            dwallet_network_encryption_key_id,
+            curve,
+            centralized_party_message,
+            encrypted_centralized_secret_share_and_proof,
+            encryption_key_address,
+            user_public_output,
+            signer_public_key,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun request_make_dwallet_user_secret_key_shares_public(
@@ -320,14 +357,16 @@ public fun request_make_dwallet_user_secret_key_shares_public(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_make_dwallet_user_secret_key_share_public(
-        dwallet_id,
-        public_user_secret_key_shares,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_make_dwallet_user_secret_key_share_public(
+            dwallet_id,
+            public_user_secret_key_shares,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun request_re_encrypt_user_share_for(
@@ -341,16 +380,18 @@ public fun request_re_encrypt_user_share_for(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_re_encrypt_user_share_for(
-        dwallet_id,
-        destination_encryption_key_address,
-        encrypted_centralized_secret_share_and_proof,
-        source_encrypted_user_secret_key_share_id,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_re_encrypt_user_share_for(
+            dwallet_id,
+            destination_encryption_key_address,
+            encrypted_centralized_secret_share_and_proof,
+            source_encrypted_user_secret_key_share_id,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun accept_encrypted_user_share(
@@ -359,11 +400,13 @@ public fun accept_encrypted_user_share(
     encrypted_user_secret_key_share_id: ID,
     user_output_signature: vector<u8>,
 ) {
-    self.inner_mut().accept_encrypted_user_share(
-        dwallet_id,
-        encrypted_user_secret_key_share_id,
-        user_output_signature,
-    )
+    self
+        .inner_mut()
+        .accept_encrypted_user_share(
+            dwallet_id,
+            encrypted_user_secret_key_share_id,
+            user_output_signature,
+        )
 }
 
 public fun request_presign(
@@ -373,16 +416,18 @@ public fun request_presign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UnverifiedPresignCap {
-    self.inner_mut().request_presign(
-        dwallet_id,
-        signature_algorithm,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_presign(
+            dwallet_id,
+            signature_algorithm,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun request_global_presign(
@@ -393,32 +438,33 @@ public fun request_global_presign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UnverifiedPresignCap {
-    self.inner_mut().request_global_presign(
-        dwallet_network_encryption_key_id,
-        curve,
-        signature_algorithm,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_global_presign(
+            dwallet_network_encryption_key_id,
+            curve,
+            signature_algorithm,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
-public fun is_presign_valid(
-    self: &DWalletCoordinator,
-    presign_cap: &UnverifiedPresignCap,
-): bool {
-    self.inner().is_presign_valid(
-        presign_cap,
-    )
+public fun is_presign_valid(self: &DWalletCoordinator, presign_cap: &UnverifiedPresignCap): bool {
+    self
+        .inner()
+        .is_presign_valid(
+            presign_cap,
+        )
 }
 
 public fun verify_presign_cap(
     self: &mut DWalletCoordinator,
     cap: UnverifiedPresignCap,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): VerifiedPresignCap {
     self.inner_mut().verify_presign_cap(cap, ctx)
 }
@@ -431,17 +477,19 @@ public fun request_sign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_sign(
-        message_approval,
-        presign_cap,
-        message_centralized_signature,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx
-    )
+    self
+        .inner_mut()
+        .request_sign(
+            message_approval,
+            presign_cap,
+            message_centralized_signature,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun request_imported_key_sign(
@@ -452,17 +500,19 @@ public fun request_imported_key_sign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_imported_key_sign(
-        message_approval,
-        presign_cap,
-        message_centralized_signature,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx
-    )
+    self
+        .inner_mut()
+        .request_imported_key_sign(
+            message_approval,
+            presign_cap,
+            message_centralized_signature,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun request_future_sign(
@@ -475,19 +525,21 @@ public fun request_future_sign(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UnverifiedPartialUserSignatureCap {
-    self.inner_mut().request_future_sign(
-        dwallet_id,
-        presign_cap,
-        message,
-        hash_scheme,
-        message_centralized_signature,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_future_sign(
+            dwallet_id,
+            presign_cap,
+            message,
+            hash_scheme,
+            message_centralized_signature,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun is_partial_user_signature_valid(
@@ -500,12 +552,14 @@ public fun is_partial_user_signature_valid(
 public fun verify_partial_user_signature_cap(
     self: &mut DWalletCoordinator,
     cap: UnverifiedPartialUserSignatureCap,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): VerifiedPartialUserSignatureCap {
-    self.inner_mut().verify_partial_user_signature_cap(
-        cap,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .verify_partial_user_signature_cap(
+            cap,
+            ctx,
+        )
 }
 
 public fun request_sign_with_partial_user_signature(
@@ -515,18 +569,19 @@ public fun request_sign_with_partial_user_signature(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_sign_with_partial_user_signature(
-        partial_user_signature_cap,
-        message_approval,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_sign_with_partial_user_signature(
+            partial_user_signature_cap,
+            message_approval,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
-
 
 public fun request_imported_key_sign_with_partial_user_signature(
     self: &mut DWalletCoordinator,
@@ -535,16 +590,18 @@ public fun request_imported_key_sign_with_partial_user_signature(
     session_identifier: SessionIdentifier,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_imported_key_sign_with_partial_user_signature(
-        partial_user_signature_cap,
-        message_approval,
-        session_identifier,
-        payment_ika,
-        payment_sui,
-        ctx,
-    )
+    self
+        .inner_mut()
+        .request_imported_key_sign_with_partial_user_signature(
+            partial_user_signature_cap,
+            message_approval,
+            session_identifier,
+            payment_ika,
+            payment_sui,
+            ctx,
+        )
 }
 
 public fun match_partial_user_signature_with_message_approval(
@@ -552,10 +609,12 @@ public fun match_partial_user_signature_with_message_approval(
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &MessageApproval,
 ): bool {
-    self.inner().match_partial_user_signature_with_message_approval(
-        partial_user_signature_cap,
-        message_approval,
-    )
+    self
+        .inner()
+        .match_partial_user_signature_with_message_approval(
+            partial_user_signature_cap,
+            message_approval,
+        )
 }
 
 public fun match_partial_user_signature_with_imported_key_message_approval(
@@ -563,10 +622,12 @@ public fun match_partial_user_signature_with_imported_key_message_approval(
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &ImportedKeyMessageApproval,
 ): bool {
-    self.inner().match_partial_user_signature_with_imported_key_message_approval(
-        partial_user_signature_cap,
-        message_approval,
-    )
+    self
+        .inner()
+        .match_partial_user_signature_with_imported_key_message_approval(
+            partial_user_signature_cap,
+            message_approval,
+        )
 }
 
 public fun current_pricing(self: &DWalletCoordinator): PricingInfo {
@@ -575,39 +636,66 @@ public fun current_pricing(self: &DWalletCoordinator): PricingInfo {
 
 /// Fund the coordinator with SUI - this let you subsidize the protocol.
 /// IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
-public fun subsidize_coordinator_with_sui(
-    self: &mut DWalletCoordinator,
-    sui: Coin<SUI>,
-) {
+public fun subsidize_coordinator_with_sui(self: &mut DWalletCoordinator, sui: Coin<SUI>) {
     self.inner_mut().subsidize_coordinator_with_sui(sui);
 }
 
 /// Fund the coordinator with IKA - this let you subsidize the protocol.
 /// IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
-public fun subsidize_coordinator_with_ika(
-    self: &mut DWalletCoordinator,
-    ika: Coin<IKA>,
-) {
+public fun subsidize_coordinator_with_ika(self: &mut DWalletCoordinator, ika: Coin<IKA>) {
     self.inner_mut().subsidize_coordinator_with_ika(ika);
 }
 
-/// Migrate the dwallet_2pc_mpc_coordinator object to the new package id.
+public fun commit_upgrade(self: &mut DWalletCoordinator, upgrade_package_approver: &mut UpgradePackageApprover) {
+    let new_package_id = upgrade_package_approver.approve_upgrade_package_by_witness(coordinator_inner::dwallet_coordinator_witness());
+    if (self.package_id == upgrade_package_approver.old_package_id()) {
+        self.migration_epoch = option::some(upgrade_package_approver.migration_epoch());
+        self.new_package_id = option::some(new_package_id);
+    };
+}
+
+/// Try to migrate the coordinator object to the new package id using a cap.
 ///
 /// This function sets the new package id and version and can be modified in future versions
-/// to migrate changes in the `dwallet_2pc_mpc_coordinator_inner` object if needed.
-public fun migrate(
-        self: &mut DWalletCoordinator,
-) {
+/// to migrate changes in the `coordinator_inner` object if needed.
+/// This function can be called immediately after the upgrade is committed.
+public fun try_migrate_by_cap(self: &mut DWalletCoordinator, _: &VerifiedProtocolCap) {
     assert!(self.version < VERSION, EInvalidMigration);
+    assert!(self.new_package_id.is_some(), EInvalidMigration);
+    self.try_migrate_impl();
+}
 
-    // Move the old system state inner to the new version.
-    let dwallet_2pc_mpc_coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
-    dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_coordinator_inner);
+/// Try to migrate the coordinator object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `coordinator_inner` object if needed.
+/// Call this function after the migration epoch is reached.
+public fun try_migrate(self: &mut DWalletCoordinator) {
+    assert!(self.version < VERSION, EInvalidMigration);
+    assert!(self.new_package_id.is_some(), EInvalidMigration);
+    assert!(self.migration_epoch.is_some_and!(|e| self.inner_without_version_check().epoch() >= *e), EInvalidMigration);
+    self.try_migrate_impl();
+}
+
+/// Migrate the coordinator object to the new package id.
+///
+/// This function sets the new package id and version and can be modified in future versions
+/// to migrate changes in the `coordinator_inner` object if needed.
+fun try_migrate_impl(self: &mut DWalletCoordinator) {
+    // Move the old coordinator inner to the new version.
+    let coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
+    dynamic_field::add(&mut self.id, VERSION, coordinator_inner);
     self.version = VERSION;
 
-    // Set the new package id.
-    assert!(self.new_package_id.is_some(), EInvalidMigration);
     self.package_id = self.new_package_id.extract();
+    // empty the migration epoch
+    if (self.migration_epoch.is_some()) {
+        let _ = self.migration_epoch.extract();
+    };
+}
+
+public fun version(self: &DWalletCoordinator): u64 {
+    self.version
 }
 
 // === Internals ===
@@ -624,14 +712,17 @@ public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     dynamic_field::borrow(&self.id, VERSION)
 }
 
+/// Get an immutable reference to `DWalletCoordinatorInner` from the `DWalletCoordinator` without checking the version.
+fun inner_without_version_check(self: &DWalletCoordinator): &DWalletCoordinatorInner {
+    dynamic_field::borrow(&self.id, self.version)
+}
+
 // === Test Functions ===
 #[test_only]
 use ika_dwallet_2pc_mpc::sessions_manager::SessionsManager;
 
 #[test_only]
-public fun last_processed_checkpoint_sequence_number(
-    self: &DWalletCoordinator,
-): u64 {
+public fun last_processed_checkpoint_sequence_number(self: &DWalletCoordinator): u64 {
     self.inner().last_processed_checkpoint_sequence_number()
 }
 

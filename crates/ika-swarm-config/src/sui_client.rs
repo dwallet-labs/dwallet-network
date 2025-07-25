@@ -1,52 +1,51 @@
 use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
+use dwallet_mpc_types::dwallet_mpc::VersionedMPCData;
 use fastcrypto::traits::ToFromBytes;
+use ika_config::Config;
 use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::Config;
 use ika_move_packages::save_contracts_to_temp_dir;
-use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::ika_coin::IKACoin;
 use ika_types::messages_dwallet_mpc::{
-    IkaPackagesConfig, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
-    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
+    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG, IkaNetworkConfig,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
-    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, ADVANCE_EPOCH_FUNCTION_NAME,
-    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
-    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
-    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_BYTES_TABLE_VEC_FUNCTION_NAME,
+    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME, INIT_CAP_STRUCT_NAME,
+    INIT_MODULE_NAME, INITIALIZE_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
+    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, System,
+    TABLE_VEC_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use move_package::BuildConfig;
 use shared_crypto::intent::Intent;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet, Opts,
-    OptsWithGas, SuiClientCommandResult,
+    SuiClientCommandResult, SuiClientCommands, estimate_gas_budget_from_gas_cost, execute_dry_run,
+    request_tokens_from_faucet,
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
+use sui_sdk::SuiClient;
 use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse};
 use sui_sdk::rpc_types::{
     SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
-use sui_sdk::SuiClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress};
 use sui_types::coin::TreasuryCap;
 use sui_types::crypto::{SignatureScheme, SuiKeyPair};
@@ -54,13 +53,14 @@ use sui_types::move_package::UpgradeCap;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{
-    Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI,
-    TransactionKind,
+    Argument, CallArg, ObjectArg, SenderSignedData, Transaction, TransactionData,
+    TransactionDataAPI, TransactionKind,
 };
 use sui_types::{
     MOVE_STDLIB_PACKAGE_ID, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION,
     SUI_FRAMEWORK_PACKAGE_ID,
 };
+use tempfile::TempDir;
 
 const STAKED_IKA_ICON_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNjk5XzIyKSI+IDxwYXRoIGQ9Ik0wIDMwLjAwMTZDMCAxMy40MzMgMTMuNDMxNCAwIDMwIDBDMzQwLjI5NCAwIDY1MC44NTYgMCA5NjkuOTk4IDBDOTg2LjU2NyAwIDEwMDAgMTMuNDMxNCAxMDAwIDMwQzEwMDAgMzQwLjI5NCAxMDAwIDY1MC44NTYgMTAwMCA5NjkuOTk4QzEwMDAgOTg2LjU2NyA5ODYuNTY5IDEwMDAgOTcwIDEwMDBDNjU5LjcwNiAxMDAwIDM0OS4xNDQgMTAwMCAzMC4wMDE2IDEwMDBDMTMuNDMzIDEwMDAgMCA5ODYuNTY5IDAgOTcwQzAgNjU5LjcwNiAwIDM0OS4xNDQgMCAzMC4wMDE2WiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDUyIDE5NEM0ODMuNjggMTk0IDUxNS4zNiAxOTQgNTQ4IDE5NEM1NDggMjA0LjU2IDU0OCAyMTUuMTIgNTQ4IDIyNkM1NjkuNDUgMjI2IDU5MC45IDIyNiA2MTMgMjI2QzYxMyAyMzYuNTYgNjEzIDI0Ny4xMiA2MTMgMjU4QzYyMy41NiAyNTggNjM0LjEyIDI1OCA2NDUgMjU4QzY0NSAyNjguNTYgNjQ1IDI3OS4xMiA2NDUgMjkwQzY1NS41NiAyOTAgNjY2LjEyIDI5MCA2NzcgMjkwQzY3NyAzMDAuODkgNjc3IDMxMS43OCA2NzcgMzIzQzY4Ny44OSAzMjMgNjk4Ljc4IDMyMyA3MTAgMzIzQzcxMCA0MjkuMjYgNzEwIDUzNS41MiA3MTAgNjQ1QzczMS4xMiA2NDUgNzUyLjI0IDY0NSA3NzQgNjQ1Qzc3NCA2MDIuNDMgNzc0IDU1OS44NiA3NzQgNTE2Qzc5NS40NSA1MTYgODE2LjkgNTE2IDgzOSA1MTZDODM5IDU2OS4xMyA4MzkgNjIyLjI2IDgzOSA2NzdDODE3LjU1IDY3NyA3OTYuMSA2NzcgNzc0IDY3N0M3NzQgNjg3Ljg5IDc3NCA2OTguNzggNzc0IDcxMEM3NTIuODggNzEwIDczMS43NiA3MTAgNzEwIDcxMEM3MTAgNjk5LjExIDcxMCA2ODguMjIgNzEwIDY3N0M2OTkuMTEgNjc3IDY4OC4yMiA2NzcgNjc3IDY3N0M2NzcgNjY2LjQ0IDY3NyA2NTUuODggNjc3IDY0NUM2NjYuNDQgNjQ1IDY1NS44OCA2NDUgNjQ1IDY0NUM2NDUgNTM4Ljc0IDY0NSA0MzIuNDggNjQ1IDMyM0M2MzQuNDQgMzIzIDYyMy44OCAzMjMgNjEzIDMyM0M2MTMgMzEyLjExIDYxMyAzMDEuMjIgNjEzIDI5MEM1OTEuNTUgMjkwIDU3MC4xIDI5MCA1NDggMjkwQzU0OCAyNzkuNDQgNTQ4IDI2OC44OCA1NDggMjU4QzUxNi4zMiAyNTggNDg0LjY0IDI1OCA0NTIgMjU4QzQ1MiAyNjguNTYgNDUyIDI3OS4xMiA0NTIgMjkwQzQzMC41NSAyOTAgNDA5LjEgMjkwIDM4NyAyOTBDMzg3IDMwMC44OSAzODcgMzExLjc4IDM4NyAzMjNDMzc2LjQ0IDMyMyAzNjUuODggMzIzIDM1NSAzMjNDMzU1IDQyOS4yNiAzNTUgNTM1LjUyIDM1NSA2NDVDMzQ0LjQ0IDY0NSAzMzMuODggNjQ1IDMyMyA2NDVDMzIzIDY1NS41NiAzMjMgNjY2LjEyIDMyMyA2NzdDMzEyLjExIDY3NyAzMDEuMjIgNjc3IDI5MCA2NzdDMjkwIDY4Ny44OSAyOTAgNjk4Ljc4IDI5MCA3MTBDMjY4Ljg4IDcxMCAyNDcuNzYgNzEwIDIyNiA3MTBDMjI2IDY5OS4xMSAyMjYgNjg4LjIyIDIyNiA2NzdDMjA0LjU1IDY3NyAxODMuMSA2NzcgMTYxIDY3N0MxNjEgNjIzLjg3IDE2MSA1NzAuNzQgMTYxIDUxNkMxODIuNDUgNTE2IDIwMy45IDUxNiAyMjYgNTE2QzIyNiA1NTguNTcgMjI2IDYwMS4xNCAyMjYgNjQ1QzI0Ny4xMiA2NDUgMjY4LjI0IDY0NSAyOTAgNjQ1QzI5MCA1MzguNzQgMjkwIDQzMi40OCAyOTAgMzIzQzMwMC44OSAzMjMgMzExLjc4IDMyMyAzMjMgMzIzQzMyMyAzMTIuMTEgMzIzIDMwMS4yMiAzMjMgMjkwQzMzMy41NiAyOTAgMzQ0LjEyIDI5MCAzNTUgMjkwQzM1NSAyNzkuNDQgMzU1IDI2OC44OCAzNTUgMjU4QzM2NS41NiAyNTggMzc2LjEyIDI1OCAzODcgMjU4QzM4NyAyNDcuNDQgMzg3IDIzNi44OCAzODcgMjI2QzQwOC40NSAyMjYgNDI5LjkgMjI2IDQ1MiAyMjZDNDUyIDIxNS40NCA0NTIgMjA0Ljg4IDQ1MiAxOTRaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDg0IDU0OEM0OTQuNTYgNTQ4IDUwNS4xMiA1NDggNTE2IDU0OEM1MTYgNTU4Ljg5IDUxNiA1NjkuNzggNTE2IDU4MUM1MzcuNDUgNTgxIDU1OC45IDU4MSA1ODEgNTgxQzU4MSA2MDIuMTIgNTgxIDYyMy4yNCA1ODEgNjQ1QzU5MS41NiA2NDUgNjAyLjEyIDY0NSA2MTMgNjQ1QzYxMyA2ODcuNTcgNjEzIDczMC4xNCA2MTMgNzc0QzU5MS41NSA3NzQgNTcwLjEgNzc0IDU0OCA3NzRDNTQ4IDczMS40MyA1NDggNjg4Ljg2IDU0OCA2NDVDNTM3LjQ0IDY0NSA1MjYuODggNjQ1IDUxNiA2NDVDNTE2IDYzNC40NCA1MTYgNjIzLjg4IDUxNiA2MTNDNTA1LjQ0IDYxMyA0OTQuODggNjEzIDQ4NCA2MTNDNDg0IDYyMy41NiA0ODQgNjM0LjEyIDQ4NCA2NDVDNDczLjQ0IDY0NSA0NjIuODggNjQ1IDQ1MiA2NDVDNDUyIDY4Ny41NyA0NTIgNzMwLjE0IDQ1MiA3NzRDNDMwLjU1IDc3NCA0MDkuMSA3NzQgMzg3IDc3NEMzODcgNzMxLjQzIDM4NyA2ODguODYgMzg3IDY0NUMzOTcuNTYgNjQ1IDQwOC4xMiA2NDUgNDE5IDY0NUM0MTkgNjIzLjg4IDQxOSA2MDIuNzYgNDE5IDU4MUM0NDAuNDUgNTgxIDQ2MS45IDU4MSA0ODQgNTgxQzQ4NCA1NzAuMTEgNDg0IDU1OS4yMiA0ODQgNTQ4WiIgZmlsbD0id2hpdGUiLz4gPHBhdGggZD0iTTQ1MiAzODdDNDgzLjY4IDM4NyA1MTUuMzYgMzg3IDU0OCAzODdDNTQ4IDQxOS4wMSA1NDggNDUxLjAyIDU0OCA0ODRDNTM3LjQ0IDQ4NCA1MjYuODggNDg0IDUxNiA0ODRDNTE2IDQ3My40NCA1MTYgNDYyLjg4IDUxNiA0NTJDNTA1LjQ0IDQ1MiA0OTQuODggNDUyIDQ4NCA0NTJDNDg0IDQ0MS4xMSA0ODQgNDMwLjIyIDQ4NCA0MTlDNDczLjQ0IDQxOSA0NjIuODggNDE5IDQ1MiA0MTlDNDUyIDQwOC40NCA0NTIgMzk3Ljg4IDQ1MiAzODdaIiBmaWxsPSJ3aGl0ZSIvPiA8L2c+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9ImNsaXAwXzY5OV8yMiI+IDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IndoaXRlIi8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+";
 const DWALLET_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzAzXzMwKSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNMjQxIDM0MUM0MTIuMjcgMzQxIDU4My41NCAzNDEgNzYwIDM0MUM3NjAgNDc5LjI3IDc2MCA2MTcuNTQgNzYwIDc2MEM1ODguNzMgNzYwIDQxNy40NiA3NjAgMjQxIDc2MEMyNDEgNjIxLjczIDI0MSA0ODMuNDYgMjQxIDM0MVoiIGZpbGw9IiNFRTJCNUIiLz4gPHBhdGggZD0iTTIwMCAyMDBDMjEzLjUzIDIwMCAyMjcuMDYgMjAwIDI0MSAyMDBDMjQxIDIzMyAyNDEgMjY2IDI0MSAzMDBDNDEyLjI3IDMwMCA1ODMuNTQgMzAwIDc2MCAzMDBDNzYwIDI2NyA3NjAgMjM0IDc2MCAyMDBDNzczLjUzIDIwMCA3ODcuMDYgMjAwIDgwMSAyMDBDODAxIDM4NC44IDgwMSA1NjkuNiA4MDEgNzYwQzc4Ny40NyA3NjAgNzczLjk0IDc2MCA3NjAgNzYwQzc2MCA2MjEuNzMgNzYwIDQ4My40NiA3NjAgMzQxQzU4OC43MyAzNDEgNDE3LjQ2IDM0MSAyNDEgMzQxQzI0MSA0NzkuMjcgMjQxIDYxNy41NCAyNDEgNzYwQzIyNy40NyA3NjAgMjEzLjk0IDc2MCAyMDAgNzYwQzIwMCA1NzUuMiAyMDAgMzkwLjQgMjAwIDIwMFoiIGZpbGw9IndoaXRlIi8+IDxwYXRoIGQ9Ik0yNDEgNzYwQzQxMi4yNyA3NjAgNTgzLjU0IDc2MCA3NjAgNzYwQzc2MCA3NzMuNTMgNzYwIDc4Ny4wNiA3NjAgODAxQzU4OC43MyA4MDEgNDE3LjQ2IDgwMSAyNDEgODAxQzI0MSA3ODcuNDcgMjQxIDc3My45NCAyNDEgNzYwWiIgZmlsbD0id2hpdGUiLz4gPHBhdGggZD0iTTY1MCAyMjBDNjYzLjUzIDIyMCA2NzcuMDYgMjIwIDY5MSAyMjBDNjkxIDIzMy41MyA2OTEgMjQ3LjA2IDY5MSAyNjFDNjc3LjQ3IDI2MSA2NjMuOTQgMjYxIDY1MCAyNjFDNjUwIDI0Ny40NyA2NTAgMjMzLjk0IDY1MCAyMjBaIiBmaWxsPSJ3aGl0ZSIvPiA8L2c+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9ImNsaXAwXzcwM18zMCI+IDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IndoaXRlIi8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+";
@@ -69,6 +69,34 @@ const UNVERIFIED_PRESIGN_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2Zy
 const VERIFIED_PRESIGN_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzA5XzMyKSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNTYwIDU4MEM1NzMuMiA1ODAgNTg2LjQgNTgwIDYwMCA1ODBDNjAwIDU5My4yIDYwMCA2MDYuNCA2MDAgNjIwQzU4Ni44IDYyMCA1NzMuNiA2MjAgNTYwIDYyMEM1NjAgNjA2LjggNTYwIDU5My42IDU2MCA1ODBaIiBmaWxsPSIjRUUyQjVCIi8+IDxwYXRoIGQ9Ik00MDAgNTgwQzQxMy4yIDU4MCA0MjYuNCA1ODAgNDQwIDU4MEM0NDAgNTkzLjIgNDQwIDYwNi40IDQ0MCA2MjBDNDI2LjggNjIwIDQxMy42IDYyMCA0MDAgNjIwQzQwMCA2MDYuOCA0MDAgNTkzLjYgNDAwIDU4MFoiIGZpbGw9IiNFRTJCNUIiLz4gPHBhdGggZD0iTTUyMCA1NDBDNTMzLjIgNTQwIDU0Ni40IDU0MCA1NjAgNTQwQzU2MCA1NTMuMiA1NjAgNTY2LjQgNTYwIDU4MEM1NDYuOCA1ODAgNTMzLjYgNTgwIDUyMCA1ODBDNTIwIDU2Ni44IDUyMCA1NTMuNiA1MjAgNTQwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDQwIDU0MEM0NTMuMiA1NDAgNDY2LjQgNTQwIDQ4MCA1NDBDNDgwIDU1My4yIDQ4MCA1NjYuNCA0ODAgNTgwQzQ2Ni44IDU4MCA0NTMuNiA1ODAgNDQwIDU4MEM0NDAgNTY2LjggNDQwIDU1My42IDQ0MCA1NDBaIiBmaWxsPSIjRUUyQjVCIi8+IDxwYXRoIGQ9Ik00ODAgNTAwQzQ5My4yIDUwMCA1MDYuNCA1MDAgNTIwIDUwMEM1MjAgNTEzLjIgNTIwIDUyNi40IDUyMCA1NDBDNTA2LjggNTQwIDQ5My42IDU0MCA0ODAgNTQwQzQ4MCA1MjYuOCA0ODAgNTEzLjYgNDgwIDUwMFoiIGZpbGw9IiNFRTJCNUIiLz4gPC9nPiA8cGF0aCBkPSJNNzMyLjM4OSA0MDhDNzUyLjM5MSA0MDggNzcyLjM5MiA0MDggNzkzIDQwOEM3OTMgNDI4LjMyNiA3OTMgNDQ4LjY1MyA3OTMgNDY5LjU5NUM3ODMuMTI5IDQ2OS41OTUgNzczLjI1OCA0NjkuNTk1IDc2My4wODggNDY5LjU5NUM3NjMuMDg4IDQ3OS43NTggNzYzLjA4OCA0ODkuOTIxIDc2My4wODggNTAwLjM5MkM3NTMuMjE3IDUwMC4zOTIgNzQzLjM0NiA1MDAuMzkyIDczMy4xNzYgNTAwLjM5MkM3MzMuMTc2IDUxMC41NTUgNzMzLjE3NiA1MjAuNzE4IDczMy4xNzYgNTMxLjE5QzcyMi43ODYgNTMxLjE5IDcxMi4zOTUgNTMxLjE5IDcwMS42OSA1MzEuMTlDNzAxLjY5IDU0MS4zNTMgNzAxLjY5IDU1MS41MTYgNzAxLjY5IDU2MS45ODdDNjkxLjgxOSA1NjEuOTg3IDY4MS45NDggNTYxLjk4NyA2NzEuNzc4IDU2MS45ODdDNjcxLjc3OCA1ODIuMDQ2IDY3MS43NzggNjAyLjEwNSA2NzEuNzc4IDYyMi43NzFDNjYyLjE2NyA2MjIuNzcxIDY1Mi41NTYgNjIyLjc3MSA2NDIuNjUzIDYyMi43NzFDNjQyLjY1MyA2MzIuNjY3IDY0Mi42NTMgNjQyLjU2MyA2NDIuNjUzIDY1Mi43NThDNjMyLjUyMyA2NTMuMDI2IDYyMi4zOTIgNjUzLjI5MyA2MTEuOTU0IDY1My41NjlDNjExLjY5NCA2NzQuNDMgNjExLjQzNSA2OTUuMjkxIDYxMS4xNjcgNzE2Ljc4NEM2MDEuMDM2IDcxNi43ODQgNTkwLjkwNiA3MTYuNzg0IDU4MC40NjggNzE2Ljc4NEM1ODAuNDc3IDcxOS4xNzUgNTgwLjQ4NiA3MjEuNTY1IDU4MC40OTYgNzI0LjAyOEM1ODAuNTAyIDcyNi40NDggNTgwLjUwNyA3MjguODY4IDU4MC41MTEgNzMxLjI4OEM1ODAuNTE1IDczMi45MTkgNTgwLjUyIDczNC41NSA1ODAuNTI3IDczNi4xODFDNTgwLjU4OCA3NTAuODE0IDU4MC4xMjUgNzY1LjM1NiA1NzkuNjgxIDc4MEM1NTguMzggNzgwIDUzNy4wOCA3ODAgNTE1LjEzNCA3ODBDNTE1LjEzNCA3NjkuNTY5IDUxNS4xMzQgNzU5LjEzOSA1MTUuMTM0IDc0OC4zOTJDNTA1LjI2MyA3NDguMzkyIDQ5NS4zOTIgNzQ4LjM5MiA0ODUuMjIyIDc0OC4zOTJDNDg1LjIyMiA3MzcuOTYyIDQ4NS4yMjIgNzI3LjUzMSA0ODUuMjIyIDcxNi43ODRDNDc1LjYxMSA3MTYuNzg0IDQ2NiA3MTYuNzg0IDQ1Ni4wOTcgNzE2Ljc4NEM0NTYuMDk3IDcwNi4zNTQgNDU2LjA5NyA2OTUuOTIzIDQ1Ni4wOTcgNjg1LjE3NkM0NDUuOTY3IDY4NS4xNzYgNDM1LjgzNiA2ODUuMTc2IDQyNS4zOTggNjg1LjE3NkM0MjUuMzk4IDY3NC43NDYgNDI1LjM5OCA2NjQuMzE1IDQyNS4zOTggNjUzLjU2OUM0MTUuMjY3IDY1My41NjkgNDA1LjEzNyA2NTMuNTY5IDM5NC42OTkgNjUzLjU2OUMzOTQuNjk5IDY0My40MDUgMzk0LjY5OSA2MzMuMjQyIDM5NC42OTkgNjIyLjc3MUMzODQuNTY4IDYyMi43NzEgMzc0LjQzOCA2MjIuNzcxIDM2NCA2MjIuNzcxQzM2NCA2MDIuNDQ1IDM2NCA1ODIuMTE5IDM2NCA1NjEuMTc2QzM4NC41MjEgNTYxLjE3NiA0MDUuMDQyIDU2MS4xNzYgNDI2LjE4NSA1NjEuMTc2QzQyNi4xODUgNTcxLjM0IDQyNi4xODUgNTgxLjUwMyA0MjYuMTg1IDU5MS45NzRDNDM2LjA1NiA1OTEuOTc0IDQ0NS45MjcgNTkxLjk3NCA0NTYuMDk3IDU5MS45NzRDNDU2LjA5NyA2MDIuMTM3IDQ1Ni4wOTcgNjEyLjMgNDU2LjA5NyA2MjIuNzcxQzQ2Ni4yMjggNjIyLjc3MSA0NzYuMzU5IDYyMi43NzEgNDg2Ljc5NiA2MjIuNzcxQzQ4Ni43OTYgNjMyLjY2NyA0ODYuNzk2IDY0Mi41NjMgNDg2Ljc5NiA2NTIuNzU4QzQ5Ni42NjcgNjUyLjc1OCA1MDYuNTM4IDY1Mi43NTggNTE2LjcwOCA2NTIuNzU4QzUxNi43MDggNjYzLjQ1NiA1MTYuNzA4IDY3NC4xNTQgNTE2LjcwOCA2ODUuMTc2QzUyNy4zNTggNjg1LjE3NiA1MzguMDA5IDY4NS4xNzYgNTQ4Ljk4MiA2ODUuMTc2QzU0OC45ODIgNjY0LjU4MyA1NDguOTgyIDY0My45ODkgNTQ4Ljk4MiA2MjIuNzcxQzU1OS4zNzIgNjIyLjc3MSA1NjkuNzYzIDYyMi43NzEgNTgwLjQ2OCA2MjIuNzcxQzU4MC40NjggNjAyLjQ0NSA1ODAuNDY4IDU4Mi4xMTkgNTgwLjQ2OCA1NjEuMTc2QzU5MC4zMzkgNTYxLjE3NiA2MDAuMjEgNTYxLjE3NiA2MTAuMzggNTYxLjE3NkM2MTAuMzggNTUxLjI4MSA2MTAuMzggNTQxLjM4NSA2MTAuMzggNTMxLjE5QzYyMC41MTEgNTMxLjE5IDYzMC42NDEgNTMxLjE5IDY0MS4wNzkgNTMxLjE5QzY0MS4wNzkgNTIwLjQ5MiA2NDEuMDc5IDUwOS43OTMgNjQxLjA3OSA0OTguNzcxQzY1MS4yMSA0OTguNzcxIDY2MS4zNCA0OTguNzcxIDY3MS43NzggNDk4Ljc3MUM2NzEuNzc4IDQ4OC44NzYgNjcxLjc3OCA0NzguOTggNjcxLjc3OCA0NjguNzg0QzY4MS45MDkgNDY4Ljc4NCA2OTIuMDM5IDQ2OC43ODQgNzAyLjQ3NyA0NjguNzg0QzcwMi40NzcgNDU4Ljg4OSA3MDIuNDc3IDQ0OC45OTMgNzAyLjQ3NyA0MzguNzk3QzcxMi4zNDggNDM4Ljc5NyA3MjIuMjE5IDQzOC43OTcgNzMyLjM4OSA0MzguNzk3QzczMi4zODkgNDI4LjYzNCA3MzIuMzg5IDQxOC40NzEgNzMyLjM4OSA0MDhaIiBmaWxsPSIjRkVGRUZFIi8+IDxwYXRoIGQ9Ik0yNzMuMTkzIDIyMUMzNDAuOTUzIDIyMSA0MDguNzE0IDIyMSA0NzguNTI3IDIyMUM0NzguNTI3IDIzMS40MTEgNDc4LjUyNyAyNDEuODIxIDQ3OC41MjcgMjUyLjU0N0M0ODguNjUyIDI1Mi41NDcgNDk4Ljc3NyAyNTIuNTQ3IDUwOS4yMDkgMjUyLjU0N0M1MDkuMjA5IDI2My4yMjUgNTA5LjIwOSAyNzMuOTAyIDUwOS4yMDkgMjg0LjkwM0M1MTkuMDc1IDI4NC45MDMgNTI4Ljk0IDI4NC45MDMgNTM5LjEwNSAyODQuOTAzQzUzOS4xMDUgMzA0LjY1NiA1MzkuMTA1IDMyNC40MSA1MzkuMTA1IDM0NC43NjJDNTQ4Ljk3IDM0NC43NjIgNTU4LjgzNiAzNDQuNzYyIDU2OSAzNDQuNzYyQzU2OSAzNjUuODUgNTY5IDM4Ni45MzggNTY5IDQwOC42NjVDNTU4Ljg3NSA0MDguNjY1IDU0OC43NSA0MDguNjY1IDUzOC4zMTggNDA4LjY2NUM1MzguMzE4IDM5OC4yNTQgNTM4LjMxOCAzODcuODQ0IDUzOC4zMTggMzc3LjExOEM1MjguNDUyIDM3Ny4xMTggNTE4LjU4NyAzNzcuMTE4IDUwOC40MjMgMzc3LjExOEM1MDguNDIzIDM2Ni43MDcgNTA4LjQyMyAzNTYuMjk3IDUwOC40MjMgMzQ1LjU3MUM0OTguMjk3IDM0NS41NzEgNDg4LjE3MiAzNDUuNTcxIDQ3Ny43NCAzNDUuNTcxQzQ3Ny43NCAzMzYuMjI4IDQ3Ny43NCAzMjYuODg1IDQ3Ny43NCAzMTcuMjU5QzQ3NC41MTcgMzE3LjI3MyA0NzQuNTE3IDMxNy4yNzMgNDcxLjIyOCAzMTcuMjg4QzQ2OS4xNTYgMzE3LjI5NCA0NjcuMDgzIDMxNy4yOTkgNDY1LjAxMSAzMTcuMzA0QzQ2My41NjYgMzE3LjMwOCA0NjIuMTIyIDMxNy4zMTMgNDYwLjY3NyAzMTcuMzJDNDU4LjYwNSAzMTcuMzMgNDU2LjUzMyAzMTcuMzM1IDQ1NC40NjIgMzE3LjMzOEM0NTMuNDg3IDMxNy4zNDQgNDUzLjQ4NyAzMTcuMzQ0IDQ1Mi40OTIgMzE3LjM1MUM0NTAuOTQzIDMxNy4zNTEgNDQ5LjM5NCAzMTcuMzA5IDQ0Ny44NDUgMzE3LjI1OUM0NDcuMDU4IDMxNi40NSA0NDcuMDU4IDMxNi40NSA0NDYuOTU0IDMxNC4zNzFDNDQ2Ljk3NCAzMDQuNzggNDQ2LjU0NyAyNjIuMTYyIDQ0Ni45NTQgMjUyLjU0N0MzOTguOTI1IDI1Mi41NDcgMzUxLjc4NyAyNTIuNTQ3IDMwMi4zMDIgMjUyLjU0N0MzMDIuMzAyIDI2Mi45NTggMzAyLjMwMiAzMDYuNTMzIDMwMi4zMDIgMzE3LjI1OUMyOTEuOTE3IDMxNy4yNTkgMjk0LjE5OSAzMTcuMjU5IDI4My41IDMxNy4yNTlDMjgzLjUgMzQ3LjE1NiAyODMuNSAzNzcuMDUzIDI4My41IDQwNy44NTZDMzAyLjk3MSA0MDcuODU2IDMwOS43NzYgNDA3Ljg1NiAzMjkuODM3IDQwNy44NTZDMzI5LjgzNyA0MTkuMDY3IDMyOS44MzcgNDU3Ljc4MSAzMjkuODM3IDQ2OS4zMzJDMzIwLjc1IDQ2OS4zMzIgMzExLjY2NCA0NjkuMzMyIDMwMi4zMDIgNDY5LjMzMkMzMDIuMzAyIDQ3OC40MDggMzAyLjMwMiA0OTAuNzIgMzAyLjMwMiA1MDAuMDcxQzI5Mi4xNzcgNTAwLjA3MSAyODIuMDUyIDUwMC4wNzEgMjcxLjYyIDUwMC4wNzFDMjcxLjYyIDUyMC4wOTEgMjcxLjYyIDUwOS4zNzMgMjcxLjYyIDUzMEMyNjEuMjM1IDUzMCAyNTAuODUgNTMwIDI0MC4xNTEgNTMwQzI0MC4xNTEgNTIwLjEyMyAyNDAuMTUxIDUxMC4yNDcgMjQwLjE1MSA1MDAuMDcxQzIzMC4wMjYgNTAwLjA3MSAyMTkuOTAxIDUwMC4wNzEgMjA5LjQ2OSA1MDAuMDcxQzIwOS40NjkgNDg5LjkyNyAyMDkuNDY5IDQ3OS43ODMgMjA5LjQ2OSA0NjkuMzMyQzE5OS4wODQgNDY5LjMzMiAxOTMuMTk5IDQ2OS4zMzIgMTgyLjUgNDY5LjMzMkMxODIuNSA0NDkuMDQ1IDE4Mi41IDQyOC43NTggMTgyLjUgNDA3Ljg1NkMxOTIuODg1IDQwNy44NTYgMjEwLjgwMSA0MDcuODU2IDIyMS41IDQwNy44NTZDMjIxLjUgMzY3LjI4MiAyMjEuNSAzNTkuMDYzIDIyMS41IDMxNy4yNTlDMjMxLjg4NSAzMTcuMjU5IDIzMC4yMzggMzE3LjI1OSAyNDAuOTM4IDMxNy4yNTlDMjQwLjkzOCAzMDYuNTgyIDI0MC45MzggMjYzLjU0OCAyNDAuOTM4IDI1Mi41NDdDMjUxLjU4MiAyNTIuNTQ3IDI2Mi4yMjYgMjUyLjU0NyAyNzMuMTkzIDI1Mi41NDdDMjczLjE5MyAyNDIuMTM3IDI3My4xOTMgMjMxLjcyNiAyNzMuMTkzIDIyMVoiIGZpbGw9IiNGRUZFRkUiLz4gPGRlZnM+IDxjbGlwUGF0aCBpZD0iY2xpcDBfNzA5XzMyIj4gPHJlY3Qgd2lkdGg9IjEwMDAiIGhlaWdodD0iMTAwMCIgZmlsbD0id2hpdGUiLz4gPC9jbGlwUGF0aD4gPC9kZWZzPiA8L3N2Zz4=";
 const UNVERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzA0XzQ4KSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNjgwIDY4MEM2OTMuMiA2ODAgNzA2LjQgNjgwIDcyMCA2ODBDNzIwIDY5My4yIDcyMCA3MDYuNCA3MjAgNzIwQzcwNi44IDcyMCA2OTMuNiA3MjAgNjgwIDcyMEM2ODAgNzA2LjggNjgwIDY5My42IDY4MCA2ODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMjgwIDY4MEMyOTMuMiA2ODAgMzA2LjQgNjgwIDMyMCA2ODBDMzIwIDY5My4yIDMyMCA3MDYuNCAzMjAgNzIwQzMwNi44IDcyMCAyOTMuNiA3MjAgMjgwIDcyMEMyODAgNzA2LjggMjgwIDY5My42IDI4MCA2ODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjQwIDY0MEM2NTMuMiA2NDAgNjY2LjQgNjQwIDY4MCA2NDBDNjgwIDY1My4yIDY4MCA2NjYuNCA2ODAgNjgwQzY2Ni44IDY4MCA2NTMuNiA2ODAgNjQwIDY4MEM2NDAgNjY2LjggNjQwIDY1My42IDY0MCA2NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzIwIDY0MEMzMzMuMiA2NDAgMzQ2LjQgNjQwIDM2MCA2NDBDMzYwIDY1My4yIDM2MCA2NjYuNCAzNjAgNjgwQzM0Ni44IDY4MCAzMzMuNiA2ODAgMzIwIDY4MEMzMjAgNjY2LjggMzIwIDY1My42IDMyMCA2NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjAwIDYwMEM2MTMuMiA2MDAgNjI2LjQgNjAwIDY0MCA2MDBDNjQwIDYxMy4yIDY0MCA2MjYuNCA2NDAgNjQwQzYyNi44IDY0MCA2MTMuNiA2NDAgNjAwIDY0MEM2MDAgNjI2LjggNjAwIDYxMy42IDYwMCA2MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzYwIDYwMEMzNzMuMiA2MDAgMzg2LjQgNjAwIDQwMCA2MDBDNDAwIDYxMy4yIDQwMCA2MjYuNCA0MDAgNjQwQzM4Ni44IDY0MCAzNzMuNiA2NDAgMzYwIDY0MEMzNjAgNjI2LjggMzYwIDYxMy42IDM2MCA2MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTYwIDU2MEM1NzMuMiA1NjAgNTg2LjQgNTYwIDYwMCA1NjBDNjAwIDU3My4yIDYwMCA1ODYuNCA2MDAgNjAwQzU4Ni44IDYwMCA1NzMuNiA2MDAgNTYwIDYwMEM1NjAgNTg2LjggNTYwIDU3My42IDU2MCA1NjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDAwIDU2MEM0MTMuMiA1NjAgNDI2LjQgNTYwIDQ0MCA1NjBDNDQwIDU3My4yIDQ0MCA1ODYuNCA0NDAgNjAwQzQyNi44IDYwMCA0MTMuNiA2MDAgNDAwIDYwMEM0MDAgNTg2LjggNDAwIDU3My42IDQwMCA1NjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTIwIDUyMEM1MzMuMiA1MjAgNTQ2LjQgNTIwIDU2MCA1MjBDNTYwIDUzMy4yIDU2MCA1NDYuNCA1NjAgNTYwQzU0Ni44IDU2MCA1MzMuNiA1NjAgNTIwIDU2MEM1MjAgNTQ2LjggNTIwIDUzMy42IDUyMCA1MjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDQwIDUyMEM0NTMuMiA1MjAgNDY2LjQgNTIwIDQ4MCA1MjBDNDgwIDUzMy4yIDQ4MCA1NDYuNCA0ODAgNTYwQzQ2Ni44IDU2MCA0NTMuNiA1NjAgNDQwIDU2MEM0NDAgNTQ2LjggNDQwIDUzMy42IDQ0MCA1MjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDgwIDQ4MEM0OTMuMiA0ODAgNTA2LjQgNDgwIDUyMCA0ODBDNTIwIDQ5My4yIDUyMCA1MDYuNCA1MjAgNTIwQzUwNi44IDUyMCA0OTMuNiA1MjAgNDgwIDUyMEM0ODAgNTA2LjggNDgwIDQ5My42IDQ4MCA0ODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTIwIDQ0MEM1MzMuMiA0NDAgNTQ2LjQgNDQwIDU2MCA0NDBDNTYwIDQ1My4yIDU2MCA0NjYuNCA1NjAgNDgwQzU0Ni44IDQ4MCA1MzMuNiA0ODAgNTIwIDQ4MEM1MjAgNDY2LjggNTIwIDQ1My42IDUyMCA0NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDQwIDQ0MEM0NTMuMiA0NDAgNDY2LjQgNDQwIDQ4MCA0NDBDNDgwIDQ1My4yIDQ4MCA0NjYuNCA0ODAgNDgwQzQ2Ni44IDQ4MCA0NTMuNiA0ODAgNDQwIDQ4MEM0NDAgNDY2LjggNDQwIDQ1My42IDQ0MCA0NDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNTYwIDQwMEM1NzMuMiA0MDAgNTg2LjQgNDAwIDYwMCA0MDBDNjAwIDQxMy4yIDYwMCA0MjYuNCA2MDAgNDQwQzU4Ni44IDQ0MCA1NzMuNiA0NDAgNTYwIDQ0MEM1NjAgNDI2LjggNTYwIDQxMy42IDU2MCA0MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDAwIDQwMEM0MTMuMiA0MDAgNDI2LjQgNDAwIDQ0MCA0MDBDNDQwIDQxMy4yIDQ0MCA0MjYuNCA0NDAgNDQwQzQyNi44IDQ0MCA0MTMuNiA0NDAgNDAwIDQ0MEM0MDAgNDI2LjggNDAwIDQxMy42IDQwMCA0MDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjAwIDM2MEM2MTMuMiAzNjAgNjI2LjQgMzYwIDY0MCAzNjBDNjQwIDM3My4yIDY0MCAzODYuNCA2NDAgNDAwQzYyNi44IDQwMCA2MTMuNiA0MDAgNjAwIDQwMEM2MDAgMzg2LjggNjAwIDM3My42IDYwMCAzNjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzYwIDM2MEMzNzMuMiAzNjAgMzg2LjQgMzYwIDQwMCAzNjBDNDAwIDM3My4yIDQwMCAzODYuNCA0MDAgNDAwQzM4Ni44IDQwMCAzNzMuNiA0MDAgMzYwIDQwMEMzNjAgMzg2LjggMzYwIDM3My42IDM2MCAzNjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjQwIDMyMEM2NTMuMiAzMjAgNjY2LjQgMzIwIDY4MCAzMjBDNjgwIDMzMy4yIDY4MCAzNDYuNCA2ODAgMzYwQzY2Ni44IDM2MCA2NTMuNiAzNjAgNjQwIDM2MEM2NDAgMzQ2LjggNjQwIDMzMy42IDY0MCAzMjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMzIwIDMyMEMzMzMuMiAzMjAgMzQ2LjQgMzIwIDM2MCAzMjBDMzYwIDMzMy4yIDM2MCAzNDYuNCAzNjAgMzYwQzM0Ni44IDM2MCAzMzMuNiAzNjAgMzIwIDM2MEMzMjAgMzQ2LjggMzIwIDMzMy42IDMyMCAzMjBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNjgwIDI4MEM2OTMuMiAyODAgNzA2LjQgMjgwIDcyMCAyODBDNzIwIDI5My4yIDcyMCAzMDYuNCA3MjAgMzIwQzcwNi44IDMyMCA2OTMuNiAzMjAgNjgwIDMyMEM2ODAgMzA2LjggNjgwIDI5My42IDY4MCAyODBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNMjgwIDI4MEMyOTMuMiAyODAgMzA2LjQgMjgwIDMyMCAyODBDMzIwIDI5My4yIDMyMCAzMDYuNCAzMjAgMzIwQzMwNi44IDMyMCAyOTMuNiAzMjAgMjgwIDMyMEMyODAgMzA2LjggMjgwIDI5My42IDI4MCAyODBaIiBmaWxsPSJ3aGl0ZSIvPiA8L2c+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9ImNsaXAwXzcwNF80OCI+IDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IndoaXRlIi8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+";
 const VERIFIED_PARTIAL_USER_SIGNATURE_CAP_IMAGE_URL: &str = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiIGZpbGw9Im5vbmUiPiA8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfNzA0XzM3KSI+IDxwYXRoIGQ9Ik0wIDBDMzMwIDAgNjYwIDAgMTAwMCAwQzEwMDAgMzMwIDEwMDAgNjYwIDEwMDAgMTAwMEM2NzAgMTAwMCAzNDAgMTAwMCAwIDEwMDBDMCA2NzAgMCAzNDAgMCAwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNMTIwIDM0MEMzNzAuOCAzNDAgNjIxLjYgMzQwIDg4MCAzNDBDODgwIDM1My4yIDg4MCAzNjYuNCA4ODAgMzgwQzg2Ni44IDM4MCA4NTMuNiAzODAgODQwIDM4MEM4NDAgMzkzLjIgODQwIDQwNi40IDg0MCA0MjBDODI2LjggNDIwIDgxMy42IDQyMCA4MDAgNDIwQzgwMCA0MzMuMiA4MDAgNDQ2LjQgODAwIDQ2MEM3ODYuOCA0NjAgNzczLjYgNDYwIDc2MCA0NjBDNzYwIDQ3My4yIDc2MCA0ODYuNCA3NjAgNTAwQzc0Ni44IDUwMCA3MzMuNiA1MDAgNzIwIDUwMEM3MjAgNTEzLjIgNzIwIDUyNi40IDcyMCA1NDBDNzA2LjggNTQwIDY5My42IDU0MCA2ODAgNTQwQzY4MCA1NTMuMiA2ODAgNTY2LjQgNjgwIDU4MEM2NjYuOCA1ODAgNjUzLjYgNTgwIDY0MCA1ODBDNjQwIDU5My4yIDY0MCA2MDYuNCA2NDAgNjIwQzYyNi44IDYyMCA2MTMuNiA2MjAgNjAwIDYyMEM2MDAgNjMzLjIgNjAwIDY0Ni40IDYwMCA2NjBDNTg2LjggNjYwIDU3My42IDY2MCA1NjAgNjYwQzU2MCA2NzMuMiA1NjAgNjg2LjQgNTYwIDcwMEM1NDYuOCA3MDAgNTMzLjYgNzAwIDUyMCA3MDBDNTIwIDcxMy4yIDUyMCA3MjYuNCA1MjAgNzQwQzUwNi44IDc0MCA0OTMuNiA3NDAgNDgwIDc0MEM0ODAgNzI2LjggNDgwIDcxMy42IDQ4MCA3MDBDNDY2LjggNzAwIDQ1My42IDcwMCA0NDAgNzAwQzQ0MCA2ODYuOCA0NDAgNjczLjYgNDQwIDY2MEM0MjYuOCA2NjAgNDEzLjYgNjYwIDQwMCA2NjBDNDAwIDY0Ni44IDQwMCA2MzMuNiA0MDAgNjIwQzM4Ni44IDYyMCAzNzMuNiA2MjAgMzYwIDYyMEMzNjAgNjA2LjggMzYwIDU5My42IDM2MCA1ODBDMzQ2LjggNTgwIDMzMy42IDU4MCAzMjAgNTgwQzMyMCA1NjYuOCAzMjAgNTUzLjYgMzIwIDU0MEMzMDYuOCA1NDAgMjkzLjYgNTQwIDI4MCA1NDBDMjgwIDUyNi44IDI4MCA1MTMuNiAyODAgNTAwQzI2Ni44IDUwMCAyNTMuNiA1MDAgMjQwIDUwMEMyNDAgNDg2LjggMjQwIDQ3My42IDI0MCA0NjBDMjI2LjggNDYwIDIxMy42IDQ2MCAyMDAgNDYwQzIwMCA0NDYuOCAyMDAgNDMzLjYgMjAwIDQyMEMxODYuOCA0MjAgMTczLjYgNDIwIDE2MCA0MjBDMTYwIDQwNi44IDE2MCAzOTMuNiAxNjAgMzgwQzE0Ni44IDM4MCAxMzMuNiAzODAgMTIwIDM4MEMxMjAgMzY2LjggMTIwIDM1My42IDEyMCAzNDBaIiBmaWxsPSJ3aGl0ZSIvPiA8cGF0aCBkPSJNNDgwIDU0MEM0OTMuMiA1NDAgNTA2LjQgNTQwIDUyMCA1NDBDNTIwIDU1My4yIDUyMCA1NjYuNCA1MjAgNTgwQzUzMy4yIDU4MCA1NDYuNCA1ODAgNTYwIDU4MEM1NjAgNTkzLjIgNTYwIDYwNi40IDU2MCA2MjBDNTczLjIgNjIwIDU4Ni40IDYyMCA2MDAgNjIwQzYwMCA2MzMuMiA2MDAgNjQ2LjQgNjAwIDY2MEM1ODYuOCA2NjAgNTczLjYgNjYwIDU2MCA2NjBDNTYwIDY3My4yIDU2MCA2ODYuNCA1NjAgNzAwQzU0Ni44IDcwMCA1MzMuNiA3MDAgNTIwIDcwMEM1MjAgNzEzLjIgNTIwIDcyNi40IDUyMCA3NDBDNTA2LjggNzQwIDQ5My42IDc0MCA0ODAgNzQwQzQ4MCA3MjYuOCA0ODAgNzEzLjYgNDgwIDcwMEM0NjYuOCA3MDAgNDUzLjYgNzAwIDQ0MCA3MDBDNDQwIDY4Ni44IDQ0MCA2NzMuNiA0NDAgNjYwQzQyNi44IDY2MCA0MTMuNiA2NjAgNDAwIDY2MEM0MDAgNjQ2LjggNDAwIDYzMy42IDQwMCA2MjBDNDEzLjIgNjIwIDQyNi40IDYyMCA0NDAgNjIwQzQ0MCA2MDYuOCA0NDAgNTkzLjYgNDQwIDU4MEM0NTMuMiA1ODAgNDY2LjQgNTgwIDQ4MCA1ODBDNDgwIDU2Ni44IDQ4MCA1NTMuNiA0ODAgNTQwWiIgZmlsbD0id2hpdGUiLz4gPHBhdGggZD0iTTU2MCA1ODBDNTczLjIgNTgwIDU4Ni40IDU4MCA2MDAgNTgwQzYwMCA1OTMuMiA2MDAgNjA2LjQgNjAwIDYyMEM1ODYuOCA2MjAgNTczLjYgNjIwIDU2MCA2MjBDNTYwIDYwNi44IDU2MCA1OTMuNiA1NjAgNTgwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDAwIDU4MEM0MTMuMiA1ODAgNDI2LjQgNTgwIDQ0MCA1ODBDNDQwIDU5My4yIDQ0MCA2MDYuNCA0NDAgNjIwQzQyNi44IDYyMCA0MTMuNiA2MjAgNDAwIDYyMEM0MDAgNjA2LjggNDAwIDU5My42IDQwMCA1ODBaIiBmaWxsPSIjRUUyQjVCIi8+IDxwYXRoIGQ9Ik01MjAgNTQwQzUzMy4yIDU0MCA1NDYuNCA1NDAgNTYwIDU0MEM1NjAgNTUzLjIgNTYwIDU2Ni40IDU2MCA1ODBDNTQ2LjggNTgwIDUzMy42IDU4MCA1MjAgNTgwQzUyMCA1NjYuOCA1MjAgNTUzLjYgNTIwIDU0MFoiIGZpbGw9IiNFRTJCNUIiLz4gPHBhdGggZD0iTTQ0MCA1NDBDNDUzLjIgNTQwIDQ2Ni40IDU0MCA0ODAgNTQwQzQ4MCA1NTMuMiA0ODAgNTY2LjQgNDgwIDU4MEM0NjYuOCA1ODAgNDUzLjYgNTgwIDQ0MCA1ODBDNDQwIDU2Ni44IDQ0MCA1NTMuNiA0NDAgNTQwWiIgZmlsbD0iI0VFMkI1QiIvPiA8cGF0aCBkPSJNNDgwIDUwMEM0OTMuMiA1MDAgNTA2LjQgNTAwIDUyMCA1MDBDNTIwIDUxMy4yIDUyMCA1MjYuNCA1MjAgNTQwQzUwNi44IDU0MCA0OTMuNiA1NDAgNDgwIDU0MEM0ODAgNTI2LjggNDgwIDUxMy42IDQ4MCA1MDBaIiBmaWxsPSIjRUUyQjVCIi8+IDwvZz4gPGRlZnM+IDxjbGlwUGF0aCBpZD0iY2xpcDBfNzA0XzM3Ij4gPHJlY3Qgd2lkdGg9IjEwMDAiIGhlaWdodD0iMTAwMCIgZmlsbD0id2hpdGUiLz4gPC9jbGlwUGF0aD4gPC9kZWZzPiA8L3N2Zz4=";
+
+pub struct ContractPaths {
+    pub current_working_dir: PathBuf,
+    pub contracts_dir: TempDir,
+    pub ika_contract_path: PathBuf,
+    pub ika_common_contract_path: PathBuf,
+    pub ika_system_contract_path: PathBuf,
+    pub ika_dwallet_2pc_mpc_contract_path: PathBuf,
+}
+
+pub fn setup_contract_paths() -> Result<ContractPaths, anyhow::Error> {
+    let current_working_dir = std::env::current_dir()?;
+    let contracts_dir = save_contracts_to_temp_dir()?;
+    let contracts_path = contracts_dir.path();
+    let ika_contract_path = contracts_path.join("ika");
+    let ika_common_contract_path = contracts_path.join("ika_common");
+    let ika_system_contract_path = contracts_path.join("ika_system");
+    let ika_dwallet_2pc_mpc_contract_path = contracts_path.join("ika_dwallet_2pc_mpc");
+
+    Ok(ContractPaths {
+        current_working_dir,
+        contracts_dir,
+        ika_contract_path,
+        ika_common_contract_path,
+        ika_system_contract_path,
+        ika_dwallet_2pc_mpc_contract_path,
+    })
+}
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -165,38 +193,43 @@ pub async fn init_ika_on_sui(
                 Err(e)
             }
         })?;
-    let current_working_dir = std::env::current_dir()?;
-    let contracts_dir = save_contracts_to_temp_dir()?;
-    let contracts_path = contracts_dir.path();
-    let ika_contract_path = contracts_path.join("ika");
-    let ika_common_contract_path = contracts_path.join("ika_common");
-    let ika_system_contract_path = contracts_path.join("ika_system");
-    let ika_dwallet_2pc_mpc_contract_path = contracts_path.join("ika_dwallet_2pc_mpc");
+    let contract_paths = setup_contract_paths()?;
 
     let (ika_package_id, treasury_cap_id, ika_package_upgrade_cap_id) =
-        publish_ika_package_to_sui(&mut context, ika_contract_path).await?;
+        publish_ika_package_to_sui(&mut context, contract_paths.ika_contract_path).await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
+    println!(
+        "Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}"
+    );
 
-    let (ika_common_package_id, ika_common_package_upgrade_cap_id) =
-        publish_ika_common_package_to_sui(&mut context, ika_common_contract_path).await?;
+    let (ika_common_package_id, system_object_cap_id, ika_common_package_upgrade_cap_id) =
+        publish_ika_common_package_to_sui(&mut context, contract_paths.ika_common_contract_path)
+            .await?;
 
     println!("Package `ika_common` published: ika_common_package_id: {ika_common_package_id}");
 
     let (ika_system_package_id, init_cap_id, ika_system_package_upgrade_cap_id) =
-        publish_ika_system_package_to_sui(&mut context, ika_system_contract_path).await?;
+        publish_ika_system_package_to_sui(&mut context, contract_paths.ika_system_contract_path)
+            .await?;
 
-    println!("Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}");
+    println!(
+        "Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}"
+    );
 
     let (
         ika_dwallet_2pc_mpc_package_id,
         ika_dwallet_2pc_mpc_init_id,
         ika_dwallet_2pc_mpc_package_upgrade_cap_id,
-    ) = publish_ika_dwallet_2pc_mpc_package_to_sui(&mut context, ika_dwallet_2pc_mpc_contract_path)
-        .await?;
+    ) = publish_ika_dwallet_2pc_mpc_package_to_sui(
+        &mut context,
+        contract_paths.ika_dwallet_2pc_mpc_contract_path,
+    )
+    .await?;
 
-    println!("Package `ika_dwallet_2pc_mpc` published: ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id} ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}");
+    println!(
+        "Package `ika_dwallet_2pc_mpc` published: ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id} ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}"
+    );
 
     let ika_supply_id = minted_ika(publisher_address, client.clone(), ika_package_id).await?;
 
@@ -206,8 +239,10 @@ pub async fn init_ika_on_sui(
         publisher_address,
         &mut context,
         client.clone(),
+        ika_common_package_id,
         ika_system_package_id,
         init_cap_id,
+        system_object_cap_id,
         ika_package_upgrade_cap_id,
         ika_system_package_upgrade_cap_id,
         treasury_cap_id,
@@ -215,7 +250,9 @@ pub async fn init_ika_on_sui(
     )
     .await?;
 
-    println!("Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}");
+    println!(
+        "Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}"
+    );
 
     ika_system_set_witness_approving_advance_epoch(
         publisher_address,
@@ -256,7 +293,6 @@ pub async fn init_ika_on_sui(
         let (validator_id, validator_cap_id) = request_add_validator_candidate(
             validator_address,
             &mut context,
-            client.clone(),
             &validator_initialization_metadata,
             ika_system_package_id,
             ika_common_package_id,
@@ -266,7 +302,9 @@ pub async fn init_ika_on_sui(
         .await?;
         validator_ids.push(validator_id);
         validator_cap_ids.push(validator_cap_id);
-        println!("Running `system::request_add_validator_candidate` done for validator {validator_address}");
+        println!(
+            "Running `system::request_add_validator_candidate` done for validator {validator_address}"
+        );
     }
 
     stake_ika(
@@ -330,15 +368,16 @@ pub async fn init_ika_on_sui(
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    let ika_config = IkaPackagesConfig {
+    let ika_config = IkaNetworkConfig::new(
         ika_package_id,
         ika_common_package_id,
         ika_dwallet_2pc_mpc_package_id,
         ika_system_package_id,
         ika_system_object_id,
         ika_dwallet_coordinator_object_id,
-    };
-    std::env::set_current_dir(current_working_dir)?;
+    );
+
+    std::env::set_current_dir(contract_paths.current_working_dir)?;
     let mut file = File::create("ika_config.json")?;
     let json = serde_json::to_string_pretty(&ika_config)?;
     file.write_all(json.as_bytes())?;
@@ -754,6 +793,15 @@ pub async fn ika_system_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
+    if response.errors.is_empty() {
+        println!("Transaction executed successfully.");
+    } else {
+        panic!(
+            "Errors occurred during transaction execution: {:?}",
+            response.errors
+        );
+    }
+
     let dwallet_2pc_mpc_coordinator_type = StructTag {
         address: ika_dwallet_2pc_mpc_package_id.into(),
         module: DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
@@ -838,9 +886,9 @@ pub async fn ika_system_set_witness_approving_advance_epoch(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             witness_type_arg,
             false_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -911,8 +959,8 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             ika_common_package_upgrade_cap_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -923,8 +971,8 @@ pub async fn ika_system_add_upgrade_cap_by_cap(
         vec![],
         vec![
             ika_system_arg,
-            protocol_cap_arg,
             ika_dwallet_2pc_mpc_package_upgrade_cap_arg,
+            protocol_cap_arg,
         ],
     );
 
@@ -946,8 +994,10 @@ pub async fn init_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
+    ika_common_package_id: ObjectID,
     ika_system_package_id: ObjectID,
     init_cap_id: ObjectID,
+    system_object_cap_id: ObjectID,
     ika_package_upgrade_cap_id: ObjectID,
     ika_system_package_upgrade_cap_id: ObjectID,
     treasury_cap_id: ObjectID,
@@ -958,6 +1008,10 @@ pub async fn init_initialize(
     let init_cap_ref = client
         .transaction_builder()
         .get_object_ref(init_cap_id)
+        .await?;
+    let system_object_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(system_object_cap_id)
         .await?;
     let ika_package_upgrade_cap_ref = client
         .transaction_builder()
@@ -979,6 +1033,7 @@ pub async fn init_initialize(
         vec![],
         vec![
             CallArg::Object(ObjectArg::ImmOrOwnedObject(init_cap_ref)),
+            CallArg::Object(ObjectArg::ImmOrOwnedObject(system_object_cap_ref)),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(ika_package_upgrade_cap_ref)),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(
                 ika_system_package_upgrade_cap_ref,
@@ -1029,7 +1084,7 @@ pub async fn init_initialize(
         .unwrap();
 
     let protocol_cap_type = StructTag {
-        address: ika_system_package_id.into(),
+        address: ika_common_package_id.into(),
         module: PROTOCOL_CAP_MODULE_NAME.into(),
         name: PROTOCOL_CAP_STRUCT_NAME.into(),
         type_params: vec![],
@@ -1194,7 +1249,6 @@ pub async fn minted_ika(
 async fn request_add_validator_candidate(
     validator_address: SuiAddress,
     context: &mut WalletContext,
-    client: SuiClient,
     validator_initialization_metadata: &ValidatorInfo,
     ika_system_package_id: ObjectID,
     ika_common_package_id: ObjectID,
@@ -1203,16 +1257,9 @@ async fn request_add_validator_candidate(
 ) -> Result<(ObjectID, ObjectID), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    let class_groups_pubkey_and_proof_obj_ref = create_class_groups_public_key_and_proof_object(
-        validator_address,
-        context,
-        &client,
-        ika_common_package_id,
-        validator_initialization_metadata
-            .class_groups_public_key_and_proof
-            .clone(),
-    )
-    .await?;
+    let mpc_data = validator_initialization_metadata.mpc_data.clone();
+
+    let mpc_data_table_vec = store_mcp_data_in_table_vec(&mut ptb, mpc_data)?;
 
     let name = ptb.input(CallArg::Pure(bcs::to_bytes(
         validator_initialization_metadata.name.as_str(),
@@ -1246,10 +1293,6 @@ async fn request_add_validator_candidate(
             .to_vec(),
     )?))?;
 
-    let class_groups_pubkey_and_proof_obj_ref = ptb.input(CallArg::Object(
-        ObjectArg::ImmOrOwnedObject(class_groups_pubkey_and_proof_obj_ref),
-    ))?;
-
     let proof_of_possession = ptb.input(CallArg::Pure(bcs::to_bytes(
         &validator_initialization_metadata
             .proof_of_possession
@@ -1273,15 +1316,15 @@ async fn request_add_validator_candidate(
         &validator_initialization_metadata.commission_rate,
     )?))?;
 
-    let metadata = ptb.command(Command::move_call(
+    let metadata = ptb.programmable_move_call(
         ika_system_package_id,
         VALIDATOR_METADATA_MODULE_NAME.into(),
         NEW_VALIDATOR_METADATA_FUNCTION_NAME.into(),
         vec![],
         vec![name, empty_str, empty_str],
-    ));
+    );
 
-    ptb.command(Command::move_call(
+    let validator_caps = ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
         REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME.into(),
@@ -1292,7 +1335,7 @@ async fn request_add_validator_candidate(
             protocol_public_key,
             network_public_key,
             consensus_public_key,
-            class_groups_pubkey_and_proof_obj_ref,
+            mpc_data_table_vec,
             proof_of_possession,
             network_address,
             p2p_address,
@@ -1300,14 +1343,17 @@ async fn request_add_validator_candidate(
             commission_rate,
             metadata,
         ],
-    ));
+    );
 
+    let Argument::Result(validator_caps_index) = validator_caps else {
+        panic!("Failed to get validator caps index");
+    };
     ptb.transfer_args(
         validator_address,
         vec![
-            Argument::NestedResult(1, 0),
-            Argument::NestedResult(1, 1),
-            Argument::NestedResult(1, 2),
+            Argument::NestedResult(validator_caps_index, 0),
+            Argument::NestedResult(validator_caps_index, 1),
+            Argument::NestedResult(validator_caps_index, 2),
         ],
     );
 
@@ -1318,7 +1364,7 @@ async fn request_add_validator_candidate(
     let object_changes = response.object_changes.unwrap();
 
     let validator_cap_type = StructTag {
-        address: ika_system_package_id.into(),
+        address: ika_common_package_id.into(),
         module: VALIDATOR_CAP_MODULE_NAME.into(),
         name: VALIDATOR_CAP_STRUCT_NAME.into(),
         type_params: vec![],
@@ -1466,12 +1512,34 @@ pub async fn publish_ika_system_package_to_sui(
 pub async fn publish_ika_common_package_to_sui(
     context: &mut WalletContext,
     contract_path: PathBuf,
-) -> Result<(ObjectID, ObjectID), anyhow::Error> {
+) -> Result<(ObjectID, ObjectID, ObjectID), anyhow::Error> {
     let object_changes = publish_package_to_sui(context, contract_path).await?;
+
     let ika_common_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Published { package_id, .. } => Some(*package_id),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    let system_object_cap_type = StructTag {
+        address: ika_common_package_id.into(),
+        module: ident_str!("system_object_cap").into(),
+        name: ident_str!("SystemObjectCap").into(),
+        type_params: vec![],
+    };
+
+    let system_object_cap_id = *object_changes
+        .iter()
+        .filter_map(|o| match o {
+            ObjectChange::Created {
+                object_id,
+                object_type,
+                ..
+            } if system_object_cap_type == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()
@@ -1492,165 +1560,47 @@ pub async fn publish_ika_common_package_to_sui(
         .first()
         .unwrap();
 
-    Ok((ika_common_package_id, ika_common_package_upgrade_cap_id))
+    Ok((
+        ika_common_package_id,
+        system_object_cap_id,
+        ika_common_package_upgrade_cap_id,
+    ))
 }
 
-async fn create_class_groups_public_key_and_proof_builder_object(
-    publisher_address: SuiAddress,
-    context: &mut WalletContext,
-    client: &SuiClient,
-    ika_common_package_id: ObjectID,
-) -> anyhow::Result<ObjectRef> {
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    ptb.move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
+fn store_mcp_data_in_table_vec(
+    ptb: &mut ProgrammableTransactionBuilder,
+    mpc_data: VersionedMPCData,
+) -> anyhow::Result<Argument> {
+    let table_arg = ptb.programmable_move_call(
+        SUI_FRAMEWORK_PACKAGE_ID,
+        TABLE_VEC_MODULE_NAME.into(),
+        CREATE_BYTES_TABLE_VEC_FUNCTION_NAME.into(),
+        vec![TypeTag::Vector(Box::new(TypeTag::U8))],
         vec![],
-        vec![],
-    )?;
-    ptb.transfer_arg(publisher_address, Argument::Result(0));
-    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
+    );
 
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
+    let mpc_data: Box<VersionedMPCData> = Box::new(mpc_data);
+    let mpc_data_bytes = bcs::to_bytes(&mpc_data)?;
 
-    let object_changes = response.object_changes.unwrap();
+    let ten_kb = 10 * 1024;
+    let mut i = 0;
 
-    let builder_id = *object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
-                == *object_type =>
-            {
-                Some(*object_id)
-            }
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap();
+    while i < mpc_data_bytes.len() {
+        let max_len = std::cmp::min(mpc_data_bytes.len(), i + ten_kb);
+        let slice = mpc_data_bytes[i..max_len].to_vec();
+        let slice = ptb.input(CallArg::Pure(bcs::to_bytes(&slice)?))?;
+        i += ten_kb;
 
-    let builder_ref = client
-        .transaction_builder()
-        .get_object_ref(builder_id)
-        .await?;
-
-    Ok(builder_ref)
-}
-
-async fn create_class_groups_public_key_and_proof_object(
-    publisher_address: SuiAddress,
-    context: &mut WalletContext,
-    client: &SuiClient,
-    ika_common_package_id: ObjectID,
-    class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
-) -> anyhow::Result<ObjectRef> {
-    let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
-        publisher_address,
-        context,
-        client,
-        ika_common_package_id,
-    )
-    .await?;
-
-    let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
-        Box::new(class_groups_public_key_and_proof_bytes);
-
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_common_package_id,
-        (0, 3),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
-    let builder_object_ref = client
-        .transaction_builder()
-        .get_object_ref(builder_object_ref.0)
-        .await?;
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    ptb.move_call(
-        ika_common_package_id,
-        CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-        FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
-        vec![],
-        vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(
-            builder_object_ref,
-        ))],
-    )?;
-    ptb.transfer_arg(publisher_address, Argument::Result(0));
-    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
-
-    let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-
-    let object_changes = response
-        .object_changes
-        .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-
-    let obj_id = *object_changes
-        .iter()
-        .filter_map(|o| match o {
-            ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
-                == *object_type =>
-            {
-                Some(*object_id)
-            }
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap();
-
-    let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
-
-    Ok(pubkey_and_proof_obj_ref)
-}
-
-async fn add_public_keys_and_proofs_with_rng(
-    publisher_address: SuiAddress,
-    context: &mut WalletContext,
-    client: &SuiClient,
-    ika_system_package_id: ObjectID,
-    range: (u8, u8),
-    cg_builder_object_id: ObjectID,
-    class_groups_public_key_and_proof: &ClassGroupsEncryptionKeyAndProof,
-) -> anyhow::Result<()> {
-    let mut first_ptb = ProgrammableTransactionBuilder::new();
-    let builder_object_ref = client
-        .transaction_builder()
-        .get_object_ref(cg_builder_object_id)
-        .await?;
-    for i in range.0..range.1 {
-        let pubkey_and_proof = bcs::to_bytes(&class_groups_public_key_and_proof[i as usize])?;
-        let proof_builder = first_ptb.obj(ObjectArg::ImmOrOwnedObject(builder_object_ref))?;
-        let first_proof_bytes_half = first_ptb.pure(pubkey_and_proof[0..10_000].to_vec())?;
-        let second_proof_bytes_half = first_ptb.pure(pubkey_and_proof[10_000..].to_vec())?;
-        first_ptb.programmable_move_call(
-            ika_system_package_id,
-            CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
-            ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
-            vec![],
-            vec![
-                proof_builder,
-                // Sui limits the size of a single call argument to 16KB.
-                first_proof_bytes_half,
-                second_proof_bytes_half,
-            ],
+        ptb.programmable_move_call(
+            SUI_FRAMEWORK_PACKAGE_ID,
+            TABLE_VEC_MODULE_NAME.into(),
+            PUSH_BACK_TO_TABLE_VEC_FUNCTION_NAME.into(),
+            vec![TypeTag::Vector(Box::new(TypeTag::U8))],
+            vec![table_arg, slice],
         );
     }
-    let tx_kind = TransactionKind::ProgrammableTransaction(first_ptb.finish());
-    execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-    Ok(())
+
+    Ok(table_arg)
 }
 
 pub async fn publish_ika_package_to_sui(
@@ -1704,19 +1654,33 @@ async fn publish_package_to_sui(
     context: &mut WalletContext,
     package_path: PathBuf,
 ) -> Result<Vec<ObjectChange>, anyhow::Error> {
-    let result = sui::client_commands::SuiClientCommands::Publish {
+    let result = SuiClientCommands::Publish {
         package_path,
-        build_config: Default::default(),
-        opts: OptsWithGas {
-            gas: None,
-            rest: Opts {
-                gas_budget: None,
-                dry_run: false,
-                dev_inspect: false,
-                serialize_unsigned_transaction: false,
-                serialize_signed_transaction: false,
-            },
+        build_config: BuildConfig {
+            dev_mode: false,
+            test_mode: false,
+            generate_docs: false,
+            save_disassembly: false,
+            install_dir: None,
+            force_recompilation: false,
+            lock_file: None,
+            fetch_deps_only: false,
+            skip_fetch_latest_git_deps: false,
+            default_flavor: None,
+            default_edition: None,
+            deps_as_root: false,
+            silence_warnings: false,
+            warnings_are_errors: true,
+            json_errors: false,
+            additional_named_addresses: Default::default(),
+            lint_flag: Default::default(),
+            modes: vec![],
+            implicit_dependencies: Default::default(),
+            force_lock_file: false,
         },
+        payment: Default::default(),
+        gas_data: Default::default(),
+        processing: Default::default(),
         skip_dependency_verification: false,
         verify_deps: false,
         with_unpublished_dependencies: false,
@@ -1731,24 +1695,27 @@ async fn publish_package_to_sui(
     Ok(object_changes)
 }
 
+const DEFAULT_GAS_BUDGET: u64 = 5_000_000_000; // 5 SUI
+
 pub(crate) async fn create_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
+    gas_payment: Vec<ObjectRef>,
 ) -> Result<Transaction, anyhow::Error> {
     let gas_price = context.get_reference_gas_price().await?;
 
-    let client = context.get_client().await?;
-
     //let gas_budget = max_gas_budget(&client).await?;
-    let gas_budget =
-        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
+    // let gas_budget =
+    //     estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, gas_payment.clone(), None).await?;
 
-    let tx_data = client
-        .transaction_builder()
-        .tx_data(signer, tx_kind, gas_budget, gas_price, gas_payment, None)
-        .await?;
+    let tx_data = TransactionData::new_with_gas_coins(
+        tx_kind,
+        signer,
+        gas_payment,
+        DEFAULT_GAS_BUDGET,
+        gas_price,
+    );
 
     let signature = context.config.keystore.sign_secure(
         &tx_data.sender(),
@@ -1766,8 +1733,17 @@ pub(crate) async fn execute_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
+    gas_payment: Vec<ObjectRef>,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let gas_payment = if gas_payment.is_empty() {
+        let Some(gas_ref) = context.get_one_gas_object_owned_by_address(signer).await? else {
+            panic!("No gas object found in the wallet context.");
+        };
+
+        vec![gas_ref]
+    } else {
+        gas_payment
+    };
     let transaction = create_sui_transaction(signer, tx_kind, context, gas_payment).await?;
 
     let response = context
@@ -1776,12 +1752,13 @@ pub(crate) async fn execute_sui_transaction(
     Ok(response)
 }
 
+#[allow(dead_code)]
 pub async fn estimate_gas_budget(
     context: &mut WalletContext,
     signer: SuiAddress,
     kind: TransactionKind,
     gas_price: u64,
-    gas_payment: Option<Vec<ObjectID>>,
+    gas_payment: Vec<ObjectRef>,
     sponsor: Option<SuiAddress>,
 ) -> Result<u64, anyhow::Error> {
     let client = context.get_client().await?;
@@ -1790,7 +1767,6 @@ pub async fn estimate_gas_budget(
     else {
         bail!("Wrong SuiClientCommandResult. Should be SuiClientCommandResult::DryRun.")
     };
-
     let rgp = client.read_api().get_reference_gas_price().await?;
 
     Ok(estimate_gas_budget_from_gas_cost(
